@@ -2,6 +2,7 @@ import { Router } from "express";
 import { UserRouter } from "../Modules/User/user.route";
 import { AuthRouter } from "../Modules/Auth/auth.route";
 import { ChatgptRouter } from "../Modules/Chatgpt/chatgpt.route";
+import { GeminiRouter } from "../Modules/Gemini/gemini.route";
 
 const router = Router();
 
@@ -18,7 +19,11 @@ const moduleRoutes = [
     {
         path: '/chatgpt',
         route: ChatgptRouter
-    }
+    },
+    {
+        path: '/gemini',
+        route: GeminiRouter
+    },
 ]
 
 moduleRoutes.forEach(route => router.use(route.path, route.route));
