@@ -1,8 +1,8 @@
-const PAGE_TOKEN =
-  "EAAPC7kQLggkBPH1GjKbF48QiGCSgkXf2v2aVJJ4iIoPI6jvrKMzBWmzUEgl9L5DZBkmFoTai2R780jfh5CZAZBeimTyJRuYf9ZBY9adKJUkApeJLHKNkG8YqF02sThwb7NKrLfsYnHbt60K8E77i08oNmZBwZBUVm1PmmZCY857pUZCTjGcjLsAEyRQclc1CxBZCZCkDPmZADyRExL9uV1mZA5HnRGwBtxkTvYneOVqlmaQeHpZCvrgZDZD";
-if (!PAGE_TOKEN) throw new Error("Missing FB_PAGE_ACCESS_TOKEN");
+// if (!PAGE_TOKEN) throw new Error("Missing FB_PAGE_ACCESS_TOKEN");
 import axios from "axios";
-// const PAGE_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN!;
+const PAGE_TOKEN =
+  "EAAPC7kQLggkBPC2ZBASnIf31hb5VA9CI0zrKwq70uLXUYTI9Y4vfl20EvSCBL3XxuKMM9C40yApHFrZCy7qMikwAZCPhzWpYhGavN3bDeIt0nqW6GLwETMABMw01ZCgZCoszVZCxXNJULguRdKyiJ6H0F9uzuZChhQ0u4YQur3xzwC8GCYWwArWBXfzJcmXJeJuddMIIWmKLQZDZD";
+// const PAGE_TOKEN = process.env.PAGE_ACCESS_TOKEN!;
 if (!PAGE_TOKEN) throw new Error("Missing FB_PAGE_ACCESS_TOKEN");
 
 export const sendMessage = async (
