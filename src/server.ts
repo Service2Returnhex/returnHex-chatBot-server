@@ -6,6 +6,6 @@ const PORT = config.port;
 connectDB();
 
 //server
-app.listen(3002, () => {
+app.listen(process.env.PORT || 3002, () => {
   console.log(`Server is listening at: http://localhost:${PORT}`);
 });

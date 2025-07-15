@@ -1,5 +1,5 @@
+import { callSendAPI } from "../../utility/callSendApi";
 import { generateGeminiReply } from "../../utility/gemini";
-import { callSendAPI } from "../../utility/messenger";
 
 export async function processMessageEvent(event: any) {
   const sender = event.sender.id;

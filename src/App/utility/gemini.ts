@@ -1,9 +1,10 @@
 import { GenerateContentResponse, GoogleGenAI } from "@google/genai";
-
+import dotenv from "dotenv";
+dotenv.config();
 const ai = new GoogleGenAI({
-  apiKey: process.env.GOOGLE_GEMINI_API_KEY,
-  //   project: process.env.GOOGLE_CLOUD_PROJECT,
+  apiKey: process.env.GEMINI_API_KEY,
 });
+//   project: process.env.GOOGLE_CLOUD_PROJECT,
 
 export async function generateGeminiReply(prompt: string): Promise<string> {
   try {
