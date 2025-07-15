@@ -1,42 +1,47 @@
 // src/utils/facebookApi.ts
-import request, { RequestResponse } from "request";
+import axios from "axios";
+import { RequestResponse } from "request";
 
-const PAGE_TOKEN = process.env.PAGE_ACCESS_TOKEN;
-// if (!PAGE_TOKEN) {
-//   throw new Error("Missing FB_PAGE_ACCESS_TOKEN in environment");
-// }
-
-export function sendTextMessage(senderId: string, text: string): void {
-  const url = `https://graph.facebook.com/v17.0/me/messages`;
-
-  request(
-    {
-      uri: url,
-      qs: { access_token: PAGE_TOKEN },
-      method: "POST",
-      json: {
-        recipient: { id: senderId },
-        message: { text },
-      },
-    },
-    handleError
-  );
+const PAGE_TOKEN =
+  "EAAPC7kQLggkBPK4LWZCYZBhn02US8JCKndseh8l6UZAjPV24OYaDqTUZApfsxzUegfbiKZCCQAZACTlslgRnedpxeqnoKcZBZBEHn99wpXgZC2Dzvb4uo2AQzwbbZAm4jOJBJJoH7tqSuXD2pN4ImZBvdsGw0Aq7OSzHPj52ZCpD9ZAF5KHTVPudvjLPgY95jEBNHHLFcvQUZC2De8zaF0FpeInpZBtJ0gsg5Ke0Gidk1FIXHjzds2r7lYZD";
+if (!PAGE_TOKEN) {
+  throw new Error("Missing FB_PAGE_ACCESS_TOKEN in environment");
 }
 
-export function replyToComment(commentId: string, message: string): void {
-  const url = `https://graph.facebook.com/v17.0/${commentId}/comments`;
+export async function sendTextMessage(
+  senderId: string,
+  text: string
+): Promise<void> {
+  const url = `https://graph.facebook.com/v17.0/me/messages?access_token=${PAGE_TOKEN}`;
 
-  request(
-    {
-      uri: url,
-      qs: { access_token: PAGE_TOKEN },
-      method: "POST",
-      json: {
-        message,
-      },
-    },
-    handleError
-  );
+  try {
+    await axios.post(url, {
+      recipient: { id: senderId },
+      message: { text },
+    });
+    console.log(`Sent message to ${senderId}`);
+  } catch (err: any) {
+    console.error(
+      "Error sending message via Send API:",
+      err.response?.data || err.message
+    );
+  }
+}
+
+export async function replyToComment(
+  commentId: string,
+  message: string
+): Promise<void> {
+  const url = `https://graph.facebook.com/v17.0/${commentId}/comments?access_token=${PAGE_TOKEN}`;
+  try {
+    await axios.post(url, { message });
+    console.log(`Replied to comment ${commentId}`);
+  } catch (err: any) {
+    console.error(
+      "Error replying to comment:",
+      err.response?.data || err.message
+    );
+  }
 }
 
 function handleError(error: any, response: RequestResponse, body: any): void {
@@ -44,5 +49,7 @@ function handleError(error: any, response: RequestResponse, body: any): void {
     console.error("Facebook API request error:", error);
   } else if (body && body.error) {
     console.error("Facebook API error response:", body.error);
+  } else {
+    console.log("Facebook API success:", body);
   }
 }
