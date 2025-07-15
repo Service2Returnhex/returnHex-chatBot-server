@@ -18,7 +18,7 @@ const moduleRoutes = [
         route: UserRouter
     },
     {
-        path: '/webhook',
+        path: '/webhook', 
         route: WebhookRouter 
     },
     {

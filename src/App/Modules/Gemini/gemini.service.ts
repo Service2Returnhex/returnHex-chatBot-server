@@ -15,22 +15,36 @@ const getResponse = async (promt: string) => {
 
 export const sendMessage = async (recipientId: string, text: string) => {
   const res = await axios.post(
-    `https://graph.facebook.com/v18.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+    `https://graph.facebook.com/v23.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
     {
-      recipient: { id: recipientId },
+      recipient: { id: recipientId }, 
       message: { text },
     }
   );
 };
 
-export const replyToComment = async (commentId: string, text: string) => {
-  const res = await axios.post(
-    `https://graph.facebook.com/v18.0/${commentId}/comments?access_token=${PAGE_ACCESS_TOKEN}`,
-    {
-      message: text,
+const replyToComment = async (commentId: string, message: string) => {
+  try {
+    const response = await axios.post(
+      `https://graph.facebook.com/v23.0/${commentId}/comments`,
+      {
+        message,
+      },
+      {
+        params: {
+          access_token: PAGE_ACCESS_TOKEN,
+        },
+      }
+    );
+    console.log('✅ Comment reply sent:', response.data);
+  } catch (error: any) {
+    console.error('❌ Failed to reply to comment');
+    if (error.response) {
+      console.error(error.response.data);
     }
-  );
+  }
 };
+
 
 export const GeminiService = {
 
