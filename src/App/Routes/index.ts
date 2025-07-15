@@ -1,20 +1,10 @@
 import { Router } from "express";
-import { AuthRouter } from "../Modules/Auth/auth.route";
 import { ChatgptRouter } from "../Modules/Chatgpt/chatgpt.route";
-import { UserRouter } from "../Modules/User/user.route";
 import { WebhookRouter } from "../webhook/webhook.router";
 
 const router = Router();
 
 const moduleRoutes = [
-  {
-    path: "/auth",
-    route: AuthRouter,
-  },
-  {
-    path: "/users",
-    route: UserRouter,
-  },
   {
     path: "/chatgpt",
     route: ChatgptRouter,

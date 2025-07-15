@@ -5,7 +5,6 @@
 // import { Staff } from "../Modules/Staff/staff.model";
 // import { IUser } from "../Modules/User/user.interface";
 
-
 // type TUserData = {
 //     name: string,
 //     email: string,

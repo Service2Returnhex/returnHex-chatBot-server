@@ -9,9 +9,11 @@ export const getWebhook = (req: Request, res: Response) => {
   } = req.query;
   if (mode === "subscribe" && token === process.env.MY_VERIFY_TOKEN) {
     console.log("WEBHOOK_VERIFIED");
-    return res.status(200).send(challenge as string);
+    res.status(200).send(challenge as string);
+    return;
   }
   res.sendStatus(403);
+  return;
 };
 
 export const postWebhook = (req: Request, res: Response) => {
@@ -33,7 +35,9 @@ export const postWebhook = (req: Request, res: Response) => {
         });
       }
     });
-    return res.status(200).send("EVENT_RECEIVED");
+    res.status(200).send("EVENT_RECEIVED");
+    return;
   }
   res.sendStatus(404);
+  return;
 };
