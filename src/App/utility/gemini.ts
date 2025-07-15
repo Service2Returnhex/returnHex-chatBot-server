@@ -7,9 +7,14 @@ const ai = new GoogleGenAI({
 });
 
 export async function generateGeminiReply(prompt: string): Promise<string> {
-  const resp = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-  });
-  return resp.text ?? "Sorry, I couldn't generate a response right now.";
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+    return response.text || "Sorry, I couldn't generate a response right now.";
+  } catch (error) {
+    console.error("Error generating content:", error);
+    return "An error occurred while generating the response.";
+  }
 }
