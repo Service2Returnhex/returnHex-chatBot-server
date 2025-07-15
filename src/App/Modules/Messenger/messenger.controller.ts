@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { processMessage } from "./messenger.service";
+import { processCommentEvent, processMessage } from "./messenger.service";
 
 export const getWebhook = (req: Request, res: Response) => {
   const {
