@@ -22,8 +22,8 @@ export const postWebhook = async (
   console.log("📥 Webhook Payload:", JSON.stringify(body, null, 2));
   if (body.object === "page") {
     for (const entry of body.entry) {
-      (entry.messaging || []).forEach((evt) => processMessageEvent(evt));
-      (entry.changes || []).forEach((chg) => processCommentEvent(chg));
+      (entry.messaging || []).forEach((evt:any) => processMessageEvent(evt));
+      (entry.changes || []).forEach((chg:any) => processCommentEvent(chg));
     }
     res.status(200).send("EVENT_RECEIVED");
     return;
