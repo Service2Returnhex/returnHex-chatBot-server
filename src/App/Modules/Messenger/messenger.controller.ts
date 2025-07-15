@@ -30,7 +30,7 @@ export const getWebhook = (req: Request, res: Response) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
-  
+
   if (mode === "subscribe" && token === process.env.MY_VERIFY_TOKEN) {
     res.status(200).send(challenge as string);
     return;
@@ -39,10 +39,7 @@ export const getWebhook = (req: Request, res: Response) => {
   res.sendStatus(403);
 };
 
-export async function postWebhook(
-  req: Request,
-  res: Response
-): Promise<Response> {
+export async function postWebhook(req: Request, res: Response): Promise<void> {
   const body = req.body as WebhookBody;
 
   if (body.object === "page") {
@@ -69,8 +66,10 @@ export async function postWebhook(
       }
     }
 
-    return res.sendStatus(200);
+ res.sendStatus(200);
+ return
   }
 
-  return res.sendStatus(404);
+   res.sendStatus(404);
+   return
 }
