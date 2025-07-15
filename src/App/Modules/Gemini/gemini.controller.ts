@@ -7,7 +7,7 @@ import { GeminiService } from "./gemini.service";
 const getResponse: RequestHandler = catchAsync(
     async(req: Request, res: Response) => {
 
-        const result = await GeminiService.getResponse(req.body);
+        const result = await GeminiService.getResponse(req.body?.message);
 
         sendResponse(res, {
             statusCode: httpStatus.OK,

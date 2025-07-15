@@ -7,7 +7,7 @@ const handleWebhook = async (query: any, body: any) => {
 
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     return challenge
-  } else {
+  } else { 
     return "Webhook verification failed";
   }
     
