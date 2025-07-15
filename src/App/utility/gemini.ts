@@ -3,7 +3,6 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GEMINI_API_KEY,
   //   project: process.env.GOOGLE_CLOUD_PROJECT,
-  vertexai: true,
 });
 
 export async function generateGeminiReply(prompt: string): Promise<string> {
