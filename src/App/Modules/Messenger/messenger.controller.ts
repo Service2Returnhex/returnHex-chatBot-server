@@ -1,43 +1,28 @@
 import { Request, Response } from "express";
-import { processCommentEvent, processMessage } from "./messenger.service";
+import { processMessageEvent } from "./messenger.service";
 
 export const getWebhook = (req: Request, res: Response) => {
-  const {
-    "hub.mode": mode,
-    "hub.verify_token": token,
-    "hub.challenge": challenge,
-  } = req.query;
+  //   console.log("/messenger/webhook GET query:", req.query);
+  //   console.log("VERIFY_TOKEN from env:", process.env.MY_VERIFY_TOKEN);
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
   if (mode === "subscribe" && token === process.env.MY_VERIFY_TOKEN) {
-    console.log("WEBHOOK_VERIFIED");
     res.status(200).send(challenge as string);
     return;
-  }
+  } else console.log("❌ Forbidden - invalid token or mode");
+
   res.sendStatus(403);
-  return;
 };
 
-export const postWebhook = (req: Request, res: Response) => {
-  const body = req.body;
+export const postWebhook = async (req: Request, res: Response) => {
+  const { body } = req;
   if (body.object === "page") {
-    body.entry.forEach((entry: any) => {
-      if (entry.messaging) {
-        entry.messaging.forEach((event: any) => {
-          if (event.message || event.postback) {
-            processMessage(event);
-          }
-        });
+    for (const entry of body.entry) {
+      for (const event of entry.messaging) {
+        if (event.message?.text) await processMessageEvent(event);
       }
-      if (entry.changes) {
-        entry.changes.forEach((change: any) => {
-          if (change.field === "feed" && change.value.item === "comment") {
-            processCommentEvent(change.value);
-          }
-        });
-      }
-    });
+    }
     res.status(200).send("EVENT_RECEIVED");
-    return;
-  }
-  res.sendStatus(404);
-  return;
+  } else res.sendStatus(404);
 };
