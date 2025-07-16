@@ -6,7 +6,7 @@ import { WebHookService } from "./webhook.service";
 
 export const handleWebhook: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await WebHookService.handleWebhook(req.query, req.body);
+    const result = await WebHookService.verifyWebhook(req, res);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
@@ -17,6 +17,24 @@ export const handleWebhook: RequestHandler = catchAsync(
   }
 );
 
+enum WebHookMethods {
+    GEMINI = "gemini",
+    CHATGPT = "chatgpt",
+}
+
+export const handleIncomingMessages: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await WebHookService.handleIncomingMessages(req, res, WebHookMethods.CHATGPT);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Incoming messages handled successfully",
+      data: result,
+    });
+  }
+);
+
 export const WebHookController = {
   handleWebhook,
+  handleIncomingMessages,
 };

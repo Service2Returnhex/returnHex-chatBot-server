@@ -21,6 +21,7 @@ export const sendMessage = async (recipientId: string, text: string) => {
       message: { text },
     }
   );
+  console.log(res.data);
 };
 
 const replyToComment = async (commentId: string, message: string) => {

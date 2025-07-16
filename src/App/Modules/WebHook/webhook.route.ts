@@ -2,6 +2,11 @@ import express from 'express';
 import { WebHookController } from './webhook.controller';
 const router = express.Router();
 
-router.post('/', WebHookController.handleWebhook); 
+//verification
+router.get('/', WebHookController.handleWebhook); 
+
+//receive messages
+router.post('/', WebHookController.handleIncomingMessages); 
+
 
 export const WebhookRouter = router;
