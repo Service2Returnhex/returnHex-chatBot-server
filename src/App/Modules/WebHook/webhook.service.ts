@@ -30,10 +30,10 @@ const handleIncomingMessages = async (
         console.log("💬 DM Message:", userMsg);
 
         if (method === "gemini") {
-          const reply = await GeminiService.getResponse(userMsg);
+          const reply = await GeminiService.getResponse(senderId, userMsg);
           await GeminiService.sendMessage(senderId, reply as string);
         } else if (method === "chatgpt") {
-          const reply = await ChatgptService.getResponse(userMsg);
+          const reply = await ChatgptService.getResponse(senderId, userMsg);
           await ChatgptService.sendMessage(senderId, reply as string);
         }
       }
@@ -61,10 +61,10 @@ const handleIncomingMessages = async (
             }
 
             if (method === "gemini") {
-              const reply = await GeminiService.getResponse(commentMsg);
+              const reply = await GeminiService.getResponse(commenterId, commentMsg);
               await GeminiService.replyToComment(commentId, reply as string);
             } else if (method === "chatgpt") {
-              const reply = await ChatgptService.getResponse(commentMsg);
+              const reply = await ChatgptService.getResponse(commenterId, commentMsg);
               await ChatgptService.replyToComment(commentId, reply as string);
             }
           }

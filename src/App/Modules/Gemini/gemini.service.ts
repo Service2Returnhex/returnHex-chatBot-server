@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import axios from 'axios';
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 
-const getResponse = async (promt: string) => {
+const getResponse = async (senderId: string, promt: string) => {
     const ai = new GoogleGenAI({});
 
     const response = await ai.models.generateContent({

@@ -7,7 +7,7 @@ import { ChatgptService } from "./chatgpt.service";
 const getResponse: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
 
-    const result = await ChatgptService.getResponse(req.body.message);
+    const result = await ChatgptService.getResponse('dummy-user', req.body.message);
     
     sendResponse(res, {
       statusCode: httpStatus.OK,
