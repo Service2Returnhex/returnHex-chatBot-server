@@ -18,6 +18,7 @@ const getResponse: RequestHandler = catchAsync(
   }
 );
 
+
 export const ChatgptController = {
     getResponse
 }

@@ -7,12 +7,11 @@ const verifyWebhook = async (req: Request, res: Response) => {
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe" && token === process.env.VERIFY_TOKEN) {
-    console.log("Webhook verified!");
+  if (mode && token && mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
+    console.log('Webhook verified!');
     return challenge;
   } else {
-    console.log("Not verified!");
-    return "Not Verified";
+    return "Forbidden";
   }
 };
 

@@ -6,14 +6,25 @@ import { WebHookService } from "./webhook.service";
 
 export const handleWebhook: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await WebHookService.verifyWebhook(req, res);
+    // const result = await WebHookService.verifyWebhook(req, res);
 
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "Webhook handled successfully",
-      data: result,
-    });
+    // sendResponse(res, {
+    //   statusCode: httpStatus.OK,
+    //   success: true,
+    //   message: "Webhook handled successfully",
+    //   data: result,
+    // });
+
+    const mode = req.query["hub.mode"];
+    const token = req.query["hub.verify_token"];
+    const challenge = req.query["hub.challenge"];
+
+    if (mode && token && mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
+      console.log('Webhook verified!');
+      res.status(200).send(challenge);
+    } else {
+      res.sendStatus(403);
+    }
   }
 );
 
