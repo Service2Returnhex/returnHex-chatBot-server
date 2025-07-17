@@ -72,7 +72,8 @@ ${i + 1}. ${p.name}
     messages,
   });
 
-  const reply = completion.choices[0].message.content || "";
+  const reply = specificProduct ? (`[@${userId} ]` + completion.choices[0].message.content || "") : 
+  (completion.choices[0].message.content || "");
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
   await userHistoryDoc.save();

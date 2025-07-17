@@ -1,6 +1,4 @@
 import { Router } from "express";
-import { UserRouter } from "../Modules/User/user.route";
-import { AuthRouter } from "../Modules/Auth/auth.route";
 import { ChatgptRouter } from "../Modules/Chatgpt/chatgpt.route";
 import { GeminiRouter } from "../Modules/Gemini/gemini.route";
 import { WebhookRouter } from "../Modules/WebHook/webhook.route";
@@ -9,15 +7,6 @@ import { PageRouter } from "../Modules/Page/page.route";
 const router = Router();
 
 const moduleRoutes = [
-    {
-        path: '/auth',
-        route: AuthRouter
-    }
-    ,
-    {
-        path: '/users',
-        route: UserRouter
-    },
     {
         path: '/webhook', 
         route: WebhookRouter 
