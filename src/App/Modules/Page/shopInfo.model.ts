@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
-export interface IShopInfo extends Document {
+export interface IShopInfo {
     pageName: string;
     address: string;
     phone: string;

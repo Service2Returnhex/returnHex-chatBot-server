@@ -1,24 +1,18 @@
 import { Request, Response } from "express";
 import { GeminiService } from "../Gemini/gemini.service";
 import { ChatgptService } from "../Chatgpt/chatgpt.service";
+import { PageService } from "../Page/page.service";
 
-const verifyWebhook = async (req: Request, res: Response) => {
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
-
-  if (mode && token && mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
-    console.log('Webhook verified!');
-    return challenge;
-  } else {
-    return "Forbidden";
-  }
-};
+// enum ActionType {
+//   MSG_REPLY = "reply",
+//   COMMENT_REPLAY = "comment",
+// }
 
 const handleIncomingMessages = async (
   req: Request,
   res: Response,
-  method: "gemini" | "chatgpt"
+  method: "gemini" | "chatgpt",
+ 
 ) => {
   if (req.body.object === "page") {
     for (const entry of req.body.entry) {
@@ -37,23 +31,30 @@ const handleIncomingMessages = async (
         }
       }
 
-      // Handle comments
+
       const changes = entry.changes || [];
       for (const change of changes) {
+        
+        if( change.field === "feed" &&
+            change.value.item === "status" &&
+            change.value.verb === "add") {
+              console.log("New Post Added");
+              await PageService.createProduct({
+                postId: change.value.post_id,
+                message: change.value.message,
+              });
+            }
+
         if (change.field === "feed" && change.value.item === "comment") {
           const commentData = change.value;
-        //   console.log("💬 Comment Data:", JSON.stringify(commentData, null, 2));
-
+          const postId = change.value.post_id;
+          console.log(postId);
           if (commentData.verb === "add") {
             const commentId = commentData.comment_id;
             const commentMsg = commentData.message;
 
             //preventing own comment reply
             const commenterId = commentData.from?.id;
-            // const pageId = change.value;
-
-            // console.log(commentId + ' ' + commenterId + ' ' + pageId);
-
             if(commenterId === '708889365641067') {
                 console.log("⛔ Skipping own comment to avoid infinite loop.");
                 continue;
@@ -63,7 +64,11 @@ const handleIncomingMessages = async (
               const reply = await GeminiService.getResponse(commenterId, commentMsg);
               await GeminiService.replyToComment(commentId, reply as string);
             } else if (method === "chatgpt") {
-              const reply = await ChatgptService.getResponse(commenterId, commentMsg);
+              console.log("hrer");
+              const reply = await ChatgptService.getResponse(commenterId, 
+                commentMsg, 
+                postId
+              );
               await ChatgptService.replyToComment(commentId, reply as string);
             }
           }
@@ -77,6 +82,5 @@ const handleIncomingMessages = async (
 };
 
 export const WebHookService = {
-  verifyWebhook,
   handleIncomingMessages,
 };

@@ -5,7 +5,9 @@ import { ChatHistory } from "./chat-history.model";
 import { ShopInfo } from "../Page/shopInfo.model";
 import { Product } from "../Page/product.mode";
 
-const getResponse = async (userId: string, prompt: string) => {
+const getResponse = async (userId: string, 
+  prompt: string, 
+  postId?: string) => {
   let userHistoryDoc = await ChatHistory.findOne({ userId });
 
   if (!userHistoryDoc)
@@ -19,6 +21,7 @@ const getResponse = async (userId: string, prompt: string) => {
   }
 
   const products = await Product.find();
+  const specificProduct = await Product.findOne({ postId });
 
   let productList = "";
 
@@ -28,23 +31,31 @@ const getResponse = async (userId: string, prompt: string) => {
         (p, i) => `
 ${i + 1}. ${p.name}
    - Description: ${p.description}
-   - Price: ${p.price}`
+   - Price: ${p.price}
+   - MoreDetails: ${p.message}`
       )
       .join("\n\n");
   }
 
   const systemPrompt = `
-You are an AI assistant for a Facebook page that sells products.
+  You are an AI assistant for a Facebook page that sells products.
 
-Here is the shop info:
-- PageName: ${shop.pageName}
-- Category: ${shop.pageCategory}
-- Address: ${shop?.address}
-- Phone: ${shop?.phone}
+  Here is the shop info:
+  - PageName: ${shop.pageName}
+  - Category: ${shop.pageCategory}
+  - Address: ${shop?.address}
+  - Phone: ${shop?.phone}
 
-${products.length > 0 ? `list the product's what user wants smartly. Here is our product list: ${productList}` : ""}
+  ${products.length > 0 ? `list the product's what user wants smartly. Here is our product list: ${productList}
+  if the product list's Description and Price part is missing try to find post details from MoreDetails` : ""}
+  Respond to the user's message helpfully and naturally using the above context.
   
-Respond to the user’s message helpfully and naturally using the above context.
+  ${specificProduct ? `User Wants to know about this product either in comment or meesage:
+  - Product Name: ${specificProduct.name}
+  - Description: ${specificProduct.description}
+  - Price: ${specificProduct.price}
+  - MoreDetails: ${specificProduct.message}` : ""}
+
   `.trim();
 
   const openai = new OpenAI({
