@@ -1,6 +1,6 @@
+import httpStatus from "http-status";
 import ApiError from "../../utility/AppError";
 import { IProduct, Product } from "./product.mode";
-import httpStatus from "http-status";
 import { ShopInfo } from "./shopInfo.model";
 
 //Product services
@@ -16,9 +16,9 @@ const getProductById = async (id: string) => {
 };
 
 const createProduct = async (payload: IProduct) => {
-    const result = await Product.create(payload);
-    return result;
-}
+  const result = await Product.create(payload);
+  return result;
+};
 
 const updateProduct = async (id: string, payload: Partial<IProduct>) => {
   const result = await Product.findByIdAndUpdate(id, payload, {
@@ -68,15 +68,15 @@ const deleteShop = async (id: string) => {
 };
 
 export const PageService = {
-    getProducts,
-    getProductById,
-    createProduct,
-    updateProduct,
-    deleteProduct,
+  getProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
 
-    getShops,
-    getShopById,
-    createShop,
-    updateShop,
-    deleteShop
-}
+  getShops,
+  getShopById,
+  createShop,
+  updateShop,
+  deleteShop,
+};

@@ -1,13 +1,11 @@
+import axios from "axios";
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index";
-import axios from "axios";
-import { ChatHistory } from "./chat-history.model";
-import { ShopInfo } from "../Page/shopInfo.model";
 import { Product } from "../Page/product.mode";
+import { ShopInfo } from "../Page/shopInfo.model";
+import { ChatHistory } from "./chat-history.model";
 
-const getResponse = async (userId: string, 
-  prompt: string, 
-  postId?: string) => {
+const getResponse = async (userId: string, prompt: string, postId?: string) => {
   let userHistoryDoc = await ChatHistory.findOne({ userId });
 
   if (!userHistoryDoc)
@@ -46,15 +44,23 @@ ${i + 1}. ${p.name}
   - Address: ${shop?.address}
   - Phone: ${shop?.phone}
 
-  ${products.length > 0 ? `list the product's what user wants smartly. Here is our product list: ${productList}
-  if the product list's Description and Price part is missing try to find post details from MoreDetails` : ""}
+  ${
+    products.length > 0
+      ? `list the product's what user wants smartly. Here is our product list: ${productList}
+  if the product list's Description and Price part is missing try to find post details from MoreDetails`
+      : ""
+  }
   Respond to the user's message helpfully and naturally using the above context.
   
-  ${specificProduct ? `User Wants to know about this product either in comment or meesage:
+  ${
+    specificProduct
+      ? `User Wants to know about this product either in comment or meesage:
   - Product Name: ${specificProduct.name}
   - Description: ${specificProduct.description}
   - Price: ${specificProduct.price}
-  - MoreDetails: ${specificProduct.message}` : ""}
+  - MoreDetails: ${specificProduct.message}`
+      : ""
+  }
 
   `.trim();
 
@@ -105,7 +111,6 @@ const replyToComment = async (commentId: string, message: string) => {
   );
   console.log("✅ Comment reply sent:", response.data);
 };
-
 
 export const ChatgptService = {
   getResponse,
