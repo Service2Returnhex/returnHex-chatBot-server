@@ -6,6 +6,7 @@ export interface IProduct {
   postId: string;
   message: string;
   createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const ProductSchema = new Schema<IProduct>(
@@ -20,6 +21,7 @@ const ProductSchema = new Schema<IProduct>(
     },
     message: { type: String, required: true, default: "" },
     createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
   }
 );
 

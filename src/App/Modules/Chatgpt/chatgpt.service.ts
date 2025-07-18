@@ -8,6 +8,7 @@ import { Product } from "../Page/product.mode";
 const getResponse = async (userId: string, 
   prompt: string, 
   postId?: string) => {
+    
   let userHistoryDoc = await ChatHistory.findOne({ userId });
 
   if (!userHistoryDoc)
@@ -16,6 +17,7 @@ const getResponse = async (userId: string,
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   const shop = await ShopInfo.findById(process.env.SHOP_ID);
+  
   if (!shop) {
     throw new Error("Shop not found");
   }
@@ -32,6 +34,7 @@ const getResponse = async (userId: string,
 ${i + 1}. ${p.name}
    - Description: ${p.description}
    - Price: ${p.price}
+   - createdAt: ${p.createdAt}
    - MoreDetails: ${p.message}`
       )
       .join("\n\n");
@@ -68,14 +71,15 @@ ${i + 1}. ${p.name}
   ];
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
+    model: "gpt-4o-mini",
     messages,
   });
 
-  const reply = specificProduct ? (`[@${userId} ]` + completion.choices[0].message.content || "") : 
+  const reply = specificProduct ? (`@[${userId}] ` + completion.choices[0].message.content || "") : 
   (completion.choices[0].message.content || "");
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
+  
   await userHistoryDoc.save();
 
   return reply;

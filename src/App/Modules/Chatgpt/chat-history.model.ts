@@ -1,11 +1,11 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema} from 'mongoose';
 
 export interface IChatMessages {
     role: 'system' | 'user' | 'assistant';
     content: string;
 }
 
-export interface IChatHistory extends Document {
+export interface IChatHistory{
     userId: string;
     messages: IChatMessages[];
     createdAt: Date;
@@ -20,6 +20,8 @@ const ChatMessageSchema = new Schema<IChatMessages>({
 const ChatHistorySchema = new Schema<IChatHistory>({
     userId: { type: String, required: true },
     messages: [ChatMessageSchema],
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
 })
 
 export const ChatHistory = mongoose.model<IChatHistory>("ChatHistory", ChatHistorySchema);
