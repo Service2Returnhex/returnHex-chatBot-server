@@ -3,6 +3,8 @@ import { ChatgptRouter } from "../Modules/Chatgpt/chatgpt.route";
 import { GeminiRouter } from "../Modules/Gemini/gemini.route";
 import { PageRouter } from "../Modules/Page/page.route";
 import { WebhookRouter } from "../Modules/WebHook/webhook.route";
+import { AuthRouter } from "../Modules/Auth/auth.route";
+import { UserRouter } from "../Modules/User/user.route";
 
 const router = Router();
 
