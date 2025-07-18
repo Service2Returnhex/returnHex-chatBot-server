@@ -14,4 +14,12 @@ export const predefinedPromts = {
     anseringStyle: "Keep it short and concise, no more than 2-3 sentences.",
 } 
 
+export const TourPredefinedPrompts = {
+  pageName: "GlobeTrotters Tour & Travel",
+  pageDescription: "Travel experts curating unforgettable trips, local experiences, and insider advice.",
+  pageSellingCategory: "Travel & Tourism",
+  answeringStyle: "Friendly yet concise — give 2–3 sentence responses with one actionable tip."
+};
+
+
 export default USER_ROLE

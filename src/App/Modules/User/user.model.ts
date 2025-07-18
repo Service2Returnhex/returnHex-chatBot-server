@@ -1,42 +1,41 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 import { IUser } from "./user.interface";
 
-const userSchema = new mongoose.Schema<IUser>({
+const userSchema = new mongoose.Schema<IUser>(
+  {
     name: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
-    email: {
-        type: String,
-        required: [true, "Email is required"],
-        unique: [true, "User Already Exists"]
-    },
+    email: { type: String, required: true, unique: true },
     password: {
-        type: String,
-        required: true,
-        select: false
+      type: String,
+      required: true,
+      select: false,
     },
     image: {
-        type: String,
+      type: String,
     },
     role: {
-        type: String,
-        require: true,
-        enum: ["admin", "doctor", "patient", "staff"]
+      type: String,
+      require: true,
+      enum: ["admin", "doctor", "patient", "staff"],
     },
     status: {
-        type: String,
-        enum: ['in-progress', 'blocked'],
-        required: true,
-        default: "in-progress"
+      type: String,
+      enum: ["in-progress", "blocked"],
+      required: true,
+      default: "in-progress",
     },
     isDeleted: {
-        type: Boolean,
-        required: true,
-        default: false
-    }
-}, {
-    timestamps: true
-})
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
 export const User = mongoose.model<IUser>("User", userSchema);
