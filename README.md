@@ -56,6 +56,8 @@ using webhooks to deliver smart, product-aware responses to user messages and co
 ├── README.md
 ├── src
 │   ├── App
+│   │   ├── api
+│   │   │   └── facebook.api.ts
 │   │   ├── config
 │   │   │   ├── config.ts
 │   │   │   └── databas.ts
@@ -70,7 +72,12 @@ using webhooks to deliver smart, product-aware responses to user messages and co
 │   │   │   │   ├── chatgpt.controller.ts
 │   │   │   │   ├── chatgpt.route.ts
 │   │   │   │   ├── chatgpt.service.ts
-│   │   │   │   └── chat-history.model.ts
+│   │   │   │   ├── chat-history.model.ts
+│   │   │   │   └── comment-histroy.model.ts
+│   │   │   ├── DeepSeek
+│   │   │   │   ├── deepseek.controller.ts
+│   │   │   │   ├── deepseek.route.ts
+│   │   │   │   └── deepseek.service.ts
 │   │   │   ├── Gemini
 │   │   │   │   ├── gemini.controller.ts
 │   │   │   │   ├── gemini.route.ts
@@ -80,7 +87,8 @@ using webhooks to deliver smart, product-aware responses to user messages and co
 │   │   │   │   ├── page.route.ts
 │   │   │   │   ├── page.service.ts
 │   │   │   │   ├── product.mode.ts
-│   │   │   │   └── shopInfo.model.ts
+│   │   │   │   ├── shopInfo.model.ts
+│   │   │   │   └── shop.promt.ts
 │   │   │   └── WebHook
 │   │   │       ├── webhook.controller.ts
 │   │   │       ├── webhook.route.ts
