@@ -2,12 +2,27 @@ import { Request, Response } from "express";
 import { GeminiService } from "../Gemini/gemini.service";
 import { ChatgptService } from "../Chatgpt/chatgpt.service";
 import { PageService } from "../Page/page.service";
-import { ChatHistory } from "../Chatgpt/chat-history.model";
+import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 
-// enum ActionType {
-//   MSG_REPLY = "reply",
-//   COMMENT_REPLAY = "comment",
-// }
+enum ActionType {
+  DM = "reply",
+  COMMENT = "comment",
+}
+
+const handleDM = async (event: any, method: "gemini" | "chatgpt") => {
+  const senderId = event.sender.id;
+  const userMsg = event.message.text;
+  console.log("💬 DM Message:", userMsg);
+
+  const reply =
+    method === "gemini"
+      ? await GeminiService.getResponse(senderId, userMsg)
+      : await ChatgptService.getResponseDM(senderId, userMsg, ActionType.DM);
+
+  await (method === "gemini"
+    ? GeminiService.sendMessage(senderId, reply as string)
+    : ChatgptService.sendMessage(senderId, reply as string));
+};
 
 const handleAddFeed = async (value: any) => {
   const result = await PageService.createProduct({
@@ -36,81 +51,75 @@ const handleEditFeed = async (value: any) => {
 const handleRemoveFeed = async (value: any) => {
   const { post_id } = value;
   const result = await PageService.deleteProduct(post_id);
-
+  await CommentHistory.findOneAndDelete({postId: post_id});
   !result
     ? console.log("Feed Not Deleted")
     : console.log("Feed Deleted Successfully");
 };
 
-// Photo - A photo uploaded to the Page.
-const handleAddPhoto = async (value: any) => {
-  const { post_id, message, created_time } = value;
-  const result = await PageService.createProduct({
-    postId: post_id,
-    message,
-    createdAt: created_time,
-  });
-
-  !result
-    ? console.log("Photo Not Created")
-    : console.log("Photo Created Successfully");
-};
-
-const handleEditPhoto = async(value: any) => {
-
-};
-
-const handleRemovePhoto = (photoId: string) => {
-  // ...
-};
-
-// Video - A video uploaded to the Page.
-const handleAddVideo = (videoUrl: string, title?: string) => {
-  // ...
-};
-
-const handleEditVideo = (videoId: string, newTitle: string) => {
-  // ...
-};
-
-const handleRemoveVideo = (videoId: string) => {
-  // ...
-};
-
-// Comment - A comment on a post or photo.
 const handleAddComment = async (value: any, method: string) => {
   const { comment_id, message, post_id, from } = value;
-        const commenterId = from?.id;
+  const commenterId = from?.id;
+  const userName = from?.name;
 
-        // Skip your own bot comments
-        if (commenterId === "708889365641067") {
-          console.log("⛔ Skipping own comment to avoid infinite loop.");
-          return;
-        }
+  if (commenterId === "708889365641067") {
+    console.log("⛔ Skipping own comment to avoid infinite loop.");
+    return;
+  }
 
-        console.log("💬 New Comment:", message);
+  console.log("💬 New Comment:", message);
 
-        const reply =
-          method === "gemini"
-            ? await GeminiService.getResponse(commenterId, message)
-            : await ChatgptService.getResponse(commenterId, message, post_id);
+  const reply =
+    method === "gemini"
+      ? await GeminiService.getResponse(commenterId, message)
+      : await ChatgptService.getCommnetResponse(
+          commenterId,
+          comment_id,
+          userName || "Customer",
+          message,
+          post_id,
+          ActionType.COMMENT
+        );
 
-        await (method === "gemini"
-          ? GeminiService.replyToComment(comment_id, reply as string)
-          : ChatgptService.replyToComment(comment_id, reply as string));
+  await (method === "gemini"
+    ? GeminiService.replyToComment(comment_id, reply as string)
+    : ChatgptService.replyToComment(comment_id, reply as string));
 };
 
 const handleEditComment = async (value: any) => {
   const { comment_id, message } = value;
-  const result = await ChatHistory.findOneAndUpdate(
+  console.log(comment_id);
+  const result = await CommentHistory.findOneAndUpdate(
+    { "messages.commentId": comment_id },
+    {
+      $set: {
+        "messages.$.content": message,
+        updatedAt: new Date(),
+      },
+    },
+    { new: true }
+  );
 
   !result
     ? console.log("Comment Not Updated")
     : console.log("Comment Updated Successfully");
 };
 
-const handleRemoveComment = (commentId: string) => {
-  // ...
+const handleRemoveComment = async (value: any) => {
+  const { comment_id } = value;
+
+  const result = await CommentHistory.findOneAndUpdate(
+    { "messages.commentId": comment_id },
+    {
+      $pull: { messages: { commentId: comment_id } },
+      $set: { updatedAt: new Date() },
+    },
+    { new: true }
+  );
+
+  !result
+    ? console.log("Comment Not Deleted")
+    : console.log("Comment Deleted Successfully");
 };
 
 const handleIncomingMessages = async (
@@ -125,31 +134,18 @@ const handleIncomingMessages = async (
   for (const entry of req.body.entry) {
     const event = entry.messaging?.[0];
 
-    // Handle Direct Messages
     if (event?.message) {
-      const senderId = event.sender.id;
-      const userMsg = event.message.text;
-      console.log("💬 DM Message:", userMsg);
-
-      const reply =
-        method === "gemini"
-          ? await GeminiService.getResponse(senderId, userMsg)
-          : await ChatgptService.getResponse(senderId, userMsg);
-
-      await (method === "gemini"
-        ? GeminiService.sendMessage(senderId, reply as string)
-        : ChatgptService.sendMessage(senderId, reply as string));
+      handleDM(event, method);
+      continue;
     }
 
-    // Handle Feed Events
     const changes = entry.changes || [];
     for (const change of changes) {
       const { field, value } = change;
-      console.log("📦 Feed Change:", JSON.stringify(change, null, 2));
-
-      // ✅ Handle Feed Post Events
-      if (field === "feed" && 
-        ['post', 'photo', 'video', 'status'].includes(value.item)
+      // console.log("Feed Change:", JSON.stringify(change, null, 2));
+      if (
+        field === "feed" &&
+        ["post", "photo", "video", "status"].includes(value.item)
       ) {
         if (value.verb === "add") {
           handleAddFeed(value);
@@ -159,15 +155,14 @@ const handleIncomingMessages = async (
           handleRemoveFeed(value);
         }
       }
-       
 
-      // ✅ Handle Comments
-      if (
-        field === "feed" &&
-        value.item === "comment"
-      ) {
+      if (field === "feed" && value.item === "comment") {
         if (value.verb === "add") {
           handleAddComment(value, method);
+        } else if (value.verb === "edited") {
+          handleEditComment(value);
+        } else if (value.verb === "remove") {
+          handleRemoveComment(value);
         }
       }
     }

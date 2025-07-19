@@ -10,7 +10,7 @@ const getProducts = async () => {
 };
 
 const getProductById = async (id: string) => {
-  const result = await Product.findById(id);
+  const result = await Product.findOne({postId: id});
   if (!result) throw new ApiError(httpStatus.NOT_FOUND, "Product Not Found");
   return result;
 };
@@ -21,7 +21,7 @@ const createProduct = async (payload: IProduct) => {
 }
 
 const updateProduct = async (id: string, payload: Partial<IProduct>) => {
-  const result = await Product.findByIdAndUpdate(id, payload, {
+  const result = await Product.findOneAndUpdate({postId: id}, payload, {
     new: true,
     runValidators: true,
   });
@@ -30,8 +30,14 @@ const updateProduct = async (id: string, payload: Partial<IProduct>) => {
 };
 
 const deleteProduct = async (id: string) => {
-  const result = await Product.findByIdAndDelete(id);
-  if (!result) throw new ApiError(httpStatus.NOT_FOUND, "Product Not Found");
+  const existing = await Product.findOne({ postId: id });
+  if (!existing) {
+    console.log("Product already deleted or not found for postId:", id);
+    return null;
+  }
+
+  const result = await Product.findOneAndDelete({ postId: id });
+  console.log("Deleted Product:", result);
   return result;
 };
 

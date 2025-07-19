@@ -4,11 +4,13 @@ import axios from "axios";
 import { ChatHistory } from "./chat-history.model";
 import { ShopInfo } from "../Page/shopInfo.model";
 import { Product } from "../Page/product.mode";
+import { CommentHistory } from "./comment-histroy.model";
 
-const getResponse = async (userId: string, 
-  prompt: string, 
-  postId?: string) => {
-    
+const getResponseDM = async (
+  userId: string,
+  prompt: string,
+  action?: string
+) => {
   let userHistoryDoc = await ChatHistory.findOne({ userId });
 
   if (!userHistoryDoc)
@@ -17,7 +19,95 @@ const getResponse = async (userId: string,
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   const shop = await ShopInfo.findById(process.env.SHOP_ID);
-  
+
+  if (!shop) {
+    throw new Error("Shop not found");
+  }
+
+  const products = await Product.find();
+
+  let productList = "";
+
+  if (products.length > 0) {
+    productList = products
+      .map(
+        (p, i) => `
+${i + 1}. ${p.name}
+   - Description: ${p.description}
+   - Price: ${p.price}
+   - createdAt: ${p.createdAt}
+   - MoreDetails: ${p.message}`
+      )
+      .join("\n\n");
+  }
+
+  const systemPrompt = `
+  You are an AI assistant for a Facebook page that sells products.
+
+  Here is the shop info:
+  - PageName: ${shop.pageName}
+  - Category: ${shop.pageCategory}
+  - Address: ${shop?.address}
+  - Phone: ${shop?.phone}
+
+  ${
+    products.length > 0
+      ? `list the product's what user wants smartly. Here is our product list: ${productList}
+  if the product list's Description and Price part is missing try to find post details from MoreDetails`
+      : ""
+  }
+  Respond to the user's message helpfully and naturally using the above context.
+  `.trim();
+
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
+  const messages: ChatCompletionMessageParam[] = [
+    { role: "system", content: systemPrompt },
+    ...userHistoryDoc.messages,
+  ];
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages,
+  });
+
+  const reply = completion.choices[0].message.content || "";
+
+  userHistoryDoc.messages.push({ role: "assistant", content: reply });
+
+  await userHistoryDoc.save();
+
+  return reply;
+};
+
+export const getCommnetResponse = async (
+  commenterId: string,
+  commentId: string,
+  userName: string,
+  message: string,
+  postId: string,
+  action?: string
+) => {
+  let userCommnetHistoryDoc = await CommentHistory.findOne({
+    userId: commenterId,
+    postId,
+  });
+
+  if (!userCommnetHistoryDoc)
+    userCommnetHistoryDoc = new CommentHistory({
+      userId: commenterId,
+      commentId,
+      postId,
+      userName,
+      messages: [],
+    });
+
+  userCommnetHistoryDoc.messages.push({ commentId, role: "user", content: message });
+
+  const shop = await ShopInfo.findById(process.env.SHOP_ID);
+
   if (!shop) {
     throw new Error("Shop not found");
   }
@@ -49,16 +139,29 @@ ${i + 1}. ${p.name}
   - Address: ${shop?.address}
   - Phone: ${shop?.phone}
 
-  ${products.length > 0 ? `list the product's what user wants smartly. Here is our product list: ${productList}
-  if the product list's Description and Price part is missing try to find post details from MoreDetails` : ""}
-  Respond to the user's message helpfully and naturally using the above context.
+  in case of comment reply, your first priority will be to reply about commented
+  post deatails and product details if user asks about it. If it's not present
+  then reply tell about the product list smartly.
   
-  ${specificProduct ? `User Wants to know about this product either in comment or meesage:
+  here is the specific post details:
+  ${
+    specificProduct
+      ? `User Wants to know about this product either in comment:
   - Product Name: ${specificProduct.name}
   - Description: ${specificProduct.description}
   - Price: ${specificProduct.price}
-  - MoreDetails: ${specificProduct.message}` : ""}
+  - MoreDetails: ${specificProduct.message}`
+      : ""
+  }
 
+  here is the product list:
+  ${
+    products.length > 0
+      ? `list the product's what user wants smartly. Here is our product list: ${productList}
+  if the product list's Description and Price part is missing try to find post details from MoreDetails`
+      : ""
+  }
+  Respond to the user's message helpfully and naturally using the above context.
   `.trim();
 
   const openai = new OpenAI({
@@ -67,7 +170,7 @@ ${i + 1}. ${p.name}
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
-    ...userHistoryDoc.messages,
+    ...userCommnetHistoryDoc.messages,
   ];
 
   const completion = await openai.chat.completions.create({
@@ -75,12 +178,11 @@ ${i + 1}. ${p.name}
     messages,
   });
 
-  const reply = specificProduct ? (`@[${userId}] ` + completion.choices[0].message.content || "") : 
-  (completion.choices[0].message.content || "");
+  const reply = `@[${commenterId}] ` + completion.choices[0].message.content;
 
-  userHistoryDoc.messages.push({ role: "assistant", content: reply });
-  
-  await userHistoryDoc.save();
+  userCommnetHistoryDoc.messages.push({commentId, role: "assistant", content: reply });
+
+  await userCommnetHistoryDoc.save();
 
   return reply;
 };
@@ -112,7 +214,8 @@ const replyToComment = async (commentId: string, message: string) => {
 };
 
 export const ChatgptService = {
-  getResponse,
+  getResponseDM,
+  getCommnetResponse,
   sendMessage,
   replyToComment,
 };
