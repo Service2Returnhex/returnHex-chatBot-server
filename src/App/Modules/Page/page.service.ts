@@ -21,11 +21,17 @@ const createProduct = async (payload: IProduct) => {
 }
 
 const updateProduct = async (id: string, payload: Partial<IProduct>) => {
+
+  const existing = await Product.findOne({ postId: id });
+  if (!existing) {
+    console.log("Product already deleted or not found for postId:", id);
+    return null;
+  }
+
   const result = await Product.findOneAndUpdate({postId: id}, payload, {
     new: true,
     runValidators: true,
   });
-  if (!result) throw new ApiError(httpStatus.NOT_FOUND, "Product Not Found");
   return result;
 };
 
@@ -35,9 +41,7 @@ const deleteProduct = async (id: string) => {
     console.log("Product already deleted or not found for postId:", id);
     return null;
   }
-
   const result = await Product.findOneAndDelete({ postId: id });
-  console.log("Deleted Product:", result);
   return result;
 };
 

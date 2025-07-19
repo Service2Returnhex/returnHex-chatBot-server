@@ -3,25 +3,29 @@ import { GeminiService } from "../Gemini/gemini.service";
 import { ChatgptService } from "../Chatgpt/chatgpt.service";
 import { PageService } from "../Page/page.service";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
+import { replyToComment, sendMessage } from "../../api/facebook.api";
+import { DeepSeekService } from "../DeepSeek/deepseek.service";
 
 enum ActionType {
   DM = "reply",
   COMMENT = "comment",
 }
 
-const handleDM = async (event: any, method: "gemini" | "chatgpt") => {
+const handleDM = async (
+  event: any,
+  method: "gemini" | "chatgpt" | "deepseek"
+) => {
   const senderId = event.sender.id;
   const userMsg = event.message.text;
   console.log("💬 DM Message:", userMsg);
 
   const reply =
     method === "gemini"
-      ? await GeminiService.getResponse(senderId, userMsg)
-      : await ChatgptService.getResponseDM(senderId, userMsg, ActionType.DM);
-
-  await (method === "gemini"
-    ? GeminiService.sendMessage(senderId, reply as string)
-    : ChatgptService.sendMessage(senderId, reply as string));
+      ? await GeminiService.getResponseDM(senderId, userMsg, ActionType.DM)
+      : method === "chatgpt"
+      ? await ChatgptService.getResponseDM(senderId, userMsg, ActionType.DM)
+      : await DeepSeekService.getResponseDM(senderId, userMsg, ActionType.DM);
+  await sendMessage(senderId, reply as string);
 };
 
 const handleAddFeed = async (value: any) => {
@@ -40,7 +44,7 @@ const handleEditFeed = async (value: any) => {
   const { post_id, message } = value;
   const result = await PageService.updateProduct(post_id, {
     message,
-    updatedAt: new Date(),
+    updatedAt: new Date(), 
   });
 
   !result
@@ -51,7 +55,7 @@ const handleEditFeed = async (value: any) => {
 const handleRemoveFeed = async (value: any) => {
   const { post_id } = value;
   const result = await PageService.deleteProduct(post_id);
-  await CommentHistory.findOneAndDelete({postId: post_id});
+  await CommentHistory.findOneAndDelete({ postId: post_id });
   !result
     ? console.log("Feed Not Deleted")
     : console.log("Feed Deleted Successfully");
@@ -66,13 +70,28 @@ const handleAddComment = async (value: any, method: string) => {
     console.log("⛔ Skipping own comment to avoid infinite loop.");
     return;
   }
-
   console.log("💬 New Comment:", message);
 
   const reply =
     method === "gemini"
-      ? await GeminiService.getResponse(commenterId, message)
-      : await ChatgptService.getCommnetResponse(
+      ? await GeminiService.getCommnetResponse(
+          commenterId,
+          comment_id,
+          userName || "Customer",
+          message,
+          post_id,
+          ActionType.COMMENT
+        )
+      : method === "chatgpt"
+      ? await ChatgptService.getCommnetResponse(
+          commenterId,
+          comment_id,
+          userName || "Customer",
+          message,
+          post_id,
+          ActionType.COMMENT
+        )
+      : await DeepSeekService.getCommnetResponse(
           commenterId,
           comment_id,
           userName || "Customer",
@@ -81,9 +100,7 @@ const handleAddComment = async (value: any, method: string) => {
           ActionType.COMMENT
         );
 
-  await (method === "gemini"
-    ? GeminiService.replyToComment(comment_id, reply as string)
-    : ChatgptService.replyToComment(comment_id, reply as string));
+  await replyToComment(comment_id, reply as string);
 };
 
 const handleEditComment = async (value: any) => {
@@ -125,7 +142,7 @@ const handleRemoveComment = async (value: any) => {
 const handleIncomingMessages = async (
   req: Request,
   res: Response,
-  method: "gemini" | "chatgpt"
+  method: "gemini" | "chatgpt" | "deepseek"
 ) => {
   if (req.body.object !== "page") {
     return "Reply Not Bot Working";

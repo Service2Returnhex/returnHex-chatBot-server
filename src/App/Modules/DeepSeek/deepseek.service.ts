@@ -1,10 +1,10 @@
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index";
 import axios from "axios";
-import { ChatHistory } from "./chat-history.model";
 import { ShopInfo } from "../Page/shopInfo.model";
 import { Product } from "../Page/product.mode";
-import { CommentHistory } from "./comment-histroy.model";
+import { ChatHistory } from "../Chatgpt/chat-history.model";
+import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { makePromtComment, makePromtDM } from "../Page/shop.promt";
 
 const getResponseDM = async (
@@ -13,26 +13,31 @@ const getResponseDM = async (
   action?: string
 ) => {
   let userHistoryDoc = await ChatHistory.findOne({ userId });
+
   if (!userHistoryDoc)
     userHistoryDoc = new ChatHistory({ userId, messages: [] });
+
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   const shop = await ShopInfo.findById(process.env.SHOP_ID);
-  if (!shop) throw new Error("Shop not found");
+  if (!shop) {
+    throw new Error("Shop not found");
+  }
 
   const products = await Product.find();
 
-  const getPromt = makePromtDM(shop, products);
+  const getPrompt = makePromtDM(shop, products);
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: getPromt },
+    { role: "system", content: getPrompt },
     ...userHistoryDoc.messages,
   ];
 
   const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    baseURL: 'https://api.deepseek.com',
+    apiKey: process.env.DEEPSEEK_API_KEY,
   });
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "deepseek-chat",
     messages,
   });
   const reply = completion.choices[0].message.content || "";
@@ -63,25 +68,29 @@ export const getCommnetResponse = async (
       userName,
       messages: [],
     });
+
   userCommnetHistoryDoc.messages.push({ commentId, role: "user", content: message });
 
   const shop = await ShopInfo.findById(process.env.SHOP_ID);
-  if (!shop) throw new Error("Shop not found");
+  if (!shop) {
+    throw new Error("Shop not found");
+  }
 
   const products = await Product.find();
   const specificProduct = await Product.findOne({ postId });
 
-  const getPrompt = makePromtComment(shop, products, specificProduct);
+  const getPromt = makePromtComment(shop, products, specificProduct);
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: getPrompt },
+    { role: "system", content: getPromt },
     ...userCommnetHistoryDoc.messages,
   ];
 
   const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    baseURL: 'https://api.deepseek.com',
+    apiKey: process.env.DEEPSEEK_API_KEY,
   });
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "deepseek-chat",
     messages,
   });
   const reply = `@[${commenterId}] ` + completion.choices[0].message.content;
@@ -91,9 +100,7 @@ export const getCommnetResponse = async (
   return reply;
 };
 
-
-
-export const ChatgptService = {
+export const DeepSeekService = {
   getResponseDM,
   getCommnetResponse,
 };
