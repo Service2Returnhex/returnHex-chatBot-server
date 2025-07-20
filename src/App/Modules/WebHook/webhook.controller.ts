@@ -22,12 +22,13 @@ export const handleWebhook: RequestHandler = catchAsync(
 enum WebHookMethods {
     GEMINI = "gemini",
     CHATGPT = "chatgpt",
-    DEEPSEEK = "deepseek"
+    DEEPSEEK = "deepseek",
+    GROQ = "groq"
 }
 
 export const handleIncomingMessages: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await WebHookService.handleIncomingMessages(req, res, WebHookMethods.GEMINI);
+    const result = await WebHookService.handleIncomingMessages(req, res, WebHookMethods.GROQ);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,

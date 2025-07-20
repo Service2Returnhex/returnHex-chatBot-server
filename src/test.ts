@@ -1,6 +1,6 @@
-const str = "708889365641067_122106535610937984";
-const postId = str.split("_")[1];
-console.log(postId); // Output: 122106535610937984
+// const str = "708889365641067_122106535610937984";
+// const postId = str.split("_")[1];
+// console.log(postId); // Output: 122106535610937984
 
 
 
@@ -26,3 +26,5 @@ const webHookOnPostLikeThis = {
     }
   ]
 }
+
+

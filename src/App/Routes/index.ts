@@ -4,6 +4,7 @@ import { GeminiRouter } from "../Modules/Gemini/gemini.route";
 import { WebhookRouter } from "../Modules/WebHook/webhook.route";
 import { PageRouter } from "../Modules/Page/page.route";
 import { DeepSeekRouter } from "../Modules/DeepSeek/deepseek.route";
+import { GroqRouter } from "../Modules/Groq/grok.route";
 
 const router = Router();
 
@@ -23,6 +24,10 @@ const moduleRoutes = [
     {
         path: '/deepseek',
         route: DeepSeekRouter
+    },
+    {
+        path: '/groq',
+        route: GroqRouter
     },
     {
         path: '/page',

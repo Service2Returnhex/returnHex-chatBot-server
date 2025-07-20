@@ -5,6 +5,7 @@ import { PageService } from "../Page/page.service";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { replyToComment, sendMessage } from "../../api/facebook.api";
 import { DeepSeekService } from "../DeepSeek/deepseek.service";
+import { GroqService } from "../Groq/grok.service";
 
 enum ActionType {
   DM = "reply",
@@ -13,7 +14,7 @@ enum ActionType {
 
 const handleDM = async (
   event: any,
-  method: "gemini" | "chatgpt" | "deepseek"
+  method: "gemini" | "chatgpt" | "deepseek" | "groq"
 ) => {
   const senderId = event.sender.id;
   const userMsg = event.message.text;
@@ -24,7 +25,10 @@ const handleDM = async (
       ? await GeminiService.getResponseDM(senderId, userMsg, ActionType.DM)
       : method === "chatgpt"
       ? await ChatgptService.getResponseDM(senderId, userMsg, ActionType.DM)
-      : await DeepSeekService.getResponseDM(senderId, userMsg, ActionType.DM);
+      : method === 'deepseek'
+      ? await DeepSeekService.getResponseDM(senderId, userMsg, ActionType.DM)
+      : await GroqService.getResponseDM(senderId, userMsg, ActionType.DM)
+      //paid
   await sendMessage(senderId, reply as string);
 };
 
@@ -91,14 +95,22 @@ const handleAddComment = async (value: any, method: string) => {
           post_id,
           ActionType.COMMENT
         )
-      : await DeepSeekService.getCommnetResponse(
+      : method === 'deepseek'
+      ? await DeepSeekService.getCommnetResponse(
           commenterId,
           comment_id,
           userName || "Customer",
           message,
           post_id,
           ActionType.COMMENT
-        );
+        )
+      : await GroqService.getCommnetResponse(
+          commenterId,
+          comment_id,
+          userName || "Customer",
+          message,
+          post_id,
+          ActionType.COMMENT);
 
   await replyToComment(comment_id, reply as string);
 };
@@ -142,7 +154,7 @@ const handleRemoveComment = async (value: any) => {
 const handleIncomingMessages = async (
   req: Request,
   res: Response,
-  method: "gemini" | "chatgpt" | "deepseek"
+  method: "gemini" | "chatgpt" | "deepseek" | "groq"
 ) => {
   if (req.body.object !== "page") {
     return "Reply Not Bot Working";

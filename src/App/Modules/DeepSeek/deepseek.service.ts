@@ -1,6 +1,6 @@
+//not completed(credit issues)
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index";
-import axios from "axios";
 import { ShopInfo } from "../Page/shopInfo.model";
 import { Product } from "../Page/product.mode";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
@@ -32,19 +32,35 @@ const getResponseDM = async (
     ...userHistoryDoc.messages,
   ];
 
-  const openai = new OpenAI({
-    baseURL: 'https://api.deepseek.com',
-    apiKey: process.env.DEEPSEEK_API_KEY,
-  });
-  const completion = await openai.chat.completions.create({
-    model: "deepseek-chat",
-    messages,
-  });
-  const reply = completion.choices[0].message.content || "";
+  console.log(process.env.OPEN_ROUTER_API_KEY);
+  // const openai = new OpenAI({
+  //   baseURL: 'https://openrouter.ai/api/v1',
+  //   apiKey: process.env.OPEN_ROUTER_API_KEY,
+  // });
+  // const completion = await openai.chat.completions.create({
+  //   model: "deepseek/deepseek-chat:free",
+  //   messages,
+  // });
 
-  userHistoryDoc.messages.push({ role: "assistant", content: reply });
-  await userHistoryDoc.save();
-  return reply;
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.OPEN_ROUTER_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    model: 'deepseek/deepseek-chat:free',
+    messages,
+  }),
+});
+  
+  const completion = await response.json();
+
+  // const reply = completion.choices[0].message.content || "";
+
+  // userHistoryDoc.messages.push({ role: "assistant", content: reply });
+  // await userHistoryDoc.save();
+  return completion;
 };
 
 export const getCommnetResponse = async (
