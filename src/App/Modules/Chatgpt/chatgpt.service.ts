@@ -96,20 +96,31 @@ export const sendMessage = async (recipientId: string, text: string) => {
   );
   console.log(res.data);
 };
+const PAGE_TOKEN =
+  "EAAPC7kQLggkBPCIDWxhX4JQBeNDZBKfHdo80xk7tLZBLmGaFH6kXPJ3YozokutYcoxgFS2qLZBzbHGCNaVjvFQZANW0EZC4jZC5OvuosXAbBZAcpIANKMHZBM6KhXeCiqI3MCZCzGRAHz62Kbel4dHH0gLxJd3cXeMCeZApmaP5AT3nZAGcWYaELwt5YkPQfIqwSZBE8iFdBZAMIF9wZDZD";
+if (!PAGE_TOKEN) throw new Error("Missing PAGE_ACCESS_TOKEN");
 
 const replyToComment = async (commentId: string, message: string) => {
-  const response = await axios.post(
-    `https://graph.facebook.com/v23.0/${commentId}/comments`,
-    {
-      message,
-    },
-    {
-      params: {
-        access_token: process.env.PAGE_ACCESS_TOKEN,
-      },
-    }
+  console.log(
+    "📤 Attempting to reply to comment",
+    commentId,
+    "with message:",
+    message
   );
-  console.log("✅ Comment reply sent:", response.data);
+  try {
+    const response = await axios.post(
+      `https://graph.facebook.com/v23.0/${commentId}/comments`,
+      { message },
+      { params: { access_token: process.env.PAGE_ACCESS_TOKEN } }
+    );
+    console.log("✅ Comment reply sent:", response.data);
+  } catch (err: any) {
+    console.error(
+      "❌ Comment reply failed:",
+      err.response?.data || err.message
+    );
+  }
+  // console.log("✅ Comment reply sent:", response.data);
 };
 
 export const ChatgptService = {

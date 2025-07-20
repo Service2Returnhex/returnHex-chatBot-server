@@ -3,15 +3,14 @@ import axios from "axios";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { Product } from "../Page/product.mode";
 import { ShopInfo } from "../Page/shopInfo.model";
-const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 
-const getResponse = async (userId: string, promt: string, postId?: string) => {
+const getResponse = async (userId: string, prompt: string, postId?: string) => {
   let userHistoryDoc = await ChatHistory.findOne({ userId });
 
   if (!userHistoryDoc)
     userHistoryDoc = new ChatHistory({ userId, messages: [] });
 
-  userHistoryDoc.messages.push({ role: "user", content: promt });
+  userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   const shop = await ShopInfo.findById(process.env.SHOP_ID);
   if (!shop) {
@@ -20,6 +19,7 @@ const getResponse = async (userId: string, promt: string, postId?: string) => {
 
   const products = await Product.find();
   const specificProduct = await Product.findOne({ postId });
+  console.log("specificProduct", specificProduct);
 
   let productList = "";
 
@@ -27,62 +27,69 @@ const getResponse = async (userId: string, promt: string, postId?: string) => {
     productList = products
       .map(
         (p, i) => `
-${i + 1}. ${p.name}
-   - Description: ${p.description}
-   - Price: ${p.price}
-   - MoreDetails: ${p.message}`
+  ${i + 1}. ${p.name}
+     - Description: ${p.description}
+     - Price: ${p.price}
+     - MoreDetails: ${p.message}`
       )
       .join("\n\n");
   }
 
   const systemPrompt = `
-  You are an AI assistant for a Facebook page that sells products.
-
-  Here is the shop info:
-  - PageName: ${shop.pageName}
-  - Category: ${shop.pageCategory}
-  - Address: ${shop?.address}
-  - Phone: ${shop?.phone}
-
-  ${
-    products.length > 0
-      ? `list the product's what user wants smartly. Here is our product list: ${productList}
-  if the product list's Description and Price part is missing try to find post details from MoreDetails`
-      : ""
-  }
-  Respond to the user's message helpfully and naturally using the above context.
+You are a friendly travel assistant for ${shop.pageName} in ${
+    shop.pageCategory
+  }.
   
-  ${
-    specificProduct
-      ? `User Wants to know about this product either in comment or meesage:
-  - Product Name: ${specificProduct.name}
-  - Description: ${specificProduct.description}
-  - Price: ${specificProduct.price}
-  - MoreDetails: ${specificProduct.message}`
-      : ""
-  }
+    Here is the shop info:
+    - PageName: ${shop.pageName}
+    - Category: ${shop.pageCategory}
+    - Address: ${shop?.address}
+    - Phone: ${shop?.phone}
+  
+   ${
+     products.length > 0
+       ? `We offer the following tours/packages:
 
-  `.trim();
+${productList}
+
+If any tour is missing Description or Price, please refer to MoreDetails.`
+       : ""
+   }
+
+Respond to the user's inquiry in a helpful and natural manner using the context above.
+
+${
+  specificProduct
+    ? `User is asking about this tour:
+
+- Tour Name: ${specificProduct.name}
+- Description: ${specificProduct.description}
+- Price: ${specificProduct.price}
+- Details: ${specificProduct.message}`
+    : ""
+}
+  
+    `.trim();
 
   const ai = new GoogleGenAI({});
-
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: promt,
+    contents: systemPrompt,
   });
 
   return response.text;
 };
 
 export const sendMessage = async (recipientId: string, text: string) => {
+  console.log("text", text);
   const res = await axios.post(
-    `https://graph.facebook.com/v23.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+    `https://graph.facebook.com/v23.0/me/messages?access_token=${process.env.PAGE_ACCESS_TOKEN}`,
     {
       recipient: { id: recipientId },
       message: { text },
     }
   );
-  console.log(res.data);
+  console.log("res", res);
 };
 
 const replyToComment = async (commentId: string, message: string) => {
@@ -90,11 +97,11 @@ const replyToComment = async (commentId: string, message: string) => {
     const response = await axios.post(
       `https://graph.facebook.com/v23.0/${commentId}/comments`,
       {
-        message,
+        message: `@${commentId} ${message}`,
       },
       {
         params: {
-          access_token: PAGE_ACCESS_TOKEN,
+          access_token: process.env.PAGE_ACCESS_TOKEN,
         },
       }
     );
