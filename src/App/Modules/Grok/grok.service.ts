@@ -1,5 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
 import axios from "axios";
+import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { Product } from "../Page/product.mode";
@@ -72,71 +72,26 @@ ${
   
     `.trim();
 
-  const ai = new GoogleGenAI({});
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: systemPrompt,
+  const openai = new OpenAI({
+    apiKey: process.env.GROK_API_KEY,
+    baseURL: "https://api.x.ai/v1",
   });
 
-  return response.text;
-};
-
-export const getCommnetResponse = async (
-  commenterId: string,
-  commentId: string,
-  userName: string,
-  message: string,
-  postId: string,
-  action?: string
-) => {
-  let userCommnetHistoryDoc = await CommentHistory.findOne({
-    userId: commenterId,
-    postId,
-  });
-
-  if (!userCommnetHistoryDoc)
-    userCommnetHistoryDoc = new CommentHistory({
-      userId: commenterId,
-      commentId,
-      postId,
-      userName,
-      messages: [],
-    });
-  userCommnetHistoryDoc.messages.push({
-    commentId,
-    role: "user",
-    content: message,
-  });
-
-  const shop = await ShopInfo.findById(process.env.SHOP_ID);
-  if (!shop) throw new Error("Shop not found");
-
-  const products = await Product.find();
-  const specificProduct = await Product.findOne({ postId });
-
-  const getPrompt = makePromtComment(shop, products, specificProduct);
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: getPrompt },
-    ...userCommnetHistoryDoc.messages,
+    { role: "system", content: systemPrompt },
+    ...userHistoryDoc.messages,
   ];
-  const geminiMessages = messages.map((msg) => ({
-    role: msg.role === "assistant" ? "model" : "user",
-    parts: [{ text: msg.content }],
-  }));
 
-  const ai = new GoogleGenAI({});
-  const completion = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: geminiMessages as ChatCompletionMessageParam[],
+  const completion = await openai.chat.completions.create({
+    model: "grok-2",
+    messages,
   });
-  const reply = `@[${commenterId}] ` + completion.text || "";
 
-  userCommnetHistoryDoc.messages.push({
-    commentId,
-    role: "assistant",
-    content: reply,
-  });
-  await userCommnetHistoryDoc.save();
+  const reply = completion.choices[0].message.content || "";
+
+  userHistoryDoc.messages.push({ role: "assistant", content: reply });
+  await userHistoryDoc.save();
+
   return reply;
 };
 
@@ -174,7 +129,7 @@ const replyToComment = async (commentId: string, message: string) => {
   }
 };
 
-export const GeminiService = {
+export const GrokService = {
   getResponse,
   sendMessage,
   replyToComment,

@@ -1,7 +1,6 @@
 // if (!PAGE_TOKEN) throw new Error("Missing FB_PAGE_ACCESS_TOKEN");
 import axios from "axios";
-const PAGE_TOKEN =
-  "EAAPC7kQLggkBPC2ZBASnIf31hb5VA9CI0zrKwq70uLXUYTI9Y4vfl20EvSCBL3XxuKMM9C40yApHFrZCy7qMikwAZCPhzWpYhGavN3bDeIt0nqW6GLwETMABMw01ZCgZCoszVZCxXNJULguRdKyiJ6H0F9uzuZChhQ0u4YQur3xzwC8GCYWwArWBXfzJcmXJeJuddMIIWmKLQZDZD";
+const PAGE_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 // const PAGE_TOKEN = process.env.PAGE_ACCESS_TOKEN!;
 if (!PAGE_TOKEN) throw new Error("Missing FB_PAGE_ACCESS_TOKEN");
 
@@ -9,17 +8,23 @@ export const sendMessage = async (
   recipientId: string,
   text: string
 ): Promise<void> => {
+  const cleanText =
+    typeof text === "string" ? text : "Sorry, something went wrong 🤖";
+  // console.log("▶️ Sending to PSID:", recipientId, "Text:", cleanText);
   try {
     await axios.post(
-      `https://graph.facebook.com/v17.0/me/messages`,
-      { recipient: { id: recipientId }, message: { text } },
-      { params: { access_token: PAGE_TOKEN } }
+      `https://graph.facebook.com/v23.0/me/messages?access_token=${process.env.PAGE_ACCESS_TOKEN}`,
+      {
+        recipient: { id: recipientId },
+        message: { text: cleanText },
+      }
     );
     console.log(`▶️ Sent Messenger reply to ${recipientId}`);
   } catch (err: any) {
     console.error(
       "❌ Messenger Send Error:",
-      err.response?.data || err.message
+      err.response?.status,
+      JSON.stringify(err.response?.data, null, 2) || err.message
     );
   }
 };
@@ -30,7 +35,7 @@ export const replyToComment = async (
 ): Promise<void> => {
   try {
     await axios.post(
-      `https://graph.facebook.com/v17.0/${commentId}/comments`,
+      `https://graph.facebook.com/v23.0/${commentId}/comments`,
       { message },
       { params: { access_token: PAGE_TOKEN } }
     );
