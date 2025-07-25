@@ -21,7 +21,16 @@ const getResponseDM = async (
 
   const products = await Product.find();
 
+  //save the post info. to the local database
+  // create a script for run makePromtDM
+  /*
+    is it same post - don't call makePromtDM
+    is it different post - call the makePromtDM
+
+   */
+
   const getPromt = makePromtDM(shop, products);
+
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
     ...userHistoryDoc.messages,
@@ -31,13 +40,18 @@ const getResponseDM = async (
     apiKey: process.env.OPENAI_API_KEY,
   });
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-4o-mini", // 
     messages,
   });
+  //replay should be in 20 token
+  //if there is no replay, we will sent a custom response like - [our customer care will contact with you]
+  // then the page owener will receive a email with post deatils that ai is not responding
   const reply = completion.choices[0].message.content || "";
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
   await userHistoryDoc.save();
+
+  //nlp: if same related question mathces with db, it will replay from the previous stored response. 
   return reply;
 };
 

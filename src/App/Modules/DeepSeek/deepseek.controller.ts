@@ -18,7 +18,6 @@ const getResponse: RequestHandler = catchAsync(
   }
 );
 
-
 export const DeepSeekController = {
     getResponse
 }
