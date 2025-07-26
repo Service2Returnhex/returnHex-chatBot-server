@@ -17,7 +17,10 @@ app.get('/', (req, res) => {
     res.send("Hello Server");
 })
 
-const VERIFY_TOKEN = process.env.VERIFY_TOKEN
+app.get('/api/health', (req, res) => {
+    res.send("Server health is good!");
+})
+
 app.use(notFound);
 app.use(globalErrorHanlder);
 
