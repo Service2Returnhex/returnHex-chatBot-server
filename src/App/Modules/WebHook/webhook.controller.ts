@@ -43,7 +43,7 @@ export const handleIncomingMessages: RequestHandler = catchAsync(
       4.2 If '' '' '' 10 token - "" "" "" 20 token 
     5. Rest of the wortk
     */
-    const result = await WebHookService.handleIncomingMessages(req, res, WebHookMethods.GROQ);
+    const result = await WebHookService.handleIncomingMessages(req, res, WebHookMethods.GEMINI);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
