@@ -26,7 +26,7 @@ const getResponseDM = async (
   const products = await Product.find();
 
   const getPrompt = makePromtDM(shop, products);
-//   const getPromt = makePromtComment(shop, products, specificProduct);
+  //   const getPromt = makePromtComment(shop, products, specificProduct);
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
     ...userHistoryDoc.messages,

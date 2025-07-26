@@ -114,6 +114,7 @@ async function handleAddComment(value: any, method: AIMethod) {
     userId: commenterId,
     postId: post_id,
   });
+  // console.log("comment history", hist);
   if (!hist)
     hist = new CommentHistory({
       userId: commenterId,
@@ -174,6 +175,7 @@ async function handleAddComment(value: any, method: AIMethod) {
     default:
       reply = "Sorry, I cannot respond to that comment.";
   }
+  console.log("comment reply", reply);
 
   // save & reply
   hist.messages.push({
@@ -220,7 +222,7 @@ export const WebHookService = {
     method: AIMethod
   ): Promise<string> => {
     if (req.body.object !== "page") return "Not a page event";
-
+    // console.log("📥 RAW WEBHOOK PAYLOAD:", JSON.stringify(req.body, null, 2));
     let didReply = false; // ◀️ ensure only one DM reply
 
     for (const entry of req.body.entry) {
