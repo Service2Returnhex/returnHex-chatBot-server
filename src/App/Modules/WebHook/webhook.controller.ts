@@ -28,6 +28,10 @@ enum WebHookMethods {
 
 export const handleIncomingMessages: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
+
+    const userIP = [
+      {ip: '192.168.10.2', count: 20}, //rate limiting
+    ]
     /*
     0. Check IP first and collect the IP
       0.1 Same IP cannot make request more than 20 times  
@@ -43,7 +47,7 @@ export const handleIncomingMessages: RequestHandler = catchAsync(
       4.2 If '' '' '' 10 token - "" "" "" 20 token 
     5. Rest of the wortk
     */
-    const result = await WebHookService.handleIncomingMessages(req, res, WebHookMethods.GEMINI);
+    const result = await WebHookService.handleIncomingMessages(req, res, WebHookMethods.DEEPSEEK);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,

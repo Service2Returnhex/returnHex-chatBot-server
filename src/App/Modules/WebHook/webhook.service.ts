@@ -18,7 +18,7 @@ const handleDM = async (
 ) => {
   const senderId = event.sender.id;
   const userMsg = event.message.text;
-  console.log("💬 DM Message:", userMsg);
+  console.log("💬 DM Message:", userMsg); 
 
   const reply =
     method === "gemini"
@@ -70,7 +70,7 @@ const handleAddComment = async (value: any, method: string) => {
   const commenterId = from?.id;
   const userName = from?.name;
 
-  if (commenterId === "708889365641067") {
+  if (commenterId === process.env.PAGE_ID) {
     console.log("⛔ Skipping own comment to avoid infinite loop.");
     return;
   }

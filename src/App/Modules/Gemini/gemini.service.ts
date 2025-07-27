@@ -33,6 +33,8 @@ const getResponseDM = async (
     parts: [{text: msg.content}]
   }))
 
+  console.log(geminiMessages);
+
   const ai = new GoogleGenAI({});
   const completion = await ai.models.generateContent({
         model: "gemini-2.5-flash",
