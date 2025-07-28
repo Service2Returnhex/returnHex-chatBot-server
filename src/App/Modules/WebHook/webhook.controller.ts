@@ -1,37 +1,53 @@
-import { Request, Response, RequestHandler } from "express";
+import { Request, RequestHandler, Response } from "express";
+import httpStatus from "http-status";
 import { catchAsync } from "../../utility/cathcAsync";
 import sendResponse from "../../utility/sendResponse";
-import httpStatus from "http-status";
+import { ShopInfo } from "../Page/shopInfo.model";
 import { WebHookService } from "./webhook.service";
 
 export const handleWebhook: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
+    const { pageId } = req.params;
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
 
-    if (mode && token && mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
-      console.log('Webhook verified!');
+    // Look up that page’s verifyToken
+    const shop = await ShopInfo.findOne({ pageId });
+    if (!shop) return res.sendStatus(httpStatus.NOT_FOUND);
+
+    if (mode && token && mode === "subscribe" && token === shop.verifyToken) {
+      console.log("Webhook verified!");
       res.status(200).send(challenge);
+      return;
     } else {
+      console.warn(`❌ Webhook verification failed for page ${pageId}`);
       res.sendStatus(403);
     }
   }
 );
 
 enum WebHookMethods {
-    GEMINI = "gemini",
-    CHATGPT = "chatgpt",
-    DEEPSEEK = "deepseek",
-    GROQ = "groq"
+  GEMINI = "gemini",
+  CHATGPT = "chatgpt",
+  DEEPSEEK = "deepseek",
+  GROQ = "groq",
 }
 
 export const handleIncomingMessages: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
+    const { pageId } = req.params;
 
-    const userIP = [
-      {ip: '192.168.10.2', count: 20}, //rate limiting
-    ]
+    const shop = await ShopInfo.findOne({ pageId });
+    if (!shop) {
+      console.error(`Unknown pageId ${pageId}`);
+      return res.sendStatus(httpStatus.NOT_FOUND);
+    }
+
+    // res.sendStatus(httpStatus.OK);
+    // const userIP = [
+    //   { ip: "192.168.10.2", count: 20 }, //rate limiting
+    // ];
     /*
     0. Check IP first and collect the IP
       0.1 Same IP cannot make request more than 20 times  
@@ -47,7 +63,13 @@ export const handleIncomingMessages: RequestHandler = catchAsync(
       4.2 If '' '' '' 10 token - "" "" "" 20 token 
     5. Rest of the wortk
     */
-    const result = await WebHookService.handleIncomingMessages(req, res, WebHookMethods.DEEPSEEK);
+    // res.sendStatus(200);
+    const result = await WebHookService.handleIncomingMessages(
+      req.body,
+      shop.pageAccessToken,
+      shop.pageId,
+      WebHookMethods.GEMINI
+    );
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,

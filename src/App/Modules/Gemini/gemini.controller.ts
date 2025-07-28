@@ -1,25 +1,23 @@
-import { RequestHandler, Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
+import httpStatus from "http-status";
 import { catchAsync } from "../../utility/cathcAsync";
 import sendResponse from "../../utility/sendResponse";
-import httpStatus from "http-status";
 import { GeminiService } from "./gemini.service";
 
 const getResponse: RequestHandler = catchAsync(
-    async(req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
+    const result = await GeminiService.textResponse(req.body.message);
+    console.log(result);
 
-        const result = await GeminiService.getResponseDM("Dummy-Sender-ID", req.body?.message);
-
-        sendResponse(res, {
-            statusCode: httpStatus.OK,
-            success: true,
-            message: "Gemini response retrieved successfully",
-            data: result
-        })
-    }
-)
-
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Gemini response retrieved successfully",
+      data: result,
+    });
+  }
+);
 
 export const GeminiController = {
-
-    getResponse
-}
+  getResponse,
+};
