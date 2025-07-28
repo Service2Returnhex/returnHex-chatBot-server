@@ -91,7 +91,7 @@ export const getCommnetResponse = async (
 
   const ai = new GoogleGenAI({});
   const completion = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: geminiMessages as ChatCompletionMessageParam[]
     })
   const reply = `@[${commenterId}] ` + completion.text || "";

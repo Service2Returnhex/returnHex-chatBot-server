@@ -97,7 +97,7 @@ export const getCommnetResponse = async (
     apiKey: process.env.OPENAI_API_KEY,
   });
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-3.5-turbo",
     messages,
   });
   const reply = `@[${commenterId}] ` + completion.choices[0].message.content;

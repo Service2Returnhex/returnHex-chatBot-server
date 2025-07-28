@@ -19,38 +19,48 @@ const getResponseDM = async (
 
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
-  const shop = await ShopInfo.findOne({shopId});
+  const shop = await ShopInfo.findOne({ shopId });
   if (!shop) {
     throw new Error("Shop not found");
   }
 
-  const products = await Product.find({shopId});
+  const products = await Product.find({ shopId });
 
   const getPrompt = makePromtDM(shop, products, prompt);
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt }, //as much as optimize
-    { role: "user", content: prompt }
+    { role: "user", content: prompt },
   ];
 
   console.log(messages);
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${process.env.OPEN_ROUTER_API_KEY}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    model: 'deepseek/deepseek-r1:free',
-    messages,
-  }),
-});
-  
-  const completion = await response.json();
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPEN_ROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-r1:free",
+        messages,
+      }),
+    }
+  );
 
-  const reply = completion.choices[0].message.content || 
-  "Sorry, Something went wrong, Owner will reach you soon!";
+  const completion = await response.json();
+  console.log(completion);
+
+  if (completion.error) {
+    console.error("OpenRouter API Error:", completion.error);
+    return "Sorry, something went wrong on our end. The admin will check this shortly!";
+  }
+
+  const reply =
+    completion.choices?.[0]?.message?.content ||
+    "Sorry, something went wrong. Please try again later.";
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
   await userHistoryDoc.save();
@@ -80,33 +90,50 @@ export const getCommnetResponse = async (
       messages: [],
     });
 
-  userCommnetHistoryDoc.messages.push({ commentId, role: "user", content: message });
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "user",
+    content: message,
+  });
 
-  const shop = await ShopInfo.findOne({shopId});
+  const shop = await ShopInfo.findOne({ shopId });
   if (!shop) {
     throw new Error("Shop not found");
   }
 
-  const products = await Product.find({shopId});
+  const products = await Product.find({ shopId });
   const specificProduct = await Product.findOne({ shopId, postId });
 
   const getPromt = makePromtComment(shop, products, specificProduct);
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
-    { role: 'user', content: message }
+    { role: "user", content: message },
   ];
+  console.log("coming from deepseek");
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPEN_ROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-r1:free",
+        messages,
+      }),
+    }
+  );
 
-  const openai = new OpenAI({
-    baseURL: 'https://api.deepseek.com',
-    apiKey: process.env.DEEPSEEK_API_KEY,
-  });
-  const completion = await openai.chat.completions.create({
-    model: "deepseek-chat",
-    messages,
-  });
-  const reply = `@[${commenterId}] ` + completion.choices[0].message.content;
+  const completion = await response.json();
+  console.log(completion);
+  const reply = `@[${commenterId}] ` + completion.choices[0]?.message?.content;
 
-  userCommnetHistoryDoc.messages.push({commentId, role: "assistant", content: reply });
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "assistant",
+    content: reply,
+  });
   await userCommnetHistoryDoc.save();
   return reply;
 };
