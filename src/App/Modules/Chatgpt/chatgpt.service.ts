@@ -7,19 +7,20 @@ import { CommentHistory } from "./comment-histroy.model";
 import { makePromtComment, makePromtDM } from "../Page/shop.promt";
 
 const getResponseDM = async (
-  userId: string,
+  senderId: string,
+  shopId: string,
   prompt: string,
   action?: string
 ) => {
-  let userHistoryDoc = await ChatHistory.findOne({ userId });
+  let userHistoryDoc = await ChatHistory.findOne({ senderId });
   if (!userHistoryDoc)
-    userHistoryDoc = new ChatHistory({ userId, messages: [] });
+    userHistoryDoc = new ChatHistory({ senderId, messages: [] });
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
-  const shop = await ShopInfo.findById(process.env.SHOP_ID);
+  const shop = await ShopInfo.findOne({shopId});
   if (!shop) throw new Error("Shop not found");
 
-  const products = await Product.find();
+  const products = await Product.find({shopId});
 
   //save the post info. to the local database
   // create a script for run makePromtDM
@@ -29,11 +30,11 @@ const getResponseDM = async (
 
    */
 
-  const getPromt = makePromtDM(shop, products);
+  const getPromt = makePromtDM(shop, products, prompt);
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
-    ...userHistoryDoc.messages,
+    { role: 'user', content: prompt}
   ];
 
   const openai = new OpenAI({
@@ -62,6 +63,7 @@ export const getCommnetResponse = async (
   userName: string,
   message: string,
   postId: string,
+  shopId: string,
   action?: string
 ) => {
   let userCommnetHistoryDoc = await CommentHistory.findOne({
@@ -79,16 +81,16 @@ export const getCommnetResponse = async (
     });
   userCommnetHistoryDoc.messages.push({ commentId, role: "user", content: message });
 
-  const shop = await ShopInfo.findById(process.env.SHOP_ID);
+  const shop = await ShopInfo.findOne({shopId});
   if (!shop) throw new Error("Shop not found");
 
-  const products = await Product.find();
-  const specificProduct = await Product.findOne({ postId });
+  const products = await Product.find({shopId});
+  const specificProduct = await Product.findOne({ shopId, postId });
 
   const getPrompt = makePromtComment(shop, products, specificProduct);
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
-    ...userCommnetHistoryDoc.messages,
+    { role: "user", content: message}
   ];
 
   const openai = new OpenAI({

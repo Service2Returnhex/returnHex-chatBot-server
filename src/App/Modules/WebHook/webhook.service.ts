@@ -14,6 +14,7 @@ enum ActionType {
 
 const handleDM = async (
   event: any,
+  pageId: string,
   method: "gemini" | "chatgpt" | "deepseek" | "groq"
 ) => {
   const senderId = event.sender.id;
@@ -22,20 +23,21 @@ const handleDM = async (
 
   const reply =
     method === "gemini"
-      ? await GeminiService.getResponseDM(senderId, userMsg, ActionType.DM)
+      ? await GeminiService.getResponseDM(senderId, pageId, userMsg, ActionType.DM)
       : method === "chatgpt"
-      ? await ChatgptService.getResponseDM(senderId, userMsg, ActionType.DM)
+      ? await ChatgptService.getResponseDM(senderId, pageId,  userMsg, ActionType.DM)
       : method === 'deepseek'
-      ? await DeepSeekService.getResponseDM(senderId, userMsg, ActionType.DM)
-      : await GroqService.getResponseDM(senderId, userMsg, ActionType.DM)
+      ? await DeepSeekService.getResponseDM(senderId, pageId,  userMsg, ActionType.DM)
+      : await GroqService.getResponseDM(senderId, pageId,  userMsg, ActionType.DM)
       //paid
-  await sendMessage(senderId, reply as string);
+  await sendMessage(senderId, pageId, reply as string);
 };
 
-const handleAddFeed = async (value: any) => {
+const handleAddFeed = async (value: any, pageId: string) => {
   const result = await PageService.createProduct({
     postId: value.post_id,
     message: value.message,
+    shopId: pageId,
     createdAt: value.created_time,
   });
 
@@ -44,9 +46,9 @@ const handleAddFeed = async (value: any) => {
     : console.log("Feed Created Successfully");
 };
 
-const handleEditFeed = async (value: any) => {
+const handleEditFeed = async (value: any, pageId: string) => {
   const { post_id, message } = value;
-  const result = await PageService.updateProduct(post_id, {
+  const result = await PageService.updateProduct( pageId, post_id, {
     message,
     updatedAt: new Date(), 
   });
@@ -56,34 +58,36 @@ const handleEditFeed = async (value: any) => {
     : console.log("Feed Updated Successfully");
 };
 
-const handleRemoveFeed = async (value: any) => {
+const handleRemoveFeed = async (value: any, pageId: string) => {
   const { post_id } = value;
-  const result = await PageService.deleteProduct(post_id);
+  const result = await PageService.deleteProduct(pageId, post_id);
   await CommentHistory.findOneAndDelete({ postId: post_id });
   !result
     ? console.log("Feed Not Deleted")
     : console.log("Feed Deleted Successfully");
 };
 
-const handleAddComment = async (value: any, method: string) => {
+const handleAddComment = async (value: any, pageId: string, method: string) => {
   const { comment_id, message, post_id, from } = value;
   const commenterId = from?.id;
   const userName = from?.name;
 
-  if (commenterId === process.env.PAGE_ID) {
+  console.log(commenterId, pageId);
+  if (commenterId === pageId) {
     console.log("⛔ Skipping own comment to avoid infinite loop.");
     return;
   }
   console.log("💬 New Comment:", message);
 
   const reply =
-    method === "gemini"
+    method === "gemini" 
       ? await GeminiService.getCommnetResponse(
           commenterId,
           comment_id,
           userName || "Customer",
           message,
           post_id,
+          pageId,
           ActionType.COMMENT
         )
       : method === "chatgpt"
@@ -93,6 +97,7 @@ const handleAddComment = async (value: any, method: string) => {
           userName || "Customer",
           message,
           post_id,
+          pageId,
           ActionType.COMMENT
         )
       : method === 'deepseek'
@@ -102,6 +107,7 @@ const handleAddComment = async (value: any, method: string) => {
           userName || "Customer",
           message,
           post_id,
+          pageId,
           ActionType.COMMENT
         )
       : await GroqService.getCommnetResponse(
@@ -110,12 +116,13 @@ const handleAddComment = async (value: any, method: string) => {
           userName || "Customer",
           message,
           post_id,
+          pageId,
           ActionType.COMMENT);
 
-  await replyToComment(comment_id, reply as string);
+  await replyToComment(comment_id, pageId, reply as string);
 };
 
-const handleEditComment = async (value: any) => {
+const handleEditComment = async (value: any, pageId: string) => {
   const { comment_id, message } = value;
   console.log(comment_id);
   const result = await CommentHistory.findOneAndUpdate(
@@ -134,7 +141,7 @@ const handleEditComment = async (value: any) => {
     : console.log("Comment Updated Successfully");
 };
 
-const handleRemoveComment = async (value: any) => {
+const handleRemoveComment = async (value: any, pageId: string) => {
   const { comment_id } = value;
 
   const result = await CommentHistory.findOneAndUpdate(
@@ -154,6 +161,7 @@ const handleRemoveComment = async (value: any) => {
 const handleIncomingMessages = async (
   req: Request,
   res: Response,
+  pageId: string,
   method: "gemini" | "chatgpt" | "deepseek" | "groq"
 ) => {
   if (req.body.object !== "page") {
@@ -164,7 +172,7 @@ const handleIncomingMessages = async (
     const event = entry.messaging?.[0];
 
     if (event?.message) {
-      handleDM(event, method);
+      handleDM(event, pageId, method);
       continue;
     }
 
@@ -177,21 +185,21 @@ const handleIncomingMessages = async (
         ["post", "photo", "video", "status"].includes(value.item)
       ) {
         if (value.verb === "add") {
-          handleAddFeed(value);
+          handleAddFeed(value, pageId);
         } else if (value.verb === "edited") {
-          handleEditFeed(value);
+          handleEditFeed(value, pageId);
         } else if (value.verb === "remove") {
-          handleRemoveFeed(value);
+          handleRemoveFeed(value, pageId);
         }
       }
 
       if (field === "feed" && value.item === "comment") {
         if (value.verb === "add") {
-          handleAddComment(value, method);
+          handleAddComment(value, pageId, method);
         } else if (value.verb === "edited") {
-          handleEditComment(value);
+          handleEditComment(value, pageId);
         } else if (value.verb === "remove") {
-          handleRemoveComment(value);
+          handleRemoveComment(value, pageId);
         }
       }
     }

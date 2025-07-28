@@ -20,9 +20,9 @@ const createProduct = async (payload: IProduct) => {
     return result;
 }
 
-const updateProduct = async (id: string, payload: Partial<IProduct>) => {
+const updateProduct = async (pageId: string, id: string, payload: Partial<IProduct>) => {
 
-  const existing = await Product.findOne({ postId: id });
+  const existing = await Product.findOne({ shopId: pageId, postId: id });
   if (!existing) {
     console.log("Product already deleted or not found for postId:", id);
     return null;
@@ -35,8 +35,8 @@ const updateProduct = async (id: string, payload: Partial<IProduct>) => {
   return result;
 };
 
-const deleteProduct = async (id: string) => {
-  const existing = await Product.findOne({ postId: id });
+const deleteProduct = async (pageId: string, id: string) => {
+  const existing = await Product.findOne({ shopId: pageId, postId: id });
   if (!existing) {
     console.log("Product already deleted or not found for postId:", id);
     return null;
@@ -47,7 +47,7 @@ const deleteProduct = async (id: string) => {
 
 // Shop services
 const getShops = async () => {
-  const result = await ShopInfo.find();
+  const result = await ShopInfo.find()
   return result;
 };
 

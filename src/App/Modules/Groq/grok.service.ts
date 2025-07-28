@@ -7,33 +7,30 @@ import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { makePromtComment, makePromtDM } from "../Page/shop.promt";
 
 const getResponseDM = async (
-  userId: string,
+  senderId: string,
+  shopId: string,
   prompt: string,
   action?: string
 ) => {
-  let userHistoryDoc = await ChatHistory.findOne({ userId });
+  let userHistoryDoc = await ChatHistory.findOne({ userId: senderId });
   if (!userHistoryDoc)
-    userHistoryDoc = new ChatHistory({ userId, messages: [] });
+    userHistoryDoc = new ChatHistory({ userId: senderId, messages: [] });
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
-  const shop = await ShopInfo.findById(process.env.SHOP_ID);
+  const shop = await ShopInfo.findOne({shopId});
   if (!shop) throw new Error("Shop not found");
 
-  const products = await Product.find();
+  const products = await Product.find({shopId});
 
-  const getPrompt = makePromtDM(shop, products);
+  const getPrompt = makePromtDM(shop, products, prompt);
   
   const cleanedMessages: ChatCompletionMessageParam[] = [
   { role: "system", content: getPrompt },
-  ...userHistoryDoc.messages.map((msg: any) => ({
-    role: msg.role,
-    content: msg.content,
-  })),
+  { role: 'user', content: prompt }
 ];
   
-
+  console.log(process.env.GROQ_API_KEY);
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  console.log("coming form groq");
 
   const completion = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
@@ -43,6 +40,7 @@ const getResponseDM = async (
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
   await userHistoryDoc.save();
+  console.log("coming form groq");
   return reply;
 };
 
@@ -52,6 +50,7 @@ export const getCommnetResponse = async (
   userName: string,
   message: string,
   postId: string,
+  shopId: string,
   action?: string
 ) => {
   let userCommnetHistoryDoc = await CommentHistory.findOne({
@@ -69,20 +68,17 @@ export const getCommnetResponse = async (
     });
   userCommnetHistoryDoc.messages.push({ commentId, role: "user", content: message });
 
-  const shop = await ShopInfo.findById(process.env.SHOP_ID);
+  const shop = await ShopInfo.findOne({shopId});
   if (!shop) throw new Error("Shop not found");
     
-  const products = await Product.find();
-  const specificProduct = await Product.findOne({ postId });
+  const products = await Product.find({shopId});
+  const specificProduct = await Product.findOne({ shopId, postId });
 
   
   const getPrompt = makePromtComment(shop, products, specificProduct);
   const cleanedMessages: ChatCompletionMessageParam[] = [
   { role: "system", content: getPrompt },
-  ...userCommnetHistoryDoc.messages.map((msg: any) => ({
-    role: msg.role,
-    content: msg.content,
-  })),
+  { role: 'user', content: message }
 ];
   console.log("coming from groq");
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });

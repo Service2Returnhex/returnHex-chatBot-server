@@ -3,35 +3,47 @@ import { catchAsync } from "../../utility/cathcAsync";
 import sendResponse from "../../utility/sendResponse";
 import httpStatus from "http-status";
 import { WebHookService } from "./webhook.service";
+import { ShopInfo } from "../Page/shopInfo.model";
 
 export const handleWebhook: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
+    const { pageId } = req.params;
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
-
-    if (mode && token && mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
-      console.log('Webhook verified!');
-      res.status(200).send(challenge);
-    } else {
-      res.sendStatus(403);
+    console.log(pageId);
+    const shop = await ShopInfo.findOne({ shopId: pageId });
+    if (!shop)
+      res.status(404).send({ success: false, message: "Shop Not Found!" });
+    else {
+      if (
+        mode &&
+        token &&
+        mode === "subscribe" &&
+        token === shop.verifyToken
+      ) {
+        console.log("Webhook verified!");
+        res.status(200).send(challenge);
+      } else {
+        res.sendStatus(403);
+      }
     }
   }
 );
 
 enum WebHookMethods {
-    GEMINI = "gemini",
-    CHATGPT = "chatgpt",
-    DEEPSEEK = "deepseek",
-    GROQ = "groq"
+  GEMINI = "gemini",
+  CHATGPT = "chatgpt",
+  DEEPSEEK = "deepseek",
+  GROQ = "groq",
 }
 
 export const handleIncomingMessages: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-
-    const userIP = [
-      {ip: '192.168.10.2', count: 20}, //rate limiting
-    ]
+    const { pageId } = req.params
+    // const userIP = [
+    //   { ip: "192.168.10.2", count: 20 }, //rate limiting
+    // ];
     /*
     0. Check IP first and collect the IP
       0.1 Same IP cannot make request more than 20 times  
@@ -47,7 +59,12 @@ export const handleIncomingMessages: RequestHandler = catchAsync(
       4.2 If '' '' '' 10 token - "" "" "" 20 token 
     5. Rest of the wortk
     */
-    const result = await WebHookService.handleIncomingMessages(req, res, WebHookMethods.CHATGPT);
+    const result = await WebHookService.handleIncomingMessages(
+      req,
+      res,
+      pageId as string,
+      WebHookMethods.DEEPSEEK
+    );
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,

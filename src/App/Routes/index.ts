@@ -10,7 +10,7 @@ const router = Router();
 
 const moduleRoutes = [
     {
-        path: '/webhook', 
+        path: '/meta-webhook', 
         route: WebhookRouter 
     },
     {

@@ -1,10 +1,11 @@
-import mongoose, {Schema } from "mongoose";
+import mongoose, {Schema,Types } from "mongoose";
 export interface IProduct {
   name?: string;
   description?: string;
   price?: string;
   postId: string;
   message: string;
+  shopId: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -20,6 +21,7 @@ const ProductSchema = new Schema<IProduct>(
       unique: true,
     },
     message: { type: String, required: true, default: "" },
+    shopId: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   }
