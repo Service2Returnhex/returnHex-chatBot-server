@@ -70,7 +70,7 @@ export const getCommnetResponse = async (
   action?: string
 ) => {
   console.log("comment message", message);
-  console.log("comment commenterId", commenterId);
+  // console.log("comment commenterId", commenterId);
   let userCommnetHistoryDoc = await CommentHistory.findOne({
     userId: commenterId,
     postId,
@@ -90,7 +90,7 @@ export const getCommnetResponse = async (
     content: message,
   });
 
-  const shop = await ShopInfo.findById(pageId);
+  const shop = await ShopInfo.findOne({ pageId });
   if (!shop) throw new Error("Shop not found");
 
   const products = await Product.find();
@@ -107,12 +107,12 @@ export const getCommnetResponse = async (
   }));
 
   const ai = new GoogleGenAI({});
-  const completion = await ai.models.generateContent({
+  const result = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: geminiMessages as ChatCompletionMessageParam[],
   });
   // console.log("completion", completion);
-  const result = await completion;
+  // const result = await completion;
 
   const replyText =
     result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";

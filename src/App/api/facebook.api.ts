@@ -21,17 +21,27 @@ export const replyToComment = async (
   message: string,
   pageAccessToken?: string
 ) => {
+  // console.log("rep commentId", commentId);
+  // console.log("rep message", message);
+  // console.log("rep pageAccessToken", pageAccessToken);
   const token = pageAccessToken;
-  const response = await axios.post(
-    `https://graph.facebook.com/v23.0/${commentId}/comments`,
-    {
-      message,
-    },
-    {
-      params: {
-        access_token: token,
+  try {
+    const response = await axios.post(
+      `https://graph.facebook.com/v23.0/${commentId}/comments`,
+      {
+        message,
       },
-    }
-  );
-  console.log("✅ Comment reply sent:", response.data);
+      { 
+        params: {
+          access_token: token,
+        },
+      }
+    );
+    console.log("✅ Comment reply sent:", response.data);
+  } catch (error: any) {
+    console.error(
+      "❌ Facebook API Error:",
+      error.response?.data || error.message
+    );
+  }
 };

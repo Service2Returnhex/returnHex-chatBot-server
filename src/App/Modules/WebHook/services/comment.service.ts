@@ -13,11 +13,13 @@ export class CommentService {
     const commenterId = from?.id;
     const userName = from?.name;
     const shop = await ShopInfo.findOne({ pageId });
-    if (commenterId === shop?.pageId) return;
+    if (!shop) return;
     const pageID = shop?.pageId || "";
+    if (commenterId === shop?.pageId) return;
     console.log("💬 New Comment:", message);
-    console.log("💬 Comment id:", userName);
-    console.log("💬 Comment id:", shop?.pageAccessToken);
+    // console.log("💬 Comment id:", comment_id);
+    // console.log("💬 commenter id:", commenterId);
+    // console.log("💬 Comment pageAccessToken:", shop?.pageAccessToken);
 
     let reply: string;
     switch (method) {

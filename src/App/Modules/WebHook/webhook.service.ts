@@ -28,7 +28,7 @@ export class WebHookService {
         if (["post", "photo", "video", "status"].includes(value.item)) {
           if (value.verb === "add") await FeedService.handleAddFeed(value);
           if (value.verb === "edited") await FeedService.handleEditFeed(value);
-          if (value.verb === "remove")
+          if (value.verb === "remove") 
             await FeedService.handleRemoveFeed(value);
         } else if (value.item === "comment") {
           if (value.verb === "add")
