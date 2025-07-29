@@ -7,7 +7,7 @@ import { GroqService } from "./grok.service";
 const getResponse: RequestHandler = catchAsync(
     async(req: Request, res: Response) => {
 
-        const result = await GroqService.getResponseDM("Dummy-Sender-ID", req.body?.message);
+        const result = await GroqService.getResponseDM("Dummy-Sender-ID", "dummy-shopid",req.body?.message);
 
         sendResponse(res, {
             statusCode: httpStatus.OK,

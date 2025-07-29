@@ -22,24 +22,25 @@ const textResponse = async (prompt: string) => {
 };
 
 const getResponseDM = async (
-  userId: string,
+  senderId: string,
+  shopId: string,
   prompt: string,
   action?: string
 ) => {
-  let userHistoryDoc = await ChatHistory.findOne({ userId });
+  let userHistoryDoc = await ChatHistory.findOne({ senderId });
   if (!userHistoryDoc)
-    userHistoryDoc = new ChatHistory({ userId, messages: [] });
+    userHistoryDoc = new ChatHistory({ senderId, messages: [] });
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
-  const shop = await ShopInfo.findById(process.env.SHOP_ID);
+  const shop = await ShopInfo.findOne({shopId});
   if (!shop) throw new Error("Shop not found");
 
-  const products = await Product.find();
+  const products = await Product.find({shopId});
 
   const getPrompt = makePromtDM(shop, products, prompt);
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
-    ...userHistoryDoc.messages,
+    { role: 'user', content: getPrompt }
   ];
   const geminiMessages = messages.map((msg) => ({
     role: msg.role === "assistant" ? "model" : "user",
@@ -66,7 +67,7 @@ export const getCommnetResponse = async (
   userName: string,
   message: string,
   postId: string,
-  pageId: string,
+  shopId: string,
   action?: string
 ) => {
   console.log("comment message", message);
@@ -90,16 +91,17 @@ export const getCommnetResponse = async (
     content: message,
   });
 
-  const shop = await ShopInfo.findOne({ pageId });
+  const shop = await ShopInfo.findOne({shopId});
   if (!shop) throw new Error("Shop not found");
+    
+  const products = await Product.find({shopId});
+  const specificProduct = await Product.findOne({ shopId, postId });
 
-  const products = await Product.find();
-  const specificProduct = await Product.findOne({ postId });
-
+  
   const getPrompt = makePromtComment(shop, products, specificProduct);
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
-    ...userCommnetHistoryDoc.messages,
+    { role: "user", content: message}
   ];
   const geminiMessages = messages.map((msg) => ({
     role: msg.role === "assistant" ? "model" : "user",
@@ -107,17 +109,11 @@ export const getCommnetResponse = async (
   }));
 
   const ai = new GoogleGenAI({});
-  const result = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: geminiMessages as ChatCompletionMessageParam[],
-  });
-  // console.log("completion", completion);
-  // const result = await completion;
-
-  const replyText =
-    result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-  const reply = `@[${commenterId}] ${replyText}`;
-  console.log("reply", reply);
+  const completion = await ai.models.generateContent({
+        model: "gemini-2.5-flash-lite",
+        contents: geminiMessages as ChatCompletionMessageParam[]
+    })
+  const reply = `@[${commenterId}] ` + completion.text || "";
 
   userCommnetHistoryDoc.messages.push({
     commentId,

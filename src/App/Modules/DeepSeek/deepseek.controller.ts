@@ -7,7 +7,7 @@ import { DeepSeekService } from "./deepseek.service";
 const getResponse: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
 
-    const result = await DeepSeekService.getResponseDM('dummy-user', req.body.message);
+    const result = await DeepSeekService.getResponseDM('dummy-user', 'shop-id', req.body.message);
     
     sendResponse(res, {
       statusCode: httpStatus.OK,

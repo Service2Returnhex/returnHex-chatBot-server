@@ -11,18 +11,17 @@ export const handleWebhook: RequestHandler = catchAsync(
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
-
-    // Look up that page’s verifyToken
-    const shop = await ShopInfo.findOne({ pageId });
-    if (!shop) return res.sendStatus(httpStatus.NOT_FOUND);
-
-    if (mode && token && mode === "subscribe" && token === shop.verifyToken) {
-      console.log("Webhook verified!");
-      res.status(200).send(challenge);
-      return;
-    } else {
-      console.warn(`❌ Webhook verification failed for page ${pageId}`);
-      res.sendStatus(403);
+    console.log(pageId);
+    const shop = await ShopInfo.findOne({ shopId: pageId });
+    if (!shop)
+      res.status(404).send({ success: false, message: "Shop Not Found!" });
+    else {
+      if (mode && token && mode === "subscribe" && token === shop.verifyToken) {
+        console.log("Webhook verified!");
+        res.status(200).send(challenge);
+      } else {
+        res.sendStatus(403);
+      }
     }
   }
 );
@@ -37,14 +36,6 @@ enum WebHookMethods {
 export const handleIncomingMessages: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const { pageId } = req.params;
-
-    const shop = await ShopInfo.findOne({ pageId });
-    if (!shop) {
-      console.error(`Unknown pageId ${pageId}`);
-      return res.sendStatus(httpStatus.NOT_FOUND);
-    }
-
-    // res.sendStatus(httpStatus.OK);
     // const userIP = [
     //   { ip: "192.168.10.2", count: 20 }, //rate limiting
     // ];
@@ -63,12 +54,11 @@ export const handleIncomingMessages: RequestHandler = catchAsync(
       4.2 If '' '' '' 10 token - "" "" "" 20 token 
     5. Rest of the wortk
     */
-    // res.sendStatus(200);
     const result = await WebHookService.handleIncomingMessages(
-      req.body,
-      shop.pageAccessToken,
-      shop.pageId,
-      WebHookMethods.GEMINI
+      req,
+      res,
+      pageId as string,
+      WebHookMethods.DEEPSEEK
     );
     sendResponse(res, {
       statusCode: httpStatus.OK,

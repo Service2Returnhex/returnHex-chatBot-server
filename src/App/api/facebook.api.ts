@@ -1,13 +1,17 @@
 import axios from "axios";
+import { ShopInfo } from "../Modules/Page/shopInfo.model";
+import ApiError from "../utility/AppError";
 
 export const sendMessage = async (
   recipientId: string,
-  text: string,
-  pageAccessToken?: string
+  pageId: string,
+  text: string
 ) => {
-  const token = pageAccessToken;
+  const shop = await ShopInfo.findOne({ shopId: pageId });
+  if (!shop) throw new ApiError(404, "Shop Not Found!");
+
   const res = await axios.post(
-    `https://graph.facebook.com/v23.0/me/messages?access_token=${token}`,
+    `https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`,
     {
       recipient: { id: recipientId },
       message: { text },
@@ -18,30 +22,21 @@ export const sendMessage = async (
 
 export const replyToComment = async (
   commentId: string,
-  message: string,
-  pageAccessToken?: string
+  pageId: string,
+  message: string
 ) => {
-  // console.log("rep commentId", commentId);
-  // console.log("rep message", message);
-  // console.log("rep pageAccessToken", pageAccessToken);
-  const token = pageAccessToken;
-  try {
-    const response = await axios.post(
-      `https://graph.facebook.com/v23.0/${commentId}/comments`,
-      {
-        message,
+  const shop = await ShopInfo.findOne({ shopId: pageId });
+  if (!shop) throw new ApiError(404, "Shop Not Found!");
+  const response = await axios.post(
+    `https://graph.facebook.com/v23.0/${commentId}/comments`,
+    {
+      message,
+    },
+    {
+      params: {
+        access_token: shop.accessToken,
       },
-      { 
-        params: {
-          access_token: token,
-        },
-      }
-    );
-    console.log("✅ Comment reply sent:", response.data);
-  } catch (error: any) {
-    console.error(
-      "❌ Facebook API Error:",
-      error.response?.data || error.message
-    );
-  }
+    }
+  );
+  console.log("✅ Comment reply sent:", response.data);
 };

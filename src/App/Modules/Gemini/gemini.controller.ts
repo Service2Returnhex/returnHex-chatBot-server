@@ -5,9 +5,9 @@ import sendResponse from "../../utility/sendResponse";
 import { GeminiService } from "./gemini.service";
 
 const getResponse: RequestHandler = catchAsync(
-  async (req: Request, res: Response) => {
-    const result = await GeminiService.textResponse(req.body.message);
-    console.log(result);
+    async(req: Request, res: Response) => {
+
+        const result = await GeminiService.getResponseDM("Dummy-Sender-ID", "dummy-shop", req.body?.message);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
