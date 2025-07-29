@@ -19,7 +19,7 @@ const http_status_1 = __importDefault(require("http-status"));
 const grok_service_1 = require("./grok.service");
 const getResponse = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const result = yield grok_service_1.GroqService.getResponseDM("Dummy-Sender-ID", (_a = req.body) === null || _a === void 0 ? void 0 : _a.message);
+    const result = yield grok_service_1.GroqService.getResponseDM("Dummy-Sender-ID", "dummy-shopid", (_a = req.body) === null || _a === void 0 ? void 0 : _a.message);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

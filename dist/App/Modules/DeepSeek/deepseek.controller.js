@@ -18,7 +18,7 @@ const sendResponse_1 = __importDefault(require("../../utility/sendResponse"));
 const http_status_1 = __importDefault(require("http-status"));
 const deepseek_service_1 = require("./deepseek.service");
 const getResponse = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield deepseek_service_1.DeepSeekService.getResponseDM('dummy-user', req.body.message);
+    const result = yield deepseek_service_1.DeepSeekService.getResponseDM('dummy-user', 'shop-id', req.body.message);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

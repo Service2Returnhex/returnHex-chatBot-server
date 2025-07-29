@@ -16,24 +16,25 @@ const product_mode_1 = require("../Page/product.mode");
 const chat_history_model_1 = require("../Chatgpt/chat-history.model");
 const comment_histroy_model_1 = require("../Chatgpt/comment-histroy.model");
 const shop_promt_1 = require("../Page/shop.promt");
-const getResponseDM = (userId, prompt, action) => __awaiter(void 0, void 0, void 0, function* () {
-    let userHistoryDoc = yield chat_history_model_1.ChatHistory.findOne({ userId });
+const getResponseDM = (senderId, shopId, prompt, action) => __awaiter(void 0, void 0, void 0, function* () {
+    let userHistoryDoc = yield chat_history_model_1.ChatHistory.findOne({ senderId });
     if (!userHistoryDoc)
-        userHistoryDoc = new chat_history_model_1.ChatHistory({ userId, messages: [] });
+        userHistoryDoc = new chat_history_model_1.ChatHistory({ senderId, messages: [] });
     userHistoryDoc.messages.push({ role: "user", content: prompt });
-    const shop = yield shopInfo_model_1.ShopInfo.findById(process.env.SHOP_ID);
+    const shop = yield shopInfo_model_1.ShopInfo.findOne({ shopId });
     if (!shop)
         throw new Error("Shop not found");
-    const products = yield product_mode_1.Product.find();
-    const getPrompt = (0, shop_promt_1.makePromtDM)(shop, products);
+    const products = yield product_mode_1.Product.find({ shopId });
+    const getPrompt = (0, shop_promt_1.makePromtDM)(shop, products, prompt);
     const messages = [
         { role: "system", content: getPrompt },
-        ...userHistoryDoc.messages,
+        { role: 'user', content: getPrompt }
     ];
     const geminiMessages = messages.map((msg) => ({
         role: msg.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: msg.content }]
     }));
+    console.log(geminiMessages);
     const ai = new genai_1.GoogleGenAI({});
     const completion = yield ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -44,7 +45,7 @@ const getResponseDM = (userId, prompt, action) => __awaiter(void 0, void 0, void
     yield userHistoryDoc.save();
     return reply;
 });
-const getCommnetResponse = (commenterId, commentId, userName, message, postId, action) => __awaiter(void 0, void 0, void 0, function* () {
+const getCommnetResponse = (commenterId, commentId, userName, message, postId, shopId, action) => __awaiter(void 0, void 0, void 0, function* () {
     let userCommnetHistoryDoc = yield comment_histroy_model_1.CommentHistory.findOne({
         userId: commenterId,
         postId,
@@ -58,15 +59,15 @@ const getCommnetResponse = (commenterId, commentId, userName, message, postId, a
             messages: [],
         });
     userCommnetHistoryDoc.messages.push({ commentId, role: "user", content: message });
-    const shop = yield shopInfo_model_1.ShopInfo.findById(process.env.SHOP_ID);
+    const shop = yield shopInfo_model_1.ShopInfo.findOne({ shopId });
     if (!shop)
         throw new Error("Shop not found");
-    const products = yield product_mode_1.Product.find();
-    const specificProduct = yield product_mode_1.Product.findOne({ postId });
+    const products = yield product_mode_1.Product.find({ shopId });
+    const specificProduct = yield product_mode_1.Product.findOne({ shopId, postId });
     const getPrompt = (0, shop_promt_1.makePromtComment)(shop, products, specificProduct);
     const messages = [
         { role: "system", content: getPrompt },
-        ...userCommnetHistoryDoc.messages,
+        { role: "user", content: message }
     ];
     const geminiMessages = messages.map((msg) => ({
         role: msg.role === 'assistant' ? 'model' : 'user',
@@ -74,7 +75,7 @@ const getCommnetResponse = (commenterId, commentId, userName, message, postId, a
     }));
     const ai = new genai_1.GoogleGenAI({});
     const completion = yield ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: geminiMessages
     });
     const reply = `@[${commenterId}] ` + completion.text || "";

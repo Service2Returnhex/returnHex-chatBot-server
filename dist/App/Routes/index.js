@@ -10,7 +10,7 @@ const grok_route_1 = require("../Modules/Groq/grok.route");
 const router = (0, express_1.Router)();
 const moduleRoutes = [
     {
-        path: '/webhook',
+        path: '/meta-webhook',
         route: webhook_route_1.WebhookRouter
     },
     {

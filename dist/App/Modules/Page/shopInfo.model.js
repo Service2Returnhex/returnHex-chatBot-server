@@ -40,5 +40,8 @@ const ShopInfoSchema = new mongoose_1.Schema({
     address: { type: String, required: true },
     phone: { type: String, required: true },
     pageCategory: { type: String, required: true },
+    shopId: { type: String, required: true },
+    accessToken: { type: String, required: true },
+    verifyToken: { type: String, required: true },
 });
 exports.ShopInfo = mongoose_1.default.model("ShopInfo", ShopInfoSchema);
