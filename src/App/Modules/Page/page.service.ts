@@ -28,7 +28,7 @@ const updateProduct = async (pageId: string, id: string, payload: Partial<IProdu
     return null;
   }
 
-  const result = await Product.findOneAndUpdate({postId: id}, payload, {
+  const result = await Product.findOneAndUpdate({shopId: pageId, postId: id}, payload, {
     new: true,
     runValidators: true,
   });
@@ -41,7 +41,7 @@ const deleteProduct = async (pageId: string, id: string) => {
     console.log("Product already deleted or not found for postId:", id);
     return null;
   }
-  const result = await Product.findOneAndDelete({ postId: id });
+  const result = await Product.findOneAndDelete({ shopId:pageId, postId: id });
   return result;
 };
 

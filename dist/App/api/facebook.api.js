@@ -14,20 +14,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.replyToComment = exports.sendMessage = void 0;
 const axios_1 = __importDefault(require("axios"));
-const sendMessage = (recipientId, text) => __awaiter(void 0, void 0, void 0, function* () {
-    const res = yield axios_1.default.post(`https://graph.facebook.com/v23.0/me/messages?access_token=${process.env.PAGE_ACCESS_TOKEN}`, {
+const shopInfo_model_1 = require("../Modules/Page/shopInfo.model");
+const AppError_1 = __importDefault(require("../utility/AppError"));
+const sendMessage = (recipientId, pageId, text) => __awaiter(void 0, void 0, void 0, function* () {
+    const shop = yield shopInfo_model_1.ShopInfo.findOne({ shopId: pageId });
+    if (!shop)
+        throw new AppError_1.default(404, 'Shop Not Found!');
+    const res = yield axios_1.default.post(`https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`, {
         recipient: { id: recipientId },
         message: { text },
     });
     console.log(res.data);
 });
 exports.sendMessage = sendMessage;
-const replyToComment = (commentId, message) => __awaiter(void 0, void 0, void 0, function* () {
+const replyToComment = (commentId, pageId, message) => __awaiter(void 0, void 0, void 0, function* () {
+    const shop = yield shopInfo_model_1.ShopInfo.findOne({ shopId: pageId });
+    if (!shop)
+        throw new AppError_1.default(404, 'Shop Not Found!');
     const response = yield axios_1.default.post(`https://graph.facebook.com/v23.0/${commentId}/comments`, {
         message,
     }, {
         params: {
-            access_token: process.env.PAGE_ACCESS_TOKEN,
+            access_token: shop.accessToken,
         },
     });
     console.log("✅ Comment reply sent:", response.data);

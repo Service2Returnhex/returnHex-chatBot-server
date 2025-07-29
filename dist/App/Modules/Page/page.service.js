@@ -32,25 +32,25 @@ const createProduct = (payload) => __awaiter(void 0, void 0, void 0, function* (
     const result = yield product_mode_1.Product.create(payload);
     return result;
 });
-const updateProduct = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const existing = yield product_mode_1.Product.findOne({ postId: id });
+const updateProduct = (pageId, id, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    const existing = yield product_mode_1.Product.findOne({ shopId: pageId, postId: id });
     if (!existing) {
         console.log("Product already deleted or not found for postId:", id);
         return null;
     }
-    const result = yield product_mode_1.Product.findOneAndUpdate({ postId: id }, payload, {
+    const result = yield product_mode_1.Product.findOneAndUpdate({ shopId: pageId, postId: id }, payload, {
         new: true,
         runValidators: true,
     });
     return result;
 });
-const deleteProduct = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const existing = yield product_mode_1.Product.findOne({ postId: id });
+const deleteProduct = (pageId, id) => __awaiter(void 0, void 0, void 0, function* () {
+    const existing = yield product_mode_1.Product.findOne({ shopId: pageId, postId: id });
     if (!existing) {
         console.log("Product already deleted or not found for postId:", id);
         return null;
     }
-    const result = yield product_mode_1.Product.findOneAndDelete({ postId: id });
+    const result = yield product_mode_1.Product.findOneAndDelete({ shopId: pageId, postId: id });
     return result;
 });
 // Shop services

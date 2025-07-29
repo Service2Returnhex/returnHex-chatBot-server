@@ -27,16 +27,18 @@ const getProducts = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0,
         data: result
     });
 }));
-const getProductById = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
-    const result = yield page_service_1.PageService.getProductById(id);
-    (0, sendResponse_1.default)(res, {
-        statusCode: http_status_1.default.CREATED,
-        success: true,
-        message: "One Product retrieved Successfully",
-        data: result
-    });
-}));
+// const getProductById: RequestHandler = catchAsync(
+//   async(req: Request, res: Response) => {
+//     const {id} = req.params
+//     const result = await PageService.getProductById(id);
+//     sendResponse(res, {
+//       statusCode: httpStatus.CREATED,
+//       success: true,
+//       message: "One Product retrieved Successfully",
+//       data: result
+//     })
+//   }
+// )
 const createProduct = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield page_service_1.PageService.createProduct(req.body);
     (0, sendResponse_1.default)(res, {
@@ -48,7 +50,8 @@ const createProduct = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 
 }));
 const updateProduct = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield page_service_1.PageService.updateProduct(id, req.body);
+    const { shopId } = req.body;
+    const result = yield page_service_1.PageService.updateProduct(shopId, id, req.body);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -58,7 +61,8 @@ const updateProduct = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 
 }));
 const deleteProduct = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield page_service_1.PageService.deleteProduct(id);
+    const { shopId } = req.body;
+    const result = yield page_service_1.PageService.deleteProduct(shopId, id);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -117,7 +121,6 @@ const deleteShop = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
 }));
 exports.PageController = {
     getProducts,
-    getProductById,
     createProduct,
     updateProduct,
     deleteProduct,

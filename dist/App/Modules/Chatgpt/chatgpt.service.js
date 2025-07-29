@@ -19,15 +19,15 @@ const shopInfo_model_1 = require("../Page/shopInfo.model");
 const product_mode_1 = require("../Page/product.mode");
 const comment_histroy_model_1 = require("./comment-histroy.model");
 const shop_promt_1 = require("../Page/shop.promt");
-const getResponseDM = (userId, prompt, action) => __awaiter(void 0, void 0, void 0, function* () {
-    let userHistoryDoc = yield chat_history_model_1.ChatHistory.findOne({ userId });
+const getResponseDM = (senderId, shopId, prompt, action) => __awaiter(void 0, void 0, void 0, function* () {
+    let userHistoryDoc = yield chat_history_model_1.ChatHistory.findOne({ senderId });
     if (!userHistoryDoc)
-        userHistoryDoc = new chat_history_model_1.ChatHistory({ userId, messages: [] });
+        userHistoryDoc = new chat_history_model_1.ChatHistory({ senderId, messages: [] });
     userHistoryDoc.messages.push({ role: "user", content: prompt });
-    const shop = yield shopInfo_model_1.ShopInfo.findById(process.env.SHOP_ID);
+    const shop = yield shopInfo_model_1.ShopInfo.findOne({ shopId });
     if (!shop)
         throw new Error("Shop not found");
-    const products = yield product_mode_1.Product.find();
+    const products = yield product_mode_1.Product.find({ shopId });
     //save the post info. to the local database
     // create a script for run makePromtDM
     /*
@@ -35,16 +35,16 @@ const getResponseDM = (userId, prompt, action) => __awaiter(void 0, void 0, void
       is it different post - call the makePromtDM
   
      */
-    const getPromt = (0, shop_promt_1.makePromtDM)(shop, products);
+    const getPromt = (0, shop_promt_1.makePromtDM)(shop, products, prompt);
     const messages = [
         { role: "system", content: getPromt },
-        ...userHistoryDoc.messages,
+        { role: 'user', content: prompt }
     ];
     const openai = new openai_1.default({
         apiKey: process.env.OPENAI_API_KEY,
     });
     const completion = yield openai.chat.completions.create({
-        model: "gpt-3.5-turbo", // 
+        model: "gpt-3.5-turbo",
         messages,
     });
     //replay should be in 20 token
@@ -56,7 +56,7 @@ const getResponseDM = (userId, prompt, action) => __awaiter(void 0, void 0, void
     //nlp: if same related question mathces with db, it will replay from the previous stored response. 
     return reply;
 });
-const getCommnetResponse = (commenterId, commentId, userName, message, postId, action) => __awaiter(void 0, void 0, void 0, function* () {
+const getCommnetResponse = (commenterId, commentId, userName, message, postId, shopId, action) => __awaiter(void 0, void 0, void 0, function* () {
     let userCommnetHistoryDoc = yield comment_histroy_model_1.CommentHistory.findOne({
         userId: commenterId,
         postId,
@@ -70,21 +70,21 @@ const getCommnetResponse = (commenterId, commentId, userName, message, postId, a
             messages: [],
         });
     userCommnetHistoryDoc.messages.push({ commentId, role: "user", content: message });
-    const shop = yield shopInfo_model_1.ShopInfo.findById(process.env.SHOP_ID);
+    const shop = yield shopInfo_model_1.ShopInfo.findOne({ shopId });
     if (!shop)
         throw new Error("Shop not found");
-    const products = yield product_mode_1.Product.find();
-    const specificProduct = yield product_mode_1.Product.findOne({ postId });
+    const products = yield product_mode_1.Product.find({ shopId });
+    const specificProduct = yield product_mode_1.Product.findOne({ shopId, postId });
     const getPrompt = (0, shop_promt_1.makePromtComment)(shop, products, specificProduct);
     const messages = [
         { role: "system", content: getPrompt },
-        ...userCommnetHistoryDoc.messages,
+        { role: "user", content: message }
     ];
     const openai = new openai_1.default({
         apiKey: process.env.OPENAI_API_KEY,
     });
     const completion = yield openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-3.5-turbo",
         messages,
     });
     const reply = `@[${commenterId}] ` + completion.choices[0].message.content;

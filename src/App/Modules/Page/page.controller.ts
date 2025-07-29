@@ -18,18 +18,18 @@ const getProducts: RequestHandler = catchAsync(
   }
 )
 
-const getProductById: RequestHandler = catchAsync(
-  async(req: Request, res: Response) => {
-    const {id} = req.params
-    const result = await PageService.getProductById(id);
-    sendResponse(res, {
-      statusCode: httpStatus.CREATED,
-      success: true,
-      message: "One Product retrieved Successfully",
-      data: result
-    })
-  }
-)
+// const getProductById: RequestHandler = catchAsync(
+//   async(req: Request, res: Response) => {
+//     const {id} = req.params
+//     const result = await PageService.getProductById(id);
+//     sendResponse(res, {
+//       statusCode: httpStatus.CREATED,
+//       success: true,
+//       message: "One Product retrieved Successfully",
+//       data: result
+//     })
+//   }
+// )
 
 const createProduct: RequestHandler = catchAsync(
   async(req: Request, res: Response) => {
@@ -46,7 +46,8 @@ const createProduct: RequestHandler = catchAsync(
 const updateProduct: RequestHandler = catchAsync(
   async(req: Request, res: Response) => {
     const {id} = req.params;
-    const result = await PageService.updateProduct(id, req.body);
+    const { shopId } = req.body;
+    const result = await PageService.updateProduct(shopId, id, req.body);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
@@ -59,7 +60,8 @@ const updateProduct: RequestHandler = catchAsync(
 const deleteProduct: RequestHandler = catchAsync(
   async(req: Request, res: Response) => {
     const {id} = req.params;
-    const result = await PageService.deleteProduct(id);
+    const { shopId } = req.body;
+    const result = await PageService.deleteProduct(shopId, id);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
@@ -137,7 +139,6 @@ const deleteShop: RequestHandler = catchAsync(
 
 export const PageController = {
     getProducts,
-    getProductById,
     createProduct,
     updateProduct,
     deleteProduct,

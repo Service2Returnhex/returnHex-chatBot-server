@@ -5,9 +5,9 @@ export interface IShopInfo {
   address: string;
   phone: string;
   pageCategory: string;
-  shopId: string;
-  accessToken: string;
-  verifyToken: string;
+  shopId: string; // pageId
+  accessToken: string; // subscribe 
+  verifyToken: string; //random
 }
 
 const ShopInfoSchema = new Schema<IShopInfo>({

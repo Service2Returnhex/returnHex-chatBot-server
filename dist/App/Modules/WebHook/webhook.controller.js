@@ -17,16 +17,27 @@ const cathcAsync_1 = require("../../utility/cathcAsync");
 const sendResponse_1 = __importDefault(require("../../utility/sendResponse"));
 const http_status_1 = __importDefault(require("http-status"));
 const webhook_service_1 = require("./webhook.service");
+const shopInfo_model_1 = require("../Page/shopInfo.model");
 exports.handleWebhook = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { pageId } = req.params;
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
-    if (mode && token && mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
-        console.log('Webhook verified!');
-        res.status(200).send(challenge);
-    }
+    console.log(pageId);
+    const shop = yield shopInfo_model_1.ShopInfo.findOne({ shopId: pageId });
+    if (!shop)
+        res.status(404).send({ success: false, message: "Shop Not Found!" });
     else {
-        res.sendStatus(403);
+        if (mode &&
+            token &&
+            mode === "subscribe" &&
+            token === shop.verifyToken) {
+            console.log("Webhook verified!");
+            res.status(200).send(challenge);
+        }
+        else {
+            res.sendStatus(403);
+        }
     }
 }));
 var WebHookMethods;
@@ -37,6 +48,10 @@ var WebHookMethods;
     WebHookMethods["GROQ"] = "groq";
 })(WebHookMethods || (WebHookMethods = {}));
 exports.handleIncomingMessages = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { pageId } = req.params;
+    // const userIP = [
+    //   { ip: "192.168.10.2", count: 20 }, //rate limiting
+    // ];
     /*
     0. Check IP first and collect the IP
       0.1 Same IP cannot make request more than 20 times
@@ -52,7 +67,7 @@ exports.handleIncomingMessages = (0, cathcAsync_1.catchAsync)((req, res) => __aw
       4.2 If '' '' '' 10 token - "" "" "" 20 token
     5. Rest of the wortk
     */
-    const result = yield webhook_service_1.WebHookService.handleIncomingMessages(req, res, WebHookMethods.GROQ);
+    const result = yield webhook_service_1.WebHookService.handleIncomingMessages(req, res, pageId, WebHookMethods.DEEPSEEK);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

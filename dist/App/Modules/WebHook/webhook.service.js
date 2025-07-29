@@ -22,33 +22,34 @@ var ActionType;
     ActionType["DM"] = "reply";
     ActionType["COMMENT"] = "comment";
 })(ActionType || (ActionType = {}));
-const handleDM = (event, method) => __awaiter(void 0, void 0, void 0, function* () {
+const handleDM = (event, pageId, method) => __awaiter(void 0, void 0, void 0, function* () {
     const senderId = event.sender.id;
     const userMsg = event.message.text;
     console.log("💬 DM Message:", userMsg);
     const reply = method === "gemini"
-        ? yield gemini_service_1.GeminiService.getResponseDM(senderId, userMsg, ActionType.DM)
+        ? yield gemini_service_1.GeminiService.getResponseDM(senderId, pageId, userMsg, ActionType.DM)
         : method === "chatgpt"
-            ? yield chatgpt_service_1.ChatgptService.getResponseDM(senderId, userMsg, ActionType.DM)
+            ? yield chatgpt_service_1.ChatgptService.getResponseDM(senderId, pageId, userMsg, ActionType.DM)
             : method === 'deepseek'
-                ? yield deepseek_service_1.DeepSeekService.getResponseDM(senderId, userMsg, ActionType.DM)
-                : yield grok_service_1.GroqService.getResponseDM(senderId, userMsg, ActionType.DM);
+                ? yield deepseek_service_1.DeepSeekService.getResponseDM(senderId, pageId, userMsg, ActionType.DM)
+                : yield grok_service_1.GroqService.getResponseDM(senderId, pageId, userMsg, ActionType.DM);
     //paid
-    yield (0, facebook_api_1.sendMessage)(senderId, reply);
+    yield (0, facebook_api_1.sendMessage)(senderId, pageId, reply);
 });
-const handleAddFeed = (value) => __awaiter(void 0, void 0, void 0, function* () {
+const handleAddFeed = (value, pageId) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield page_service_1.PageService.createProduct({
         postId: value.post_id,
         message: value.message,
+        shopId: pageId,
         createdAt: value.created_time,
     });
     !result
         ? console.log("Feed Not Created")
         : console.log("Feed Created Successfully");
 });
-const handleEditFeed = (value) => __awaiter(void 0, void 0, void 0, function* () {
+const handleEditFeed = (value, pageId) => __awaiter(void 0, void 0, void 0, function* () {
     const { post_id, message } = value;
-    const result = yield page_service_1.PageService.updateProduct(post_id, {
+    const result = yield page_service_1.PageService.updateProduct(pageId, post_id, {
         message,
         updatedAt: new Date(),
     });
@@ -56,33 +57,34 @@ const handleEditFeed = (value) => __awaiter(void 0, void 0, void 0, function* ()
         ? console.log("Feed Not Updated")
         : console.log("Feed Updated Successfully");
 });
-const handleRemoveFeed = (value) => __awaiter(void 0, void 0, void 0, function* () {
+const handleRemoveFeed = (value, pageId) => __awaiter(void 0, void 0, void 0, function* () {
     const { post_id } = value;
-    const result = yield page_service_1.PageService.deleteProduct(post_id);
+    const result = yield page_service_1.PageService.deleteProduct(pageId, post_id);
     yield comment_histroy_model_1.CommentHistory.findOneAndDelete({ postId: post_id });
     !result
         ? console.log("Feed Not Deleted")
         : console.log("Feed Deleted Successfully");
 });
-const handleAddComment = (value, method) => __awaiter(void 0, void 0, void 0, function* () {
+const handleAddComment = (value, pageId, method) => __awaiter(void 0, void 0, void 0, function* () {
     const { comment_id, message, post_id, from } = value;
     const commenterId = from === null || from === void 0 ? void 0 : from.id;
     const userName = from === null || from === void 0 ? void 0 : from.name;
-    if (commenterId === "708889365641067") {
+    console.log(commenterId, pageId);
+    if (commenterId === pageId) {
         console.log("⛔ Skipping own comment to avoid infinite loop.");
         return;
     }
     console.log("💬 New Comment:", message);
     const reply = method === "gemini"
-        ? yield gemini_service_1.GeminiService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, ActionType.COMMENT)
+        ? yield gemini_service_1.GeminiService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT)
         : method === "chatgpt"
-            ? yield chatgpt_service_1.ChatgptService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, ActionType.COMMENT)
+            ? yield chatgpt_service_1.ChatgptService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT)
             : method === 'deepseek'
-                ? yield deepseek_service_1.DeepSeekService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, ActionType.COMMENT)
-                : yield grok_service_1.GroqService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, ActionType.COMMENT);
-    yield (0, facebook_api_1.replyToComment)(comment_id, reply);
+                ? yield deepseek_service_1.DeepSeekService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT)
+                : yield grok_service_1.GroqService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT);
+    yield (0, facebook_api_1.replyToComment)(comment_id, pageId, reply);
 });
-const handleEditComment = (value) => __awaiter(void 0, void 0, void 0, function* () {
+const handleEditComment = (value, pageId) => __awaiter(void 0, void 0, void 0, function* () {
     const { comment_id, message } = value;
     console.log(comment_id);
     const result = yield comment_histroy_model_1.CommentHistory.findOneAndUpdate({ "messages.commentId": comment_id }, {
@@ -95,7 +97,7 @@ const handleEditComment = (value) => __awaiter(void 0, void 0, void 0, function*
         ? console.log("Comment Not Updated")
         : console.log("Comment Updated Successfully");
 });
-const handleRemoveComment = (value) => __awaiter(void 0, void 0, void 0, function* () {
+const handleRemoveComment = (value, pageId) => __awaiter(void 0, void 0, void 0, function* () {
     const { comment_id } = value;
     const result = yield comment_histroy_model_1.CommentHistory.findOneAndUpdate({ "messages.commentId": comment_id }, {
         $pull: { messages: { commentId: comment_id } },
@@ -105,7 +107,7 @@ const handleRemoveComment = (value) => __awaiter(void 0, void 0, void 0, functio
         ? console.log("Comment Not Deleted")
         : console.log("Comment Deleted Successfully");
 });
-const handleIncomingMessages = (req, res, method) => __awaiter(void 0, void 0, void 0, function* () {
+const handleIncomingMessages = (req, res, pageId, method) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     if (req.body.object !== "page") {
         return "Reply Not Bot Working";
@@ -113,7 +115,7 @@ const handleIncomingMessages = (req, res, method) => __awaiter(void 0, void 0, v
     for (const entry of req.body.entry) {
         const event = (_a = entry.messaging) === null || _a === void 0 ? void 0 : _a[0];
         if (event === null || event === void 0 ? void 0 : event.message) {
-            handleDM(event, method);
+            handleDM(event, pageId, method);
             continue;
         }
         const changes = entry.changes || [];
@@ -123,24 +125,24 @@ const handleIncomingMessages = (req, res, method) => __awaiter(void 0, void 0, v
             if (field === "feed" &&
                 ["post", "photo", "video", "status"].includes(value.item)) {
                 if (value.verb === "add") {
-                    handleAddFeed(value);
+                    handleAddFeed(value, pageId);
                 }
                 else if (value.verb === "edited") {
-                    handleEditFeed(value);
+                    handleEditFeed(value, pageId);
                 }
                 else if (value.verb === "remove") {
-                    handleRemoveFeed(value);
+                    handleRemoveFeed(value, pageId);
                 }
             }
             if (field === "feed" && value.item === "comment") {
                 if (value.verb === "add") {
-                    handleAddComment(value, method);
+                    handleAddComment(value, pageId, method);
                 }
                 else if (value.verb === "edited") {
-                    handleEditComment(value);
+                    handleEditComment(value, pageId);
                 }
                 else if (value.verb === "remove") {
-                    handleRemoveComment(value);
+                    handleRemoveComment(value, pageId);
                 }
             }
         }
