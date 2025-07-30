@@ -19,52 +19,99 @@ const handleDM = async (
 ) => {
   const senderId = event.sender.id;
   const userMsg = event.message.text;
-  console.log("💬 DM Message:", userMsg); 
+  console.log("💬 DM Message:", userMsg);
 
-  const reply =
-    method === "gemini"
-      ? await GeminiService.getResponseDM(senderId, pageId, userMsg, ActionType.DM)
-      : method === "chatgpt"
-      ? await ChatgptService.getResponseDM(senderId, pageId,  userMsg, ActionType.DM)
-      : method === 'deepseek'
-      ? await DeepSeekService.getResponseDM(senderId, pageId,  userMsg, ActionType.DM)
-      : await GroqService.getResponseDM(senderId, pageId,  userMsg, ActionType.DM)
-      //paid
-  await sendMessage(senderId, pageId, reply as string);
+  let reply = "";
+  try {
+    if (method === "gemini") {
+      reply = await GeminiService.getResponseDM(
+        senderId,
+        pageId,
+        userMsg,
+        ActionType.DM
+      );
+    } else if (method === "chatgpt") {
+      reply = await ChatgptService.getResponseDM(
+        senderId,
+        pageId,
+        userMsg,
+        ActionType.DM
+      );
+    } else if (method === "deepseek") {
+      reply = await DeepSeekService.getResponseDM(
+        senderId,
+        pageId,
+        userMsg,
+        ActionType.DM
+      );
+    } else if (method === "groq") {
+      reply = await GroqService.getResponseDM(
+        senderId,
+        pageId,
+        userMsg,
+        ActionType.DM
+      );
+    }
+  } catch (error: any) {
+    console.log("Error generating reply:", error?.message);
+  }
+
+  try {
+    await sendMessage(senderId, pageId, reply);
+  } catch (error: any) {
+    console.log("Error sending reply:", error?.message);
+  }
 };
 
 const handleAddFeed = async (value: any, pageId: string) => {
-  const result = await PageService.createProduct({
-    postId: value.post_id,
-    message: value.message,
-    shopId: pageId,
-    createdAt: value.created_time,
-  });
+  try {
+    const result = await PageService.createProduct({
+      postId: value.post_id,
+      message: value.message,
+      shopId: pageId,
+      createdAt: value.created_time,
+    });
 
-  !result
-    ? console.log("Feed Not Created")
-    : console.log("Feed Created Successfully");
+    !result
+      ? console.log("Feed Not Created")
+      : console.log("Feed Created Successfully");
+  } catch (error: any) {
+    console.log("Feed Not Created, Error: ", error?.message);
+  }
 };
 
 const handleEditFeed = async (value: any, pageId: string) => {
   const { post_id, message } = value;
-  const result = await PageService.updateProduct( pageId, post_id, {
-    message,
-    updatedAt: new Date(), 
-  });
-
-  !result
-    ? console.log("Feed Not Updated")
-    : console.log("Feed Updated Successfully");
+  try {
+    const result = await PageService.updateProduct(pageId, post_id, {
+      message,
+      updatedAt: new Date(),
+    });
+    !result
+      ? console.log("Feed Not Updated")
+      : console.log("Feed Updated Successfully");
+  } catch (error: any) {
+    console.log("Feed Not Updated, Error: ", error?.message);
+  }
 };
 
 const handleRemoveFeed = async (value: any, pageId: string) => {
   const { post_id } = value;
-  const result = await PageService.deleteProduct(pageId, post_id);
-  await CommentHistory.findOneAndDelete({ postId: post_id });
-  !result
-    ? console.log("Feed Not Deleted")
-    : console.log("Feed Deleted Successfully");
+  try {
+    const result = await PageService.deleteProduct(pageId, post_id);
+    const result1 = await CommentHistory.findOneAndDelete({ postId: post_id });
+    !result
+      ? console.log("Feed Not Deleted")
+      : console.log("Feed Deleted Successfully");
+    !result1
+      ? console.log("Comment History Not Deleted")
+      : console.log("Comment History Deleted Successfully");
+  } catch (error: any) {
+    console.log(
+      "Feed Not Deleted\nComment History Not Deleted\nError: ",
+      error.message
+    );
+  }
 };
 
 const handleAddComment = async (value: any, pageId: string, method: string) => {
@@ -79,83 +126,101 @@ const handleAddComment = async (value: any, pageId: string, method: string) => {
   }
   console.log("💬 New Comment:", message);
 
-  const reply =
-    method === "gemini" 
-      ? await GeminiService.getCommnetResponse(
-          commenterId,
-          comment_id,
-          userName || "Customer",
-          message,
-          post_id,
-          pageId,
-          ActionType.COMMENT
-        )
-      : method === "chatgpt"
-      ? await ChatgptService.getCommnetResponse(
-          commenterId,
-          comment_id,
-          userName || "Customer",
-          message,
-          post_id,
-          pageId,
-          ActionType.COMMENT
-        )
-      : method === 'deepseek'
-      ? await DeepSeekService.getCommnetResponse(
-          commenterId,
-          comment_id,
-          userName || "Customer",
-          message,
-          post_id,
-          pageId,
-          ActionType.COMMENT
-        )
-      : await GroqService.getCommnetResponse(
-          commenterId,
-          comment_id,
-          userName || "Customer",
-          message,
-          post_id,
-          pageId,
-          ActionType.COMMENT);
+  let reply = "";
 
-  await replyToComment(comment_id, pageId, reply as string);
+  try {
+    if (method === "gemini") {
+      reply = await GeminiService.getCommnetResponse(
+        commenterId,
+        comment_id,
+        userName || "Customer",
+        message,
+        post_id,
+        pageId,
+        ActionType.COMMENT
+      );
+    } else if (method === "chatgpt") {
+      reply = await ChatgptService.getCommnetResponse(
+        commenterId,
+        comment_id,
+        userName || "Customer",
+        message,
+        post_id,
+        pageId,
+        ActionType.COMMENT
+      );
+    } else if (method === "deepseek") {
+      reply = await DeepSeekService.getCommnetResponse(
+        commenterId,
+        comment_id,
+        userName || "Customer",
+        message,
+        post_id,
+        pageId,
+        ActionType.COMMENT
+      );
+    } else {
+      reply = await GroqService.getCommnetResponse(
+        commenterId,
+        comment_id,
+        userName || "Customer",
+        message,
+        post_id,
+        pageId,
+        ActionType.COMMENT
+      );
+    }
+  } catch (err: any) {
+    console.log("Error generating Comment Replay:", err.message);
+  }
+
+  try {
+    await replyToComment(comment_id, pageId, reply as string);
+  } catch (error: any) {
+    console.log("Error Sending Comment Replay: ", error?.message);
+  }
 };
 
 const handleEditComment = async (value: any, pageId: string) => {
   const { comment_id, message } = value;
-  console.log(comment_id);
-  const result = await CommentHistory.findOneAndUpdate(
-    { "messages.commentId": comment_id },
-    {
-      $set: {
-        "messages.$.content": message,
-        updatedAt: new Date(),
+  try {
+    const result = await CommentHistory.findOneAndUpdate(
+      { "messages.commentId": comment_id },
+      {
+        $set: {
+          "messages.$.content": message,
+          updatedAt: new Date(),
+        },
       },
-    },
-    { new: true }
-  );
+      { new: true }
+    );
 
-  !result
-    ? console.log("Comment Not Updated")
-    : console.log("Comment Updated Successfully");
+    !result
+      ? console.log("Comment Not Updated")
+      : console.log("Comment Updated Successfully");
+  } catch (error: any) {
+    console.log("Comment Not Updated, Error: ", error?.message);
+  }
 };
 
 const handleRemoveComment = async (value: any, pageId: string) => {
   const { comment_id } = value;
+  try {
+    const result = await CommentHistory.findOneAndUpdate(
+      { "messages.commentId": comment_id },
+      {
+        $pull: { messages: { commentId: comment_id } },
+        $set: { updatedAt: new Date() },
+      },
+      { new: true }
+    );
 
-  const result = await CommentHistory.findOneAndUpdate(
-    { "messages.commentId": comment_id },
-    {
-      $pull: { messages: { commentId: comment_id } },
-      $set: { updatedAt: new Date() },
-    },
-    { new: true }
-  );
-
-  !result
-    ? console.log("Comment Not Deleted")
-    : console.log("Comment Deleted Successfully");
+    !result
+      ? console.log("Comment Not Deleted")
+      : console.log("Comment Deleted Successfully");
+  } catch (error: any) {
+    console.log("Comment Not Deleted, Error: ", error?.message);
+  }
 };
 
 const handleIncomingMessages = async (

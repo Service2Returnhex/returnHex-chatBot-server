@@ -8,7 +8,8 @@ import { PageService } from "./page.service";
 //Product controllers
 const getProducts: RequestHandler = catchAsync(
   async(req: Request, res: Response) => {
-    const result = await PageService.getProducts();
+    const {pageId} = req.body;
+    const result = await PageService.getProducts(pageId);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
@@ -18,18 +19,33 @@ const getProducts: RequestHandler = catchAsync(
   }
 )
 
-// const getProductById: RequestHandler = catchAsync(
-//   async(req: Request, res: Response) => {
-//     const {id} = req.params
-//     const result = await PageService.getProductById(id);
-//     sendResponse(res, {
-//       statusCode: httpStatus.CREATED,
-//       success: true,
-//       message: "One Product retrieved Successfully",
-//       data: result
-//     })
-//   }
-// )
+
+const getTrainedProducts: RequestHandler = catchAsync(
+  async(req: Request, res: Response) => {
+    const {pageId} = req.query;
+    const result = await PageService.getProducts(pageId as string);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Trained Products retrieved successfully",
+      data: result
+    })
+  }
+)
+
+const getProductById: RequestHandler = catchAsync(
+  async(req: Request, res: Response) => {
+    const {id} = req.params
+    const {pageId} = req.body
+    const result = await PageService.getProductById(pageId, id);
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "One Product retrieved Successfully",
+      data: result
+    })
+  }
+)
 
 const createProduct: RequestHandler = catchAsync(
   async(req: Request, res: Response) => {
@@ -139,6 +155,8 @@ const deleteShop: RequestHandler = catchAsync(
 
 export const PageController = {
     getProducts,
+    getTrainedProducts,
+    getProductById,
     createProduct,
     updateProduct,
     deleteProduct,

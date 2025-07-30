@@ -1,11 +1,8 @@
-import { keywords } from "./shop.keywords";
-
 export const makePromtDM = (
   shop: any,
   products: any[],
   prompt: string
 ): string => {
-  console.log("Coming here!");
   let productList = "";
   
 
@@ -25,7 +22,7 @@ ${i + 1}. ${p.message}`
   - Category: ${shop.pageCategory} - Address: ${shop?.address} - Phone: ${shop?.phone}  
   here is the product list:
   ${productList} say no product's if empty
-  always try to answer in minimun token's maximum 30 token's if possible. 
+  always try to answer in minimun token's maximum 30 token's if possible. Any onther topic execpt this, say sorry.
   `.trim();
 
   return systemPrompt;
@@ -57,7 +54,8 @@ ${i + 1}. ${p.message}`
   } 
 
   here is the product list:  ${productList}, say no product's if empty
-  always try to answer in minimun token's maximum 30 token's if possible.  
+  always try to answer in minimun token's maximum 30 token's if possible.
+  Any onther topic execpt this, say sorry.  
   `.trim();
 
   return systemPrompt;

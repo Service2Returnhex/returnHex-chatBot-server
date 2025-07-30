@@ -3,7 +3,7 @@ import { catchAsync } from "../../utility/cathcAsync";
 import sendResponse from "../../utility/sendResponse";
 import httpStatus from "http-status";
 import { WebHookService } from "./webhook.service";
-import { ShopInfo } from "../Page/shopInfo.model";
+import { PageService } from "../Page/page.service";
 
 export const handleWebhook: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
@@ -11,22 +11,16 @@ export const handleWebhook: RequestHandler = catchAsync(
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
+
     console.log(pageId);
-    const shop = await ShopInfo.findOne({ shopId: pageId });
-    if (!shop)
-      res.status(404).send({ success: false, message: "Shop Not Found!" });
-    else {
-      if (
-        mode &&
-        token &&
-        mode === "subscribe" &&
-        token === shop.verifyToken
-      ) {
-        console.log("Webhook verified!");
-        res.status(200).send(challenge);
-      } else {
-        res.sendStatus(403);
-      }
+    const shop = await PageService.getShopById(pageId);
+
+    if (mode && token && mode === "subscribe" && token === shop.verifyToken) {
+      console.log("Webhook verified!");
+      res.status(200).send(challenge);
+    } else {
+      console.log("Webhook Not Verified");
+      res.sendStatus(403);
     }
   }
 );
@@ -40,7 +34,7 @@ enum WebHookMethods {
 
 export const handleIncomingMessages: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const { pageId } = req.params
+    const { pageId } = req.params;
     // const userIP = [
     //   { ip: "192.168.10.2", count: 20 }, //rate limiting
     // ];
