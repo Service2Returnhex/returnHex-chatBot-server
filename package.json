@@ -6,6 +6,7 @@
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "start" : "npm run src/server.ts",
     "comment" : "run the makeProm intial phase"
   },
   "keywords": [],
