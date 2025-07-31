@@ -15,7 +15,7 @@ router.delete('/product/:id', PageController.deleteProduct);
 router.get('/shop', PageController.getShops);
 router.get('/shop/:id', PageController.getShopById);
 router.post('/shop', PageController.createShop);
-router.put('/shop/:id', PageController.updateShop);
+router.patch('/shop/:id', PageController.updateShop);
 router.delete('/shop/:id', PageController.deleteShop);
 
 export const PageRouter = router;

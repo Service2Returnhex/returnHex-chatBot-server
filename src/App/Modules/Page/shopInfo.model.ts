@@ -15,8 +15,8 @@ const ShopInfoSchema = new Schema<IShopInfo>({
   address: { type: String, required: true },
   phone: { type: String, required: true },
   pageCategory: { type: String, required: true },
-  shopId: { type: String, required: true },
-  accessToken: { type: String, required: true },
+  shopId: { type: String, required: true, unique: true },
+  accessToken: { type: String, default: ''},
   verifyToken: { type: String, required: true },
 });
 

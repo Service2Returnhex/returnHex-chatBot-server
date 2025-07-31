@@ -76,8 +76,8 @@ const updateProduct: RequestHandler = catchAsync(
 const deleteProduct: RequestHandler = catchAsync(
   async(req: Request, res: Response) => {
     const {id} = req.params;
-    const { shopId } = req.body;
-    const result = await PageService.deleteProduct(shopId, id);
+    const { shopId } = req.query;
+    const result = await PageService.deleteProduct(shopId as string, id);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,

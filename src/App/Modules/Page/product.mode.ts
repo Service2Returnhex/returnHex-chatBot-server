@@ -5,6 +5,7 @@ export interface IProduct {
   price?: string;
   postId: string;
   message: string;
+  full_picture: string;
   shopId: string;
   isTrained?: boolean;
   createdAt?: Date;
@@ -22,6 +23,7 @@ const ProductSchema = new Schema<IProduct>(
       unique: true,
     },
     message: { type: String, required: true, default: "" },
+    full_picture: { type: String, default: ""},
     shopId: { type: String, required: true },
     isTrained: { type: Boolean, required: true, default: false},
     createdAt: { type: Date, default: Date.now },

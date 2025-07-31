@@ -1,7 +1,7 @@
 import ApiError from "../../utility/AppError";
 import { IProduct, Product } from "./product.mode";
 import httpStatus from "http-status";
-import { ShopInfo } from "./shopInfo.model";
+import { IShopInfo, ShopInfo } from "./shopInfo.model";
 import {
   Logger,
   LogPrefix,
@@ -132,7 +132,7 @@ const createShop = async (payload: any) => {
   return result;
 };
 
-const updateShop = async (id: string, payload: any) => {
+const updateShop = async (id: string, payload: Partial<IShopInfo>) => {
   const isExists = await ShopInfo.findOne({ shopId: id });
   if (!isExists) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_FOUND);
