@@ -70,6 +70,7 @@ const handleAddFeed = async (value: any, pageId: string) => {
       message: value.message,
       shopId: pageId,
       createdAt: value.created_time,
+      full_picture: value.full_picture
     });
 
     !result

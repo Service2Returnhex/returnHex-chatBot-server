@@ -17,27 +17,21 @@ const cathcAsync_1 = require("../../utility/cathcAsync");
 const sendResponse_1 = __importDefault(require("../../utility/sendResponse"));
 const http_status_1 = __importDefault(require("http-status"));
 const webhook_service_1 = require("./webhook.service");
-const shopInfo_model_1 = require("../Page/shopInfo.model");
+const page_service_1 = require("../Page/page.service");
 exports.handleWebhook = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { pageId } = req.params;
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
     console.log(pageId);
-    const shop = yield shopInfo_model_1.ShopInfo.findOne({ shopId: pageId });
-    if (!shop)
-        res.status(404).send({ success: false, message: "Shop Not Found!" });
+    const shop = yield page_service_1.PageService.getShopById(pageId);
+    if (mode && token && mode === "subscribe" && token === shop.verifyToken) {
+        console.log("Webhook verified!");
+        res.status(200).send(challenge);
+    }
     else {
-        if (mode &&
-            token &&
-            mode === "subscribe" &&
-            token === shop.verifyToken) {
-            console.log("Webhook verified!");
-            res.status(200).send(challenge);
-        }
-        else {
-            res.sendStatus(403);
-        }
+        console.log("Webhook Not Verified");
+        res.sendStatus(403);
     }
 }));
 var WebHookMethods;

@@ -45,7 +45,9 @@ const ProductSchema = new mongoose_1.Schema({
         unique: true,
     },
     message: { type: String, required: true, default: "" },
+    full_picture: { type: String, default: "" },
     shopId: { type: String, required: true },
+    isTrained: { type: Boolean, required: true, default: false },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });

@@ -19,7 +19,8 @@ const http_status_1 = __importDefault(require("http-status"));
 const page_service_1 = require("./page.service");
 //Product controllers
 const getProducts = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield page_service_1.PageService.getProducts();
+    const { pageId } = req.body;
+    const result = yield page_service_1.PageService.getProducts(pageId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -27,18 +28,27 @@ const getProducts = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0,
         data: result
     });
 }));
-// const getProductById: RequestHandler = catchAsync(
-//   async(req: Request, res: Response) => {
-//     const {id} = req.params
-//     const result = await PageService.getProductById(id);
-//     sendResponse(res, {
-//       statusCode: httpStatus.CREATED,
-//       success: true,
-//       message: "One Product retrieved Successfully",
-//       data: result
-//     })
-//   }
-// )
+const getTrainedProducts = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { pageId } = req.query;
+    const result = yield page_service_1.PageService.getProducts(pageId);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "Trained Products retrieved successfully",
+        data: result
+    });
+}));
+const getProductById = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const { pageId } = req.body;
+    const result = yield page_service_1.PageService.getProductById(pageId, id);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.CREATED,
+        success: true,
+        message: "One Product retrieved Successfully",
+        data: result
+    });
+}));
 const createProduct = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield page_service_1.PageService.createProduct(req.body);
     (0, sendResponse_1.default)(res, {
@@ -61,7 +71,7 @@ const updateProduct = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 
 }));
 const deleteProduct = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const { shopId } = req.body;
+    const { shopId } = req.query;
     const result = yield page_service_1.PageService.deleteProduct(shopId, id);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
@@ -121,6 +131,8 @@ const deleteShop = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
 }));
 exports.PageController = {
     getProducts,
+    getTrainedProducts,
+    getProductById,
     createProduct,
     updateProduct,
     deleteProduct,

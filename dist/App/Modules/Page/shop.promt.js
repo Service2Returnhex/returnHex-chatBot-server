@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.makePromtComment = exports.makePromtDM = void 0;
 const makePromtDM = (shop, products, prompt) => {
-    console.log("Coming here!");
     let productList = "";
     if (products.length > 0) {
         productList = products
@@ -16,7 +15,7 @@ ${i + 1}. ${p.message}`)
   - Category: ${shop.pageCategory} - Address: ${shop === null || shop === void 0 ? void 0 : shop.address} - Phone: ${shop === null || shop === void 0 ? void 0 : shop.phone}  
   here is the product list:
   ${productList} say no product's if empty
-  always try to answer in minimun token's maximum 30 token's if possible. 
+  always try to answer in minimun token's maximum 30 token's if possible. Any onther topic execpt this, say sorry.
   `.trim();
     return systemPrompt;
 };
@@ -38,7 +37,8 @@ ${i + 1}. ${p.message}`)
         : ""} 
 
   here is the product list:  ${productList}, say no product's if empty
-  always try to answer in minimun token's maximum 30 token's if possible.  
+  always try to answer in minimun token's maximum 30 token's if possible.
+  Any onther topic execpt this, say sorry.  
   `.trim();
     return systemPrompt;
 };

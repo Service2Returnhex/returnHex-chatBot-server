@@ -26,44 +26,78 @@ const handleDM = (event, pageId, method) => __awaiter(void 0, void 0, void 0, fu
     const senderId = event.sender.id;
     const userMsg = event.message.text;
     console.log("💬 DM Message:", userMsg);
-    const reply = method === "gemini"
-        ? yield gemini_service_1.GeminiService.getResponseDM(senderId, pageId, userMsg, ActionType.DM)
-        : method === "chatgpt"
-            ? yield chatgpt_service_1.ChatgptService.getResponseDM(senderId, pageId, userMsg, ActionType.DM)
-            : method === 'deepseek'
-                ? yield deepseek_service_1.DeepSeekService.getResponseDM(senderId, pageId, userMsg, ActionType.DM)
-                : yield grok_service_1.GroqService.getResponseDM(senderId, pageId, userMsg, ActionType.DM);
-    //paid
-    yield (0, facebook_api_1.sendMessage)(senderId, pageId, reply);
+    let reply = "";
+    try {
+        if (method === "gemini") {
+            reply = yield gemini_service_1.GeminiService.getResponseDM(senderId, pageId, userMsg, ActionType.DM);
+        }
+        else if (method === "chatgpt") {
+            reply = yield chatgpt_service_1.ChatgptService.getResponseDM(senderId, pageId, userMsg, ActionType.DM);
+        }
+        else if (method === "deepseek") {
+            reply = yield deepseek_service_1.DeepSeekService.getResponseDM(senderId, pageId, userMsg, ActionType.DM);
+        }
+        else if (method === "groq") {
+            reply = yield grok_service_1.GroqService.getResponseDM(senderId, pageId, userMsg, ActionType.DM);
+        }
+    }
+    catch (error) {
+        console.log("Error generating reply:", error === null || error === void 0 ? void 0 : error.message);
+    }
+    try {
+        yield (0, facebook_api_1.sendMessage)(senderId, pageId, reply);
+    }
+    catch (error) {
+        console.log("Error sending reply:", error === null || error === void 0 ? void 0 : error.message);
+    }
 });
 const handleAddFeed = (value, pageId) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield page_service_1.PageService.createProduct({
-        postId: value.post_id,
-        message: value.message,
-        shopId: pageId,
-        createdAt: value.created_time,
-    });
-    !result
-        ? console.log("Feed Not Created")
-        : console.log("Feed Created Successfully");
+    try {
+        const result = yield page_service_1.PageService.createProduct({
+            postId: value.post_id,
+            message: value.message,
+            shopId: pageId,
+            createdAt: value.created_time,
+            full_picture: value.full_picture
+        });
+        !result
+            ? console.log("Feed Not Created")
+            : console.log("Feed Created Successfully");
+    }
+    catch (error) {
+        console.log("Feed Not Created, Error: ", error === null || error === void 0 ? void 0 : error.message);
+    }
 });
 const handleEditFeed = (value, pageId) => __awaiter(void 0, void 0, void 0, function* () {
     const { post_id, message } = value;
-    const result = yield page_service_1.PageService.updateProduct(pageId, post_id, {
-        message,
-        updatedAt: new Date(),
-    });
-    !result
-        ? console.log("Feed Not Updated")
-        : console.log("Feed Updated Successfully");
+    try {
+        const result = yield page_service_1.PageService.updateProduct(pageId, post_id, {
+            message,
+            updatedAt: new Date(),
+        });
+        !result
+            ? console.log("Feed Not Updated")
+            : console.log("Feed Updated Successfully");
+    }
+    catch (error) {
+        console.log("Feed Not Updated, Error: ", error === null || error === void 0 ? void 0 : error.message);
+    }
 });
 const handleRemoveFeed = (value, pageId) => __awaiter(void 0, void 0, void 0, function* () {
     const { post_id } = value;
-    const result = yield page_service_1.PageService.deleteProduct(pageId, post_id);
-    yield comment_histroy_model_1.CommentHistory.findOneAndDelete({ postId: post_id });
-    !result
-        ? console.log("Feed Not Deleted")
-        : console.log("Feed Deleted Successfully");
+    try {
+        const result = yield page_service_1.PageService.deleteProduct(pageId, post_id);
+        const result1 = yield comment_histroy_model_1.CommentHistory.findOneAndDelete({ postId: post_id });
+        !result
+            ? console.log("Feed Not Deleted")
+            : console.log("Feed Deleted Successfully");
+        !result1
+            ? console.log("Comment History Not Deleted")
+            : console.log("Comment History Deleted Successfully");
+    }
+    catch (error) {
+        console.log("Feed Not Deleted\nComment History Not Deleted\nError: ", error.message);
+    }
 });
 const handleAddComment = (value, pageId, method) => __awaiter(void 0, void 0, void 0, function* () {
     const { comment_id, message, post_id, from } = value;
@@ -75,37 +109,62 @@ const handleAddComment = (value, pageId, method) => __awaiter(void 0, void 0, vo
         return;
     }
     console.log("💬 New Comment:", message);
-    const reply = method === "gemini"
-        ? yield gemini_service_1.GeminiService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT)
-        : method === "chatgpt"
-            ? yield chatgpt_service_1.ChatgptService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT)
-            : method === 'deepseek'
-                ? yield deepseek_service_1.DeepSeekService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT)
-                : yield grok_service_1.GroqService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT);
-    yield (0, facebook_api_1.replyToComment)(comment_id, pageId, reply);
+    let reply = "";
+    try {
+        if (method === "gemini") {
+            reply = yield gemini_service_1.GeminiService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT);
+        }
+        else if (method === "chatgpt") {
+            reply = yield chatgpt_service_1.ChatgptService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT);
+        }
+        else if (method === "deepseek") {
+            reply = yield deepseek_service_1.DeepSeekService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT);
+        }
+        else {
+            reply = yield grok_service_1.GroqService.getCommnetResponse(commenterId, comment_id, userName || "Customer", message, post_id, pageId, ActionType.COMMENT);
+        }
+    }
+    catch (err) {
+        console.log("Error generating Comment Replay:", err.message);
+    }
+    try {
+        yield (0, facebook_api_1.replyToComment)(comment_id, pageId, reply);
+    }
+    catch (error) {
+        console.log("Error Sending Comment Replay: ", error === null || error === void 0 ? void 0 : error.message);
+    }
 });
 const handleEditComment = (value, pageId) => __awaiter(void 0, void 0, void 0, function* () {
     const { comment_id, message } = value;
-    console.log(comment_id);
-    const result = yield comment_histroy_model_1.CommentHistory.findOneAndUpdate({ "messages.commentId": comment_id }, {
-        $set: {
-            "messages.$.content": message,
-            updatedAt: new Date(),
-        },
-    }, { new: true });
-    !result
-        ? console.log("Comment Not Updated")
-        : console.log("Comment Updated Successfully");
+    try {
+        const result = yield comment_histroy_model_1.CommentHistory.findOneAndUpdate({ "messages.commentId": comment_id }, {
+            $set: {
+                "messages.$.content": message,
+                updatedAt: new Date(),
+            },
+        }, { new: true });
+        !result
+            ? console.log("Comment Not Updated")
+            : console.log("Comment Updated Successfully");
+    }
+    catch (error) {
+        console.log("Comment Not Updated, Error: ", error === null || error === void 0 ? void 0 : error.message);
+    }
 });
 const handleRemoveComment = (value, pageId) => __awaiter(void 0, void 0, void 0, function* () {
     const { comment_id } = value;
-    const result = yield comment_histroy_model_1.CommentHistory.findOneAndUpdate({ "messages.commentId": comment_id }, {
-        $pull: { messages: { commentId: comment_id } },
-        $set: { updatedAt: new Date() },
-    }, { new: true });
-    !result
-        ? console.log("Comment Not Deleted")
-        : console.log("Comment Deleted Successfully");
+    try {
+        const result = yield comment_histroy_model_1.CommentHistory.findOneAndUpdate({ "messages.commentId": comment_id }, {
+            $pull: { messages: { commentId: comment_id } },
+            $set: { updatedAt: new Date() },
+        }, { new: true });
+        !result
+            ? console.log("Comment Not Deleted")
+            : console.log("Comment Deleted Successfully");
+    }
+    catch (error) {
+        console.log("Comment Not Deleted, Error: ", error === null || error === void 0 ? void 0 : error.message);
+    }
 });
 const handleIncomingMessages = (req, res, pageId, method) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
