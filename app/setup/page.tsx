@@ -54,11 +54,12 @@ export default function ChatbotUserSetupPage() {
   };
   const handleProvideInfo = async () => {
     try {
-      const res = await axios.post("http://localhost:5002/api/v1/page/shop", {
+        
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop`, {
         ...formData,
         shopId: formData.pageId,
       });
-      const generatedURL = `${window.location.origin}/api/v1/meta-webhook/${formData.pageId}/webhook`;
+      const generatedURL = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/meta-webhook/${formData.pageId}/webhook`;
       setWebhookURL(generatedURL);
       setVerifyStatus("Webhook URL and Verify Token generated successfully.");
       toast.success("Webhook URL and Verify Token generated successfully.");
@@ -72,7 +73,7 @@ export default function ChatbotUserSetupPage() {
   const handleSendAccessToken = async () => {
     try {
       await axios.patch(
-        `http://localhost:5002/api/v1/page/shop/${formData.pageId}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`,
         {
           accessToken: formData.accessToken,
         }
@@ -99,7 +100,7 @@ export default function ChatbotUserSetupPage() {
   const handleStartApp = async () => {
     try {
       const { data } = await axios.get(
-        `http://localhost:5002/api/v1/page/shop/${formData.pageId}`
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`
       );
       if (data.success) {
         const fethcedData = {

@@ -33,7 +33,7 @@ export default function Home() {
   useEffect(() => {
     axios
       .get(
-        `http://localhost:5002/api/v1/page/shop/${localStorage.getItem(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${localStorage.getItem(
           "pageId"
         )}`
       )
@@ -61,7 +61,7 @@ export default function Home() {
         }
       );
       const res1 = await axios.get(
-        `http://localhost:5002/api/v1/page/trained-products?pageId=${pageId}`
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/trained-products?pageId=${pageId}`
       );
       setPosts(response.data.data);
       setTrainedPosts(res1.data.data);
@@ -85,7 +85,7 @@ export default function Home() {
     try {
       setLoading(true);
       const { data } = await axios.post(
-        `http://localhost:5002/api/v1/page/product`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/product`,
         {
           shopId: pageId,
           postId: id,
@@ -110,7 +110,7 @@ export default function Home() {
     try {
       setLoading(true);
       const { data } = await axios.delete(
-        `http://localhost:5002/api/v1/page/product/${postId}?shopId=${shopId}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/product/${postId}?shopId=${shopId}`,
       );
       if (data.success) {
         toast.warning("Post removed from Training");
