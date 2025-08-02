@@ -1,10 +1,10 @@
 import Groq from "groq-sdk";
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
-import { ShopInfo } from "../Page/shopInfo.model";
-import { Product } from "../Page/product.mode";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
-import { makePromtComment, makePromtDM } from "../Page/shop.promt";
+import { makePromtComment, makePromtDM } from "../Page/page.promt";
+import { PageInfo } from "../Page/pageInfo.model";
+import { Post } from "../Page/post.mode";
 
 const getResponseDM = async (
   senderId: string,
@@ -17,25 +17,25 @@ const getResponseDM = async (
     userHistoryDoc = new ChatHistory({ userId: senderId, messages: [] });
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
-  const shop = await ShopInfo.findOne({shopId});
+  const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
 
-  const products = await Product.find({shopId});
+  const products = await Post.find({ shopId });
 
   const getPrompt = makePromtDM(shop, products, prompt);
-  
+
   const cleanedMessages: ChatCompletionMessageParam[] = [
-  { role: "system", content: getPrompt },
-  { role: 'user', content: prompt }
-];
-  
+    { role: "system", content: getPrompt },
+    { role: "user", content: prompt },
+  ];
+
   console.log(process.env.GROQ_API_KEY);
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
   const completion = await groq.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
-        messages: cleanedMessages
-    })
+    model: "llama-3.3-70b-versatile",
+    messages: cleanedMessages,
+  });
   const reply = completion.choices[0]?.message?.content || "";
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
@@ -66,29 +66,37 @@ export const getCommnetResponse = async (
       userName,
       messages: [],
     });
-  userCommnetHistoryDoc.messages.push({ commentId, role: "user", content: message });
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "user",
+    content: message,
+  });
 
-  const shop = await ShopInfo.findOne({shopId});
+  const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
-    
-  const products = await Product.find({shopId});
-  const specificProduct = await Product.findOne({ shopId, postId });
 
-  
+  const products = await Post.find({ shopId });
+  const specificProduct = await Post.findOne({ shopId, postId });
+
   const getPrompt = makePromtComment(shop, products, specificProduct);
   const cleanedMessages: ChatCompletionMessageParam[] = [
-  { role: "system", content: getPrompt },
-  { role: 'user', content: message }
-];
+    { role: "system", content: getPrompt },
+    { role: "user", content: message },
+  ];
   console.log("coming from groq");
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   const completion = await groq.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
-        messages: cleanedMessages
-    })
-  const reply = `@[${commenterId}] ` + completion.choices[0]?.message?.content || "";
+    model: "llama-3.3-70b-versatile",
+    messages: cleanedMessages,
+  });
+  const reply =
+    `@[${commenterId}] ` + completion.choices[0]?.message?.content || "";
 
-  userCommnetHistoryDoc.messages.push({commentId, role: "assistant", content: reply });
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "assistant",
+    content: reply,
+  });
   await userCommnetHistoryDoc.save();
   return reply;
 };

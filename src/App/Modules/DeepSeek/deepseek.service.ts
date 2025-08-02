@@ -1,10 +1,9 @@
-import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index";
-import { ShopInfo } from "../Page/shopInfo.model";
-import { Product } from "../Page/product.mode";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
-import { makePromtComment, makePromtDM } from "../Page/shop.promt";
+import { makePromtComment, makePromtDM } from "../Page/page.promt";
+import { PageInfo } from "../Page/pageInfo.model";
+import { Post } from "../Page/post.mode";
 
 const getResponseDM = async (
   senderId: string,
@@ -19,12 +18,12 @@ const getResponseDM = async (
 
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
-  const shop = await ShopInfo.findOne({ shopId });
+  const shop = await PageInfo.findOne({ shopId });
   if (!shop) {
     throw new Error("Shop not found");
   }
 
-  const products = await Product.find({ shopId });
+  const products = await Post.find({ shopId });
 
   const getPrompt = makePromtDM(shop, products, prompt);
 
@@ -96,13 +95,13 @@ export const getCommnetResponse = async (
     content: message,
   });
 
-  const shop = await ShopInfo.findOne({ shopId });
+  const shop = await PageInfo.findOne({ shopId });
   if (!shop) {
     throw new Error("Shop not found");
   }
 
-  const products = await Product.find({ shopId });
-  const specificProduct = await Product.findOne({ shopId, postId });
+  const products = await Post.find({ shopId });
+  const specificProduct = await Post.findOne({ shopId, postId });
 
   const getPromt = makePromtComment(shop, products, specificProduct);
   const messages: ChatCompletionMessageParam[] = [

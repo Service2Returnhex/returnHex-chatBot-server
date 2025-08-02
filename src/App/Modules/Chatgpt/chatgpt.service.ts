@@ -1,10 +1,10 @@
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index";
+import { makePromtComment, makePromtDM } from "../Page/page.promt";
+import { PageInfo } from "../Page/pageInfo.model";
+import { Post } from "../Page/post.mode";
 import { ChatHistory } from "./chat-history.model";
-import { ShopInfo } from "../Page/shopInfo.model";
-import { Product } from "../Page/product.mode";
 import { CommentHistory } from "./comment-histroy.model";
-import { makePromtComment, makePromtDM } from "../Page/shop.promt";
 
 const getResponseDM = async (
   senderId: string,
@@ -17,10 +17,10 @@ const getResponseDM = async (
     userHistoryDoc = new ChatHistory({ senderId, messages: [] });
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
-  const shop = await ShopInfo.findOne({shopId});
+  const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
 
-  const products = await Product.find({shopId});
+  const products = await Post.find({ shopId });
 
   //save the post info. to the local database
   // create a script for run makePromtDM
@@ -34,7 +34,7 @@ const getResponseDM = async (
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
-    { role: 'user', content: prompt}
+    { role: "user", content: prompt },
   ];
 
   const openai = new OpenAI({
@@ -53,7 +53,7 @@ const getResponseDM = async (
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
   await userHistoryDoc.save();
 
-  //nlp: if same related question mathces with db, it will replay from the previous stored response. 
+  //nlp: if same related question mathces with db, it will replay from the previous stored response.
   return reply;
 };
 
@@ -79,18 +79,22 @@ export const getCommnetResponse = async (
       userName,
       messages: [],
     });
-  userCommnetHistoryDoc.messages.push({ commentId, role: "user", content: message });
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "user",
+    content: message,
+  });
 
-  const shop = await ShopInfo.findOne({shopId});
+  const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
 
-  const products = await Product.find({shopId});
-  const specificProduct = await Product.findOne({ shopId, postId });
+  const products = await Post.find({ shopId });
+  const specificProduct = await Post.findOne({ shopId, postId });
 
   const getPrompt = makePromtComment(shop, products, specificProduct);
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
-    { role: "user", content: message}
+    { role: "user", content: message },
   ];
 
   const openai = new OpenAI({
@@ -102,12 +106,14 @@ export const getCommnetResponse = async (
   });
   const reply = `@[${commenterId}] ` + completion.choices[0].message.content;
 
-  userCommnetHistoryDoc.messages.push({commentId, role: "assistant", content: reply });
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "assistant",
+    content: reply,
+  });
   await userCommnetHistoryDoc.save();
   return reply;
 };
-
-
 
 export const ChatgptService = {
   getResponseDM,

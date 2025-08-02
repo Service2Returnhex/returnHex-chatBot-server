@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
-import { GeminiService } from "../Gemini/gemini.service";
-import { ChatgptService } from "../Chatgpt/chatgpt.service";
-import { PageService } from "../Page/page.service";
-import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { replyToComment, sendMessage } from "../../api/facebook.api";
+import { ChatgptService } from "../Chatgpt/chatgpt.service";
+import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { DeepSeekService } from "../DeepSeek/deepseek.service";
+import { GeminiService } from "../Gemini/gemini.service";
 import { GroqService } from "../Groq/grok.service";
+import { PageService } from "../Page/page.service";
 
 enum ActionType {
   DM = "reply",
@@ -70,7 +70,7 @@ const handleAddFeed = async (value: any, pageId: string) => {
       message: value.message,
       shopId: pageId,
       createdAt: value.created_time,
-      full_picture: value.full_picture
+      full_picture: value.full_picture,
     });
 
     !result

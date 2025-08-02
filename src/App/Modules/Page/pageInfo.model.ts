@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types } from "mongoose";
 
-export interface IShopInfo {
+export interface IPageInfo {
   pageName: string;
   address: string;
   phone: string;
@@ -10,7 +10,7 @@ export interface IShopInfo {
   verifyToken: string; //random
 }
 
-const ShopInfoSchema = new Schema<IShopInfo>({
+const PageInfoSchema = new Schema<IPageInfo>({
   pageName: { type: String, required: true },
   address: { type: String, required: true },
   phone: { type: String, required: true },
@@ -20,4 +20,4 @@ const ShopInfoSchema = new Schema<IShopInfo>({
   verifyToken: { type: String, required: true },
 });
 
-export const ShopInfo = mongoose.model<IShopInfo>("ShopInfo", ShopInfoSchema);
+export const PageInfo = mongoose.model<IPageInfo>("PageInfo", PageInfoSchema);

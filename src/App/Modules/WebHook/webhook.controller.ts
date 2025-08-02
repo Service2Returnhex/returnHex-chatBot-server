@@ -1,9 +1,9 @@
-import { Request, Response, RequestHandler } from "express";
+import { Request, RequestHandler, Response } from "express";
+import httpStatus from "http-status";
 import { catchAsync } from "../../utility/cathcAsync";
 import sendResponse from "../../utility/sendResponse";
-import httpStatus from "http-status";
-import { WebHookService } from "./webhook.service";
 import { PageService } from "../Page/page.service";
+import { WebHookService } from "./webhook.service";
 
 export const handleWebhook: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
@@ -57,7 +57,7 @@ export const handleIncomingMessages: RequestHandler = catchAsync(
       req,
       res,
       pageId as string,
-      WebHookMethods.DEEPSEEK
+      WebHookMethods.GROQ
     );
     sendResponse(res, {
       statusCode: httpStatus.OK,

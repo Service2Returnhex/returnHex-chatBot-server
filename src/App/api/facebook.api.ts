@@ -1,10 +1,14 @@
-import axios from 'axios'
-import { ShopInfo } from '../Modules/Page/shopInfo.model';
-import ApiError from '../utility/AppError';
+import axios from "axios";
+import ApiError from "../utility/AppError";
+import { PageInfo } from "../Modules/Page/pageInfo.model";
 
-export const sendMessage = async (recipientId: string,  pageId: string, text: string) => {
-  const shop = await ShopInfo.findOne({shopId: pageId})
-  if(!shop) throw new ApiError(404, 'Shop Not Found!');
+export const sendMessage = async (
+  recipientId: string,
+  pageId: string,
+  text: string
+) => {
+  const shop = await PageInfo.findOne({ shopId: pageId });
+  if (!shop) throw new ApiError(404, "Shop Not Found!");
 
   const res = await axios.post(
     `https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`,
@@ -16,10 +20,13 @@ export const sendMessage = async (recipientId: string,  pageId: string, text: st
   console.log(res.data);
 };
 
-export const replyToComment = async (commentId: string, pageId: string, message: string) => {
-  
-  const shop = await ShopInfo.findOne({shopId: pageId})
-  if(!shop) throw new ApiError(404, 'Shop Not Found!');
+export const replyToComment = async (
+  commentId: string,
+  pageId: string,
+  message: string
+) => {
+  const shop = await PageInfo.findOne({ shopId: pageId });
+  if (!shop) throw new ApiError(404, "Shop Not Found!");
   const response = await axios.post(
     `https://graph.facebook.com/v23.0/${commentId}/comments`,
     {

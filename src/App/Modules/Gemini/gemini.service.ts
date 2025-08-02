@@ -1,12 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import { ChatCompletionMessageParam } from "openai/resources/index";
-import axios from "axios";
 
-import { ShopInfo } from "../Page/shopInfo.model";
-import { Product } from "../Page/product.mode";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
-import { makePromtComment, makePromtDM } from "../Page/shop.promt";
+import { makePromtComment, makePromtDM } from "../Page/page.promt";
+import { Post } from "../Page/post.mode";
+import { PageInfo } from "../Page/pageInfo.model";
 
 const getResponseDM = async (
   senderId: string,
@@ -19,28 +18,28 @@ const getResponseDM = async (
     userHistoryDoc = new ChatHistory({ senderId, messages: [] });
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
-  const shop = await ShopInfo.findOne({shopId});
+  const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
 
-  const products = await Product.find({shopId});
+  const products = await Post.find({ shopId });
 
   const getPrompt = makePromtDM(shop, products, prompt);
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
-    { role: 'user', content: getPrompt }
+    { role: "user", content: getPrompt },
   ];
   const geminiMessages = messages.map((msg) => ({
-    role: msg.role === 'assistant' ? 'model' : 'user',
-    parts: [{text: msg.content}]
-  }))
+    role: msg.role === "assistant" ? "model" : "user",
+    parts: [{ text: msg.content }],
+  }));
 
   console.log(geminiMessages);
 
   const ai = new GoogleGenAI({});
   const completion = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: geminiMessages as ChatCompletionMessageParam[]
-    })
+    model: "gemini-2.5-flash",
+    contents: geminiMessages as ChatCompletionMessageParam[],
+  });
   const reply = completion.text || "";
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
@@ -70,33 +69,40 @@ export const getCommnetResponse = async (
       userName,
       messages: [],
     });
-  userCommnetHistoryDoc.messages.push({ commentId, role: "user", content: message });
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "user",
+    content: message,
+  });
 
-  const shop = await ShopInfo.findOne({shopId});
+  const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
-    
-  const products = await Product.find({shopId});
-  const specificProduct = await Product.findOne({ shopId, postId });
 
-  
+  const products = await Post.find({ shopId });
+  const specificProduct = await Post.findOne({ shopId, postId });
+
   const getPrompt = makePromtComment(shop, products, specificProduct);
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
-    { role: "user", content: message}
+    { role: "user", content: message },
   ];
   const geminiMessages = messages.map((msg) => ({
-    role: msg.role === 'assistant' ? 'model' : 'user',
-    parts: [{text: msg.content}]
-  }))
+    role: msg.role === "assistant" ? "model" : "user",
+    parts: [{ text: msg.content }],
+  }));
 
   const ai = new GoogleGenAI({});
   const completion = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
-        contents: geminiMessages as ChatCompletionMessageParam[]
-    })
+    model: "gemini-2.5-flash-lite",
+    contents: geminiMessages as ChatCompletionMessageParam[],
+  });
   const reply = `@[${commenterId}] ` + completion.text || "";
 
-  userCommnetHistoryDoc.messages.push({commentId, role: "assistant", content: reply });
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "assistant",
+    content: reply,
+  });
   await userCommnetHistoryDoc.save();
   return reply;
 };
