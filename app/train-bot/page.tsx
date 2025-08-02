@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 type TPost = {
   id: string;
   message: string;
@@ -31,15 +31,21 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [isTrained, setIsTraind] = useState(false);
   useEffect(() => {
+    const savedPageId = localStorage.getItem("pageId");
+    if (!savedPageId) return;
     axios
       .get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${localStorage.getItem(
-          "pageId"
-        )}`
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${savedPageId}`,
+        {
+          headers: {
+            "ngrok-skip-browser-warning": "69420",
+          },
+        }
       )
       .then((res) => {
         const { data } = res;
         if (data.success) {
+          // console.log("pageid", data.data.shopId);
           setPageId(data.data.shopId);
           setAccessToken(data.data.accessToken);
         }
@@ -48,8 +54,11 @@ export default function Home() {
         console.log(err);
       });
   }, []);
+
   const fetchPosts = async () => {
+    // console.log("pageid || accessToken", accessToken);
     if (!pageId || !accessToken) return;
+
     setLoading(true);
     try {
       const response = await axios.get(
@@ -61,8 +70,20 @@ export default function Home() {
         }
       );
       const res1 = await axios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/trained-products?pageId=${pageId}`,
+        {
+          headers: {
+            "ngrok-skip-browser-warning": "69420",
+          },
+        }
+      );
+
+      console.log(
+        "Fetching trained-products from:",
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/trained-products?pageId=${pageId}`
       );
+      console.log("response", response);
+      console.log("res1", res1);
       setPosts(response.data.data);
       setTrainedPosts(res1.data.data);
       toast.success("Post Retrieved!");
@@ -80,7 +101,7 @@ export default function Home() {
     id: string,
     message: string,
     full_picture: string,
-    createdAt: Date,
+    createdAt: Date
   ) => {
     try {
       setLoading(true);
@@ -94,6 +115,7 @@ export default function Home() {
           createdAt,
         }
       );
+      // console.log("data", data);
       if (data.success) {
         toast.success("Post Trained");
         await fetchPosts();
@@ -110,7 +132,7 @@ export default function Home() {
     try {
       setLoading(true);
       const { data } = await axios.delete(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/product/${postId}?shopId=${shopId}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/product/${postId}?shopId=${shopId}`
       );
       if (data.success) {
         toast.warning("Post removed from Training");
@@ -122,7 +144,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }
+  };
   return (
     <div className="container mx-auto min-h-screen p-6">
       <button
@@ -196,7 +218,7 @@ export default function Home() {
         {!isTrained
           ? posts
               .filter((post: TPost) => {
-                if (!trainedPosts.length) return true;
+                if (!trainedPosts?.length) return true;
 
                 const matched = trainedPosts.find(
                   (trainedPost) =>
@@ -235,18 +257,17 @@ export default function Home() {
                           post?.id,
                           post?.message,
                           post?.full_picture,
-                          post?.created_time,
+                          post?.created_time
                         )
                       }
                       className="mt-4 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer"
                     >
                       Train
                     </button>
-                    
                   </div>
                 </div>
               ))
-          : trainedPosts.map((post: TTrainedPost) => {
+          : trainedPosts?.map((post: TTrainedPost) => {
               return (
                 <div
                   key={post?.postId}
@@ -271,9 +292,7 @@ export default function Home() {
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() =>
-                        handleNoTrain(post.shopId, post.postId)
-                      }
+                      onClick={() => handleNoTrain(post.shopId, post.postId)}
                       className="mt-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer"
                     >
                       Not Train
