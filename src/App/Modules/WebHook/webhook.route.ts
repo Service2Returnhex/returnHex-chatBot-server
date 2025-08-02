@@ -8,5 +8,4 @@ router.get('/:pageId/webhook', WebHookController.handleWebhook);
 //receive messages
 router.post('/:pageId/webhook', WebHookController.handleIncomingMessages); 
 
-
 export const WebhookRouter = router; 

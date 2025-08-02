@@ -1,7 +1,7 @@
 export const makePromtDM = (
-  shop: any,
-  products: any[],
-  prompt: string
+  shop: any, //page
+  products: any[], //posts
+  prompt?: string
 ): string => {
   let productList = "";
   
@@ -15,8 +15,8 @@ ${i + 1}. ${p.message}`
       .join(",");
   }
 
-  console.log("product list: " + productList);
-
+  // console.log("product list: " + productList);
+  
   const systemPrompt = `
   You are an AI assistant for a Facebook page that sells products. Here is the shop info: - PageName: ${shop.pageName}
   - Category: ${shop.pageCategory} - Address: ${shop?.address} - Phone: ${shop?.phone}  
@@ -45,14 +45,12 @@ ${i + 1}. ${p.message}`
   }
 
   const systemPrompt = `
-  You are an AI assistant for a Facebook page that sells products. Here is the shop info: - PageName: ${shop.pageName}
-  - Category: ${shop.pageCategory} - Address: ${shop?.address} - Phone: ${shop?.phone}
-  in case of comment replay first priority to say about commented post
-  specific post details: ${ specificProduct ? `User Wants to know about this product in comment: - Product Name: ${specificProduct.name}
-  - Description: ${specificProduct.description} - Price: ${specificProduct.price}- MoreDetails: ${specificProduct.message}`
-  : ""
-  } 
-
+    You are an AI assistant for a Facebook page that sells products. Here is the shop info: - PageName: ${shop.pageName}
+    - Category: ${shop.pageCategory} - Address: ${shop?.address} - Phone: ${shop?.phone}
+    in case of comment replay first priority to say about commented post
+    specific post details: ${ specificProduct ? `User Wants to know about this product in comment: - ${specificProduct.message}`
+    : ""
+  }
   here is the product list:  ${productList}, say no product's if empty
   always try to answer in minimun token's maximum 30 token's if possible.
   Any onther topic execpt this, say sorry.  

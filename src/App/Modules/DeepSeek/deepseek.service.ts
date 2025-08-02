@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index";
 import { ShopInfo } from "../Page/shopInfo.model";
 import { Product } from "../Page/product.mode";
