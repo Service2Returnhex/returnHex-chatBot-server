@@ -13,11 +13,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebHookController = exports.handleIncomingMessages = exports.handleWebhook = void 0;
+const http_status_1 = __importDefault(require("http-status"));
 const cathcAsync_1 = require("../../utility/cathcAsync");
 const sendResponse_1 = __importDefault(require("../../utility/sendResponse"));
-const http_status_1 = __importDefault(require("http-status"));
-const webhook_service_1 = require("./webhook.service");
 const page_service_1 = require("../Page/page.service");
+const webhook_service_1 = require("./webhook.service");
 exports.handleWebhook = (0, cathcAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { pageId } = req.params;
     const mode = req.query["hub.mode"];
@@ -61,7 +61,7 @@ exports.handleIncomingMessages = (0, cathcAsync_1.catchAsync)((req, res) => __aw
       4.2 If '' '' '' 10 token - "" "" "" 20 token
     5. Rest of the wortk
     */
-    const result = yield webhook_service_1.WebHookService.handleIncomingMessages(req, res, pageId, WebHookMethods.DEEPSEEK);
+    const result = yield webhook_service_1.WebHookService.handleIncomingMessages(req, res, pageId, WebHookMethods.CHATGPT);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

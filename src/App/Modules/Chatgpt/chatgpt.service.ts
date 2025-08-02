@@ -12,9 +12,9 @@ const getResponseDM = async (
   prompt: string,
   action?: string
 ) => {
-  let userHistoryDoc = await ChatHistory.findOne({ senderId });
+  let userHistoryDoc = await ChatHistory.findOne({ userId: senderId });
   if (!userHistoryDoc)
-    userHistoryDoc = new ChatHistory({ senderId, messages: [] });
+    userHistoryDoc = new ChatHistory({ userId: senderId, messages: [] });
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   const shop = await ShopInfo.findOne({ shopId });
@@ -48,7 +48,7 @@ const getResponseDM = async (
   //replay should be in 20 token
   //if there is no replay, we will sent a custom response like - [our customer care will contact with you]
   // then the page owener will receive a email with post deatils that ai is not responding
-  const reply = completion.choices[0].message.content || "";
+  const reply = completion.choices[0].message.content || "Something Went Wrong";
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
   await userHistoryDoc.save();
