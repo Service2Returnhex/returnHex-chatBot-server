@@ -1,5 +1,5 @@
 import mongoose, {Schema,Types } from "mongoose";
-export interface IProduct {
+export interface IPost {
   name?: string;
   description?: string;
   price?: string;
@@ -14,7 +14,7 @@ export interface IProduct {
   updatedAt?: Date;
 }
 
-const ProductSchema = new Schema<IProduct>(
+const PostSchema = new Schema<IPost>(
   {
     name: { type: String, default: "" },
     description: { type: String, default: "" },
@@ -33,4 +33,4 @@ const ProductSchema = new Schema<IProduct>(
   }
 );
 
-export const Product = mongoose.model<IProduct>("Product", ProductSchema);
+export const Post = mongoose.model<IPost>("Post", PostSchema);
