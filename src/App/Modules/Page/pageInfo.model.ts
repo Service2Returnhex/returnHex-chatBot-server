@@ -4,7 +4,7 @@ export interface IPageInfo {
   pageName: string;
   address: string;
   phone: string;
-  email: string;
+  email?: string;
   pageCategory: string;
   shopId: string; 
   moreInfo?: string;
@@ -18,7 +18,7 @@ const PageInfoSchema = new Schema<IPageInfo>({
   pageName: { type: String, required: true },
   address: { type: String, required: true },
   phone: { type: String, required: true },
-  email: { type: String, required: true},
+  email: { type: String},
   pageCategory: { type: String, required: true },
   shopId: { type: String, required: true, unique: true },
   moreInfo: { type: String, default: ''},
