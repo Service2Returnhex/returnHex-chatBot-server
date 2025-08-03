@@ -25,7 +25,7 @@ export default function Home() {
       title: "Update Page Info",
       description: "Modify existing page information and settings",
       icon: Bot,
-      path: "/update-page-info",
+      path: "/update-pageInfo",
       gradient: "from-green-500 to-green-600",
     },
     {
@@ -70,7 +70,7 @@ export default function Home() {
             return (
               <div
                 key={item.path}
-                className="relative group rounded-lg overflow-hidden shadow-lg bg-gray-800 border border-gray-700 hover:scale-[1.02] hover:border-gray-500 transition-all duration-300"
+                className="relative group rounded-lg overflow-hidden shadow-lg bg-gray-800 border border-gray-700 hover:scale-[1.02] hover:border-gray-500 transition-all duration-300 cursor-pointer"
                 onClick={() => router.push(item.path)}
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-r from-purple-500 to-pink-500 transition-opacity duration-500" />

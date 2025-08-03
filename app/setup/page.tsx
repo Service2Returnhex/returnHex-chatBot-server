@@ -175,7 +175,19 @@ Important Notes:
 `;
 
   return (
-    <div className="min-h-screen w-full relative bg-[linear-gradient(133deg,#020203,#02050c,#020816,#010b1f,#010e28,#011131,#01143b,#001744,#001a4d)] text-white bg-fixed ">
+    <div className="min-h-screen w-full relative bg-gray-900 text-white bg-fixed ">
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: `
+          radial-gradient(circle at 50% 100%, rgba(70, 85, 110, 0.5) 0%, transparent 50%),
+          radial-gradient(circle at 50% 100%, rgba(99, 102, 241, 0.4) 0%, transparent 50%),
+          radial-gradient(circle at 50% 100%, rgba(181, 184, 208, 0.3) 0%, transparent 20%)
+        `,
+          backgroundAttachment: "fixed",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
       <Navigation title="Configure Bot" />
 
       <div className="container mx-auto px-4 py-8 relative z-10 ">

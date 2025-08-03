@@ -147,17 +147,21 @@ export default function Home() {
     }
   };
   return (
-    <div className=" min-h-screen bg-[linear-gradient(110deg,#020203,#02050c,#020816,#010b1f,#010e28,#011131,#01143b,#001744,#001a4d)] ">
+    <div className=" min-h-screen w-full relative bg-gray-900 ">
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: `
+          radial-gradient(circle at 50% 100%, rgba(70, 85, 110, 0.5) 0%, transparent 50%),
+          radial-gradient(circle at 50% 100%, rgba(99, 102, 241, 0.4) 0%, transparent 40%),
+          radial-gradient(circle at 50% 100%, rgba(181, 184, 208, 0.3) 0%, transparent 20%)
+        `,
+          backgroundAttachment: "fixed",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
       <Navigation title="Train Bot" />
       <div className="container mx-auto p-6">
-        {/* <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 py-2 text-lg font-medium
-        hover:underline cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4 lg:w-5 lg:h-5 text-blue-500" />
-          <span className="text-blue-500">Back</span>
-        </button> */}
         <div className="w-full text-white space-y-6 bg-gray-500/20  border border-white/50 filter bg-blur-md p-4  backdrop-blur-xl transition-transform rounded-2xl">
           <h1 className="text-2xl font-bold text-blue-500 mb-4">
             Train Post Data
@@ -199,7 +203,7 @@ export default function Home() {
           </form>
         </div>
         {/* button section */}
-        <div className="flex justify-center gap-3 mb-5 mt-5">
+        <div className="flex justify-center gap-3  my-8 relative">
           <button
             onClick={() => {
               setIsTraind(false);
@@ -279,7 +283,7 @@ export default function Home() {
                             )
                           }
                           className="mt-4 px-3 py-1 bg-green-600 text-white rounded hover:scale-105
-    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600 cursor-pointer"
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600 cursor-pointer relative"
                         >
                           Train
                         </button>
