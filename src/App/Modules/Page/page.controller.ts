@@ -149,6 +149,35 @@ const deleteShop: RequestHandler = catchAsync(
   }
 );
 
+const setDmPromt: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { dmSystemPromt } = req.body;
+    console.log(dmSystemPromt);
+    const result = await PageService.setDmPromt(id, dmSystemPromt);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "DM System Prompt updated Successfully",
+      data: result,
+    });
+  }
+);
+
+const setCmntPromt: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { cmntSystemPromt } = req.body;
+    const result = await PageService.setCmntPromt(id, cmntSystemPromt);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Comment System Prompt updated Successfully",
+      data: result,
+    });
+  }
+);
+
 export const PageController = {
   getProducts,
   getTrainedProducts,
@@ -162,4 +191,6 @@ export const PageController = {
   createShop,
   updateShop,
   deleteShop,
+  setDmPromt,
+  setCmntPromt
 };

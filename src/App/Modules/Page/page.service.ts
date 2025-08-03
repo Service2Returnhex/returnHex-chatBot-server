@@ -166,6 +166,46 @@ const deleteShop = async (id: string) => {
   return result;
 };
 
+const setDmPromt = async (id: string,  dmSystemPromt: string ) => {
+  const isExists = await PageInfo.findOne({ shopId: id });
+  if (!isExists) {
+    Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_FOUND);
+    throw new ApiError(httpStatus.NOT_FOUND, "Shop Not Found");
+  }
+  const result = await PageInfo.updateOne(
+    { shopId: id },
+    { dmSystemPromt},
+    { new: true, runValidators: true }
+  );
+  if (!result.modifiedCount) {
+    Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_UPDATED);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Shop Not updated");
+  }
+  Logger(LogService.DB, LogPrefix.SHOP, LogMessage.UPDATED);
+
+  return result;
+};
+
+const setCmntPromt = async (id: string, cmntSystemPromt: string) => {
+  const isExists = await PageInfo.findOne({ shopId: id });
+  if (!isExists) {
+    Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_FOUND);
+    throw new ApiError(httpStatus.NOT_FOUND, "Shop Not Found");
+  }
+  const result = await PageInfo.updateOne(
+    { shopId: id },
+    { cmntSystemPromt},
+    { new: true, runValidators: true }
+  );
+  if (!result.modifiedCount) {
+    Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_UPDATED);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Shop Not updated");
+  }
+  Logger(LogService.DB, LogPrefix.SHOP, LogMessage.UPDATED);
+
+  return result;
+};
+
 export const PageService = {
   getProducts,
   getTraindProducts,
@@ -179,4 +219,6 @@ export const PageService = {
   createShop,
   updateShop,
   deleteShop,
+  setDmPromt,
+  setCmntPromt
 };
