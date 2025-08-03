@@ -147,7 +147,7 @@ export default function Home() {
     }
   };
   return (
-    <div className=" min-h-screen bg-[linear-gradient(133deg,#020203,#02050c,#020816,#010b1f,#010e28,#011131,#01143b,#001744,#001a4d)] ">
+    <div className=" min-h-screen bg-[linear-gradient(110deg,#020203,#02050c,#020816,#010b1f,#010e28,#011131,#01143b,#001744,#001a4d)] ">
       <Navigation title="Train Bot" />
       <div className="container mx-auto p-6">
         {/* <button
@@ -170,15 +170,6 @@ export default function Home() {
             className="mb-6 space-y-4"
           >
             <div>
-              {/* <label className="block text-sm font-medium ">Page ID</label>
-              <input
-                type="text"
-                value={pageId}
-                onChange={(e) => setPageId(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                required
-              /> */}
-
               <FormField
                 label="Page ID"
                 id="pageId"
@@ -251,36 +242,48 @@ export default function Home() {
                 .map((post: TPost) => (
                   <div
                     key={post?.id}
-                    className="bg-white max-w-[350px] h-auto rounded-lg shadow p-4 flex flex-col justify-center"
+                    className=" group relative w-full max-w-[350px] rounded-lg p-4 shadow-lg
+    bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600
+    hover:scale-[1.02] transition-transform duration-300
+    text-white overflow-hidden "
                   >
-                    <img
-                      src={
-                        post.full_picture ||
-                        "https://t4.ftcdn.net/jpg/04/74/36/39/360_F_474363946_l1w7phLnR1vawp8gnSOZ4tNWW9t7RVfN.jpg"
-                      }
-                      className="w-full h-full aspect-square rounded"
+                    <div
+                      className="
+     absolute inset-0 bg-white/5 backdrop-blur-sm
+    opacity-0 group-hover:opacity-20 transition-opacity duration-300
+  "
                     />
-                    <p className="text-gray-800 font-semibold mb-2 line-clamp-1">
-                      {post?.message || "No message"}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Created: {new Date(post?.created_time).toLocaleString()}
-                    </p>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          handleTrainPosts(
-                            post?.id,
-                            post?.message,
-                            post?.full_picture,
-                            post?.created_time
-                          )
+                    <div className="relative flex flex-col justify-center space-y-2">
+                      <img
+                        src={
+                          post.full_picture ||
+                          "https://t4.ftcdn.net/jpg/04/74/36/39/360_F_474363946_l1w7phLnR1vawp8gnSOZ4tNWW9t7RVfN.jpg"
                         }
-                        className="mt-4 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer"
-                      >
-                        Train
-                      </button>
+                        className="w-full h-full aspect-square rounded "
+                      />
+                      <p className=" font-semibold text-lg my-2 line-clamp-2">
+                        {post?.message || "No message"}
+                      </p>
+                      <p className="text-xs ">
+                        Created: {new Date(post?.created_time).toLocaleString()}
+                      </p>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() =>
+                            handleTrainPosts(
+                              post?.id,
+                              post?.message,
+                              post?.full_picture,
+                              post?.created_time
+                            )
+                          }
+                          className="mt-4 px-3 py-1 bg-green-600 text-white rounded hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600 cursor-pointer"
+                        >
+                          Train
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))

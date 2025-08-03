@@ -181,7 +181,7 @@ Important Notes:
       <div className="container mx-auto px-4 py-8 relative z-10 ">
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left Side Form */}
-          <div className="w-full  space-y-6 bg-gray-500/10  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
+          <div className="w-full  space-y-6 bg-gray-500/20  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
             <h2 className="text-xl font-bold bg-blue-600 bg-clip-text text-transparent">
               Bot configuration
             </h2>
@@ -318,7 +318,7 @@ Important Notes:
             </p>
           </div>
           {/* Right Side Manual */}
-          <div className="w-full bg-gray-500/10  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
+          <div className="w-full bg-gray-500/20  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
             {/* Frosted backdrop */}
             {/* <div className="absolute inset-0 bg-white/10 backdrop-blur-md rounded-2xl" /> */}
 

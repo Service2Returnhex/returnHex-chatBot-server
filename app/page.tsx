@@ -1,6 +1,6 @@
 "use client";
 
-import { Brain, MessageSquare, Settings } from "lucide-react";
+import { Bot, Brain, MessageSquare, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -21,13 +21,13 @@ export default function Home() {
       path: "/train-bot",
       gradient: "from-purple-500 to-purple-600",
     },
-    // {
-    //   title: "Update Page Info",
-    //   description: "Modify existing page information and settings",
-    //   icon: Bot,
-    //   path: "/update-page-info",
-    //   gradient: "from-green-500 to-green-600",
-    // },
+    {
+      title: "Update Page Info",
+      description: "Modify existing page information and settings",
+      icon: Bot,
+      path: "/update-page-info",
+      gradient: "from-green-500 to-green-600",
+    },
     {
       title: "Train Prompt",
       description: "Create and customize chatbot training prompts",
@@ -64,7 +64,7 @@ export default function Home() {
         </div>
 
         {/* Menu Cards */}
-        <div className="grid md:grid-cols-3 gap-8  mx-auto">
+        <div className="grid md:grid-cols-2 gap-8  mx-auto">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
             return (
