@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
 import axios from "axios";
-import Link from "next/link";
-import { toast } from "react-toastify";
-import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "react-toastify";
+import { FormField } from "../components/ui/FormField";
+import Navigation from "../components/ui/Navigation";
 
 export default function ChatbotUserSetupPage() {
   const router = useRouter();
@@ -12,53 +12,59 @@ export default function ChatbotUserSetupPage() {
     pageName: "",
     address: "",
     phone: "",
+    email: "",
     pageCategory: "",
     pageId: "",
     verifyToken: "",
     accessToken: "",
+    moreInformatio: "",
   });
   const [webhookURL, setWebhookURL] = useState("");
   const [verifyStatus, setVerifyStatus] = useState("");
   const [startStatus, setStartStatus] = useState("");
-//   useEffect(() => {
-//     axios
-//       .get(
-//         `http://localhost:5002/api/v1/page/shop/${localStorage.getItem(
-//           "pageId"
-//         )}`
-//       )
-//       .then((res) => {
-//         const { data } = res;
-//         if (data.success) {
-//     console.log(data.data.pageName);
+  //   useEffect(() => {
+  //     axios
+  //       .get(
+  //         `http://localhost:5002/api/v1/page/shop/${localStorage.getItem(
+  //           "pageId"
+  //         )}`
+  //       )
+  //       .then((res) => {
+  //         const { data } = res;
+  //         if (data.success) {
+  //     console.log(data.data.pageName);
 
-//           setFormData({
-//             pageName: data.data.pageName,
-//             address: data.data.address,
-//             phone: data.data.phone,
-//             pageCategory: data.data.pageCategory,
-//             pageId: data.data.shopId,
-//             verifyToken: data.data.verifyToken,
-//             accessToken: data.data.accessToken,
-//           });
-//         }
-//       })
-//       .catch((err) => {
-//         console.log(err);
-//       });
-//   },[]);
+  //           setFormData({
+  //             pageName: data.data.pageName,
+  //             address: data.data.address,
+  //             phone: data.data.phone,
+  //             pageCategory: data.data.pageCategory,
+  //             pageId: data.data.shopId,
+  //             verifyToken: data.data.verifyToken,
+  //             accessToken: data.data.accessToken,
+  //           });
+  //         }
+  //       })
+  //       .catch((err) => {
+  //         console.log(err);
+  //       });
+  //   },[]);
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
+  const [isLoading, setIsLoading] = useState(false);
   const handleProvideInfo = async () => {
+    setIsLoading(true);
     try {
-        
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop`, {
-        ...formData,
-        shopId: formData.pageId,
-      });
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop`,
+        {
+          ...formData,
+          shopId: formData.pageId,
+        }
+      );
       const generatedURL = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/meta-webhook/${formData.pageId}/webhook`;
       setWebhookURL(generatedURL);
       setVerifyStatus("Webhook URL and Verify Token generated successfully.");
@@ -67,6 +73,8 @@ export default function ChatbotUserSetupPage() {
     } catch (err) {
       setVerifyStatus("Failed to send info. Please check and try again.");
       toast.error("Failed to send info. Please check and try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -126,186 +134,204 @@ export default function ChatbotUserSetupPage() {
     }
   };
 
+  const userManual = `
+
+
+1. Create a Facebook App
+   - Go to Facebook Developers (developers.facebook.com)
+   - Create a new app for your business
+   - Select "Business" as the app type
+
+2. Add Messenger Product
+   - In your app dashboard, add the "Messenger" product
+   - Generate a Page Access Token for your Facebook page
+
+3. Set Up Webhook
+   - Add your webhook URL (your server endpoint)
+   - Use the verify token you set in this form
+   - Subscribe to messaging events
+
+4. Page Information
+   - Page Name: Your Facebook page name
+   - Address: Physical address of your business
+   - Phone: Contact phone number
+   - Page Category: Type of business (e.g., Restaurant, Retail)
+   - Page ID: Your Facebook page ID (found in page settings)
+
+5. Authentication Tokens
+   - Verify Token: A secret token you create for webhook verification
+   - Access Token: Page Access Token from Facebook Developers
+
+6. Testing
+   - Send a test message to your page
+   - Check webhook receives the message
+   - Verify bot responds correctly
+
+Important Notes:
+- Keep your tokens secure and never share them publicly
+- Test in a development environment first
+- Ensure your webhook URL is HTTPS
+- Subscribe to necessary webhook events (messages, messaging_postbacks)
+`;
+
   return (
-    <div className=" container mx-auto flex flex-col md:flex-row p-4 gap-4">
-      {/* Left Side Form */}
-      <div className="w-full md:w-1/2 space-y-4">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 py-2 text-lg font-medium
-        hover:underline cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4 lg:w-5 lg:h-5 text-blue-500" />
-          <span className="text-blue-500">Back</span>
-        </button>
-        <h2 className="text-xl font-bold">Configure Your Bot</h2>
+    <div className="min-h-screen w-full relative bg-[linear-gradient(133deg,#020203,#02050c,#020816,#010b1f,#010e28,#011131,#01143b,#001744,#001a4d)] text-white bg-fixed ">
+      <Navigation title="Configure Bot" />
 
-        <input
-          type="text"
-          name="pageName"
-          placeholder="Page Name"
-        //   value={formData.pageName}
-          className="w-full p-2 border rounded"
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="address"
-          placeholder="Address"
-        //   value={formData.address}
-          className="w-full p-2 border rounded"
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="phone"
-          placeholder="Phone"
-        //   value={formData.phone}
-          className="w-full p-2 border rounded"
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="pageCategory"
-          placeholder="Page Category"
-        //   value={formData.pageCategory}
-          className="w-full p-2 border rounded"
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="pageId"
-          placeholder="Page ID"
-        //   value={formData.pageId}
+      <div className="container mx-auto px-4 py-8 relative z-10 ">
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Left Side Form */}
+          <div className="w-full  space-y-6 bg-gray-500/10  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
+            <h2 className="text-xl font-bold bg-blue-600 bg-clip-text text-transparent">
+              Bot configuration
+            </h2>
 
-          className="w-full p-2 border rounded"
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="verifyToken"
-          placeholder="Verify Token"
-        //   value={formData.verifyToken}
-          className="w-full p-2 border rounded"
-          onChange={handleChange}
-        />
+            <FormField
+              label="Page Name"
+              id="pageName"
+              value={formData.pageName}
+              onChange={(val) => setFormData((f) => ({ ...f, pageName: val }))}
+              placeholder="Enter your Facebook page name"
+              required
+            />
 
-        <button
-          onClick={handleProvideInfo}
-          className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer"
-        >
-          Provide Info
-        </button>
+            <FormField
+              label="Address"
+              id="address"
+              value={formData.address}
+              onChange={(val) => setFormData((f) => ({ ...f, address: val }))}
+              placeholder="Enter business address"
+              required
+            />
 
-        {webhookURL && (
-          <div className="bg-green-100 p-2 rounded">
+            <FormField
+              label="Phone"
+              id="phone"
+              value={formData.phone}
+              onChange={(val) => setFormData((f) => ({ ...f, phone: val }))}
+              placeholder="Enter contact phone number"
+              required
+            />
+            <FormField
+              label="Email"
+              id="email"
+              value={formData.phone}
+              onChange={(val) => setFormData((f) => ({ ...f, email: val }))}
+              placeholder="Enter your email address"
+              required
+            />
+
+            <FormField
+              label="Page Category"
+              id="pageCategory"
+              value={formData.pageCategory}
+              onChange={(val) =>
+                setFormData((f) => ({ ...f, pageCategory: val }))
+              }
+              placeholder="e.g., Electronic,Service"
+              required
+            />
+
+            <FormField
+              label="Page ID"
+              id="pageId"
+              value={formData.pageId}
+              onChange={(val) => setFormData((f) => ({ ...f, pageId: val }))}
+              placeholder="Your Facebook page ID"
+              required
+            />
+
+            <FormField
+              label="Verify Token"
+              id="verifyToken"
+              value={formData.verifyToken}
+              onChange={(val) =>
+                setFormData((f) => ({ ...f, verifyToken: val }))
+              }
+              placeholder="Your webhook verify token"
+              required
+            />
+            <FormField
+              label="More information"
+              id="moreInformation"
+              value={formData.verifyToken}
+              onChange={(val) =>
+                setFormData((f) => ({ ...f, moreInformatio: val }))
+              }
+              placeholder="e.g., Some extra details…"
+              required
+            />
+
+            <button
+              onClick={handleProvideInfo}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-blue-600 cursor-pointer"
+            >
+              {isLoading ? "Saving..." : "Provide Info"}
+            </button>
+
+            {webhookURL && (
+              <div className="bg-green-100 p-2 rounded">
+                <p>
+                  <strong>Webhook URL:</strong> {webhookURL}
+                </p>
+                <p>
+                  <strong>Verify Token:</strong> {formData.verifyToken}
+                </p>
+              </div>
+            )}
             <p>
-              <strong>Webhook URL:</strong> {webhookURL}
+              Note: If Webhook is configured then collect and submit the access
+              token and start the app
             </p>
-            <p>
-              <strong>Verify Token:</strong> {formData.verifyToken}
+            <FormField
+              label="Access Token"
+              id="accessToken"
+              value={formData.accessToken}
+              onChange={(val) =>
+                setFormData((f) => ({ ...f, accessToken: val }))
+              }
+              placeholder="Your page access token"
+              required
+            />
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleSendAccessToken}
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-purple-600  cursor-pointer"
+              >
+                Submit Access Token
+              </button>
+
+              <button
+                onClick={handleStartApp}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600  cursor-pointer"
+              >
+                Start App
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-700">
+              {verifyStatus || startStatus}
             </p>
           </div>
-        )}
-        <p>
-          Note: If Webhook is configured then collect and submit the access
-          token and start the app
-        </p>
-        <input
-          type="text"
-          name="accessToken"
-          placeholder="Access Token"
-        //   value={formData.accessToken}
-          className="w-full p-2 border rounded"
-          onChange={handleChange}
-        />
+          {/* Right Side Manual */}
+          <div className="w-full bg-gray-500/10  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
+            {/* Frosted backdrop */}
+            {/* <div className="absolute inset-0 bg-white/10 backdrop-blur-md rounded-2xl" /> */}
 
-        <div className="flex gap-2">
-          <button
-            onClick={handleSendAccessToken}
-            className="bg-purple-600 text-white px-4 py-2 rounded cursor-pointer"
-          >
-            Submit Access Token
-          </button>
-
-          <button
-            onClick={handleStartApp}
-            className="bg-green-600 text-white px-4 py-2 rounded cursor-pointer"
-          >
-            Start App
-          </button>
+            <div className="relative z-10 h-96 lg:h-full overflow-y-auto pr-4">
+              <h2 className="text-xl font-bold bg-blue-500 bg-clip-text text-transparent">
+                Facebook Chatbot Configuration Guide
+              </h2>
+              <pre className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">
+                {userManual}
+              </pre>
+            </div>
+          </div>{" "}
         </div>
-
-        <p className="text-sm text-gray-700">{verifyStatus || startStatus}</p>
-      </div>
-
-      {/* Right Side Manual */}
-      <div className="w-full md:w-1/2 border p-4 rounded bg-gray-50 overflow-y-auto max-h-[90vh]">
-        <h2 className="text-xl font-bold mb-2">📘 ChatBot User Manual</h2>
-        <ol className="list-decimal list-inside space-y-2 text-sm">
-          <li>
-            Create a Facebook account:{" "}
-            <Link
-              href={"https://facebook.com"}
-              target="_blank"
-              className="text-blue-700"
-            >
-              https://facebook.com
-            </Link>
-          </li>
-          <li>Create a Facebook Page if you don't already have one.</li>
-          <li>
-            Go to Meta for Developers:{" "}
-            <Link
-              href={"https://developers.facebook.com"}
-              target="_blank"
-              className="text-blue-700"
-            >
-              https://developers.facebook.com
-            </Link>
-          </li>
-          <li>Create a new App (Business type preferred).</li>
-          <li>Add Webhooks and Messenger products from the left menu.</li>
-          <li>Navigate to App Settings - Basic. Fill out the form.</li>
-          <li>
-            Generate a free Privacy Policy:{" "}
-            <Link
-              href={"https://www.freeprivacypolicy.com"}
-              target="_blank"
-              className="text-blue-700"
-            >
-              https://www.freeprivacypolicy.com
-            </Link>
-          </li>
-          <li>Switch App Mode to Live from the top navbar.</li>
-          <li>
-            Go to Messenger - Messenger API Settings and connect your Page.
-          </li>
-          <li>Copy the Page ID. Submit it with other info on the left form.</li>
-          <li>
-            Use the generated Webhook URL and Verify Token for Messenger setup.
-          </li>
-          <li>
-            Subscribe to required webhook fields: messages, message_reads, etc.
-          </li>
-          <li>
-            Use Graph API Explorer to generate an access token with required
-            permissions.
-          </li>
-          <li>Submit the token in the form and start the app.</li>
-        </ol>
-        <p className="text-lg mt-2  font-bold mb-2">
-          📘Detailed documentation:
-          <Link
-            href={
-              "https://docs.google.com/document/d/1_eaQADKzvhlJxL2xGAZRO8lSDjiWsQ16_IREJHmzR-I/edit?usp=sharing"
-            }
-            target="_blank"
-            className="text-blue-700"
-          >
-            &nbsp; Doc
-          </Link>
-        </p>
       </div>
     </div>
   );

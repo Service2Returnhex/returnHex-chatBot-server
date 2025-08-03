@@ -1,9 +1,10 @@
 "use client";
 import axios from "axios";
-import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { FormField } from "../components/ui/FormField";
+import Navigation from "../components/ui/Navigation";
 type TPost = {
   id: string;
   message: string;
@@ -146,161 +147,178 @@ export default function Home() {
     }
   };
   return (
-    <div className="container mx-auto min-h-screen p-6">
-      <button
-        onClick={() => router.back()}
-        className="flex items-center gap-2 py-2 text-lg font-medium
+    <div className=" min-h-screen bg-[linear-gradient(133deg,#020203,#02050c,#020816,#010b1f,#010e28,#011131,#01143b,#001744,#001a4d)] ">
+      <Navigation title="Train Bot" />
+      <div className="container mx-auto p-6">
+        {/* <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 py-2 text-lg font-medium
         hover:underline cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4 lg:w-5 lg:h-5 text-blue-500" />
-        <span className="text-blue-500">Back</span>
-      </button>
-      <h1 className="text-2xl font-bold mb-4">Train Post Data</h1>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          fetchPosts();
-        }}
-        className="mb-6 space-y-4"
-      >
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Page ID
-          </label>
-          <input
-            type="text"
-            value={pageId}
-            onChange={(e) => setPageId(e.target.value)}
-            className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-            required
-          />
+        >
+          <ArrowLeft className="w-4 h-4 lg:w-5 lg:h-5 text-blue-500" />
+          <span className="text-blue-500">Back</span>
+        </button> */}
+        <div className="w-full text-white space-y-6 bg-gray-500/20  border border-white/50 filter bg-blur-md p-4  backdrop-blur-xl transition-transform rounded-2xl">
+          <h1 className="text-2xl font-bold text-blue-500 mb-4">
+            Train Post Data
+          </h1>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              fetchPosts();
+            }}
+            className="mb-6 space-y-4"
+          >
+            <div>
+              {/* <label className="block text-sm font-medium ">Page ID</label>
+              <input
+                type="text"
+                value={pageId}
+                onChange={(e) => setPageId(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                required
+              /> */}
+
+              <FormField
+                label="Page ID"
+                id="pageId"
+                value={pageId}
+                onChange={(val) => setPageId(val)}
+                placeholder="Enter your Facebook pageId"
+                required
+              />
+            </div>
+            <div>
+              <FormField
+                label="Access Token"
+                id="accessToken"
+                value={accessToken}
+                onChange={(val) => setAccessToken(val)}
+                placeholder="Enter your Facebook Access"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-blue-600 cursor-pointer"
+            >
+              {loading ? "Loading..." : "Fetch Posts"}
+            </button>
+          </form>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Page Access Token
-          </label>
-          <input
-            type="text"
-            value={accessToken}
-            onChange={(e) => setAccessToken(e.target.value)}
-            className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-            required
-          />
+        {/* button section */}
+        <div className="flex justify-center gap-3 mb-5 mt-5">
+          <button
+            onClick={() => {
+              setIsTraind(false);
+            }}
+            type="button"
+            className="px-4 py-2 bg-red-600 text-white rounded hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-red-600 cursor-pointer"
+          >
+            Not Trained
+          </button>
+          <button
+            onClick={() => {
+              setIsTraind(true);
+            }}
+            type="button"
+            className="px-4 py-2 bg-green-600 text-white rounded hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600 cursor-pointer"
+          >
+            Trained
+          </button>
         </div>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer"
-        >
-          {loading ? "Loading..." : "Fetch Posts"}
-        </button>
-      </form>
-      <div className="flex justify-center gap-3 mb-5">
-        <button
-          onClick={() => {
-            setIsTraind(false);
-          }}
-          type="button"
-          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer"
-        >
-          Not Trained
-        </button>
-        <button
-          onClick={() => {
-            setIsTraind(true);
-          }}
-          type="button"
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer"
-        >
-          Trained
-        </button>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
-        {!isTrained
-          ? posts
-              .filter((post: TPost) => {
-                if (!trainedPosts?.length) return true;
+        {/* post card */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
+          {!isTrained
+            ? posts
+                .filter((post: TPost) => {
+                  if (!trainedPosts?.length) return true;
 
-                const matched = trainedPosts.find(
-                  (trainedPost) =>
-                    trainedPost.shopId === pageId &&
-                    trainedPost.postId === post.id
-                );
+                  const matched = trainedPosts.find(
+                    (trainedPost) =>
+                      trainedPost.shopId === pageId &&
+                      trainedPost.postId === post.id
+                  );
 
-                if (matched) {
-                  return !matched.isTrained;
-                }
-                return true;
-              })
-              .map((post: TPost) => (
-                <div
-                  key={post?.id}
-                  className="bg-white max-w-[350px] h-auto rounded-lg shadow p-4 flex flex-col justify-center"
-                >
-                  <img
-                    src={
-                      post.full_picture ||
-                      "https://t4.ftcdn.net/jpg/04/74/36/39/360_F_474363946_l1w7phLnR1vawp8gnSOZ4tNWW9t7RVfN.jpg"
-                    }
-                    className="w-full h-full aspect-square rounded"
-                  />
-                  <p className="text-gray-800 font-semibold mb-2 line-clamp-1">
-                    {post?.message || "No message"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Created: {new Date(post?.created_time).toLocaleString()}
-                  </p>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        handleTrainPosts(
-                          post?.id,
-                          post?.message,
-                          post?.full_picture,
-                          post?.created_time
-                        )
+                  if (matched) {
+                    return !matched.isTrained;
+                  }
+                  return true;
+                })
+                .map((post: TPost) => (
+                  <div
+                    key={post?.id}
+                    className="bg-white max-w-[350px] h-auto rounded-lg shadow p-4 flex flex-col justify-center"
+                  >
+                    <img
+                      src={
+                        post.full_picture ||
+                        "https://t4.ftcdn.net/jpg/04/74/36/39/360_F_474363946_l1w7phLnR1vawp8gnSOZ4tNWW9t7RVfN.jpg"
                       }
-                      className="mt-4 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer"
-                    >
-                      Train
-                    </button>
-                  </div>
-                </div>
-              ))
-          : trainedPosts?.map((post: TTrainedPost) => {
-              return (
-                <div
-                  key={post?.postId}
-                  className="bg-white max-w-[350px] h-auto rounded-lg shadow p-4 flex flex-col justify-center"
-                >
-                  <img
-                    src={
-                      post.full_picture ||
-                      "https://t4.ftcdn.net/jpg/04/74/36/39/360_F_474363946_l1w7phLnR1vawp8gnSOZ4tNWW9t7RVfN.jpg"
-                    }
-                    className="w-full h-full aspect-square rounded"
-                  />
-                  <p className="text-gray-800 font-semibold mb-2 line-clamp-1">
-                    {post?.message || "No message"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Created:{" "}
-                    {post?.createdAt
-                      ? new Date(post.createdAt).toLocaleDateString()
-                      : "N/A"}
-                  </p>
+                      className="w-full h-full aspect-square rounded"
+                    />
+                    <p className="text-gray-800 font-semibold mb-2 line-clamp-1">
+                      {post?.message || "No message"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Created: {new Date(post?.created_time).toLocaleString()}
+                    </p>
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleNoTrain(post.shopId, post.postId)}
-                      className="mt-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer"
-                    >
-                      Not Train
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          handleTrainPosts(
+                            post?.id,
+                            post?.message,
+                            post?.full_picture,
+                            post?.created_time
+                          )
+                        }
+                        className="mt-4 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer"
+                      >
+                        Train
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                ))
+            : trainedPosts?.map((post: TTrainedPost) => {
+                return (
+                  <div
+                    key={post?.postId}
+                    className="bg-white max-w-[350px] h-auto rounded-lg shadow p-4 flex flex-col justify-center"
+                  >
+                    <img
+                      src={
+                        post.full_picture ||
+                        "https://t4.ftcdn.net/jpg/04/74/36/39/360_F_474363946_l1w7phLnR1vawp8gnSOZ4tNWW9t7RVfN.jpg"
+                      }
+                      className="w-full h-full aspect-square rounded"
+                    />
+                    <p className="text-gray-800 font-semibold mb-2 line-clamp-1">
+                      {post?.message || "No message"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Created:{" "}
+                      {post?.createdAt
+                        ? new Date(post.createdAt).toLocaleDateString()
+                        : "N/A"}
+                    </p>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleNoTrain(post.shopId, post.postId)}
+                        className="mt-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer"
+                      >
+                        Not Train
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+        </div>
       </div>
     </div>
   );
