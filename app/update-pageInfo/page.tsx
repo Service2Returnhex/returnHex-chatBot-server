@@ -51,7 +51,7 @@ export default function UpdatePageInfoForm() {
           },
         }
       );
-      console.log("res", res.data);
+      // console.log("res", res.data);
       if (res.data.success) {
         const data = res.data?.data;
 
@@ -145,13 +145,13 @@ export default function UpdatePageInfoForm() {
       />
       <Navigation title="Update Page Information" />
 
-      <div className="container mx-auto px-8 sm:px-4 py-8 md:w-1/2 relative z-10 ">
+      <div className="container mx-auto px-8 sm:px-4 py-8 lg:w-1/2 relative z-10 ">
         <div className="w-full  space-y-6 bg-gray-500/20  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
           <h2 className="text-xl font-bold bg-blue-600 bg-clip-text text-transparent">
             Update Page Info
           </h2>
 
-          <div className="mb-6 space-y-4 p-4 bg-gray-500/50 backdrop-blur-md rounded-lg">
+          <div className="mb-6 space-y-2 p-4 bg-gray-500/50 backdrop-blur-md rounded-lg">
             <FormField
               label="Page ID"
               id="shopId"
@@ -171,7 +171,7 @@ export default function UpdatePageInfoForm() {
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-2">
             <FormField
               label="Page Name"
               id="pageName"
@@ -180,40 +180,53 @@ export default function UpdatePageInfoForm() {
               placeholder="Facebook page name"
             />
             <FormField
-              label="Address"
-              id="address"
-              value={formData.address}
-              onChange={(val) => handleChange("address", val)}
-              placeholder="Business address"
-            />
-            <FormField
-              label="Phone"
-              id="phone"
-              value={formData.phone}
-              onChange={(val) => handleChange("phone", val)}
-              placeholder="Contact phone"
-            />
-            <FormField
               label="Email"
               id="email"
               value={formData.email}
               onChange={(val) => handleChange("email", val)}
               placeholder="email"
             />
-            <FormField
-              label="Page Category"
-              id="pageCategory"
-              value={formData.pageCategory}
-              onChange={(val) => handleChange("pageCategory", val)}
-              placeholder="e.g., Electronics"
-            />
-            <FormField
-              label="Verify Token"
-              id="verifyToken"
-              value={formData.verifyToken}
-              onChange={(val) => handleChange("verifyToken", val)}
-              placeholder="Your verify token"
-            />
+            <div className="flex gap-4 justify-center">
+              <div className="flex-1">
+                <FormField
+                  label="Address"
+                  id="address"
+                  value={formData.address}
+                  onChange={(val) => handleChange("address", val)}
+                  placeholder="Business address"
+                />
+              </div>
+              <div className="flex-1">
+                <FormField
+                  label="Phone"
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(val) => handleChange("phone", val)}
+                  placeholder="Contact phone"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4 justify-center">
+              <div className="flex-1">
+                <FormField
+                  label="Page Category"
+                  id="pageCategory"
+                  value={formData.pageCategory}
+                  onChange={(val) => handleChange("pageCategory", val)}
+                  placeholder="e.g., Electronics"
+                />
+              </div>
+              <div className="flex-1">
+                <FormField
+                  label="Verify Token"
+                  id="verifyToken"
+                  value={formData.verifyToken}
+                  onChange={(val) => handleChange("verifyToken", val)}
+                  placeholder="Your verify token"
+                />
+              </div>
+            </div>
             <FormField
               label="Access Token"
               id="accessToken"
@@ -225,6 +238,7 @@ export default function UpdatePageInfoForm() {
               label="More Information"
               id="moreInfo"
               value={formData.moreInfo}
+              type="textarea"
               onChange={(val) => handleChange("moreInfo", val)}
               placeholder="e.g., Some extra details…"
             />

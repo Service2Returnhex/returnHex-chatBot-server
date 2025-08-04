@@ -21,6 +21,7 @@ export const FormField = ({
   required = false,
   children,
 }: FormFieldProps) => {
+  const isTextarea = type === "textarea";
   return (
     <div className="space-y-1">
       {/* Label with required asterisk */}
@@ -33,20 +34,38 @@ export const FormField = ({
       </label>
 
       {/* Either custom children or default input */}
-      {children ?? (
-        <input
-          id={id}
-          name={id}
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          required={required}
-          aria-required={required}
-          className="
-            flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-blue-400 focus-visible:outline-blue-400   md:text-sm transition-smooth focus:shadow-xl"
-        />
-      )}
+      {children ??
+        (isTextarea ? (
+          <textarea
+            id={id}
+            name={id}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            required={required}
+            rows={6}
+            className="
+              w-full rounded-md border border-input bg-background
+              px-3 py-2 text-base focus-visible:outline-blue-400
+              md:text-sm transition-smooth focus:shadow-xl
+            "
+          />
+        ) : (
+          <input
+            id={id}
+            name={id}
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            required={required}
+            className="
+              w-full h-10 rounded-md border border-input bg-background
+              px-3 text-base focus-visible:outline-blue-400
+              md:text-sm transition-smooth focus:shadow-xl
+            "
+          />
+        ))}
     </div>
   );
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { Pencil } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import Navigation from "../components/ui/Navigation";
@@ -12,19 +12,40 @@ const TrainPrompt = () => {
   const [isLoadingDM, setIsLoadingDM] = useState(false);
   const [isLoadingComment, setIsLoadingComment] = useState(false);
   const [pageId, setPageId] = useState("");
-
+  const [dmEdit, setDmEdit] = useState(false);
+  const [cmtEdit, setCmtEdit] = useState(false);
   // Fetch pageId and existing prompts
   useEffect(() => {
-    const savedId = localStorage.getItem("pageId");
-    if (!savedId) {
+    const savedPageId = localStorage.getItem("pageId");
+    if (!savedPageId) {
       toast.error("No Page ID found. Please configure your page first.");
       return;
     }
-    setPageId(savedId);
 
-    // Fetch existing prompts from API
+    axios
+      .get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${savedPageId}`,
+        {
+          headers: {
+            "ngrok-skip-browser-warning": "69420",
+          },
+        }
+      )
+      .then((res) => {
+        // const { data } = res;
+        if (res.data?.data) {
+          setDmSystemPromt(res.data.data.dmSystemPromt || "");
+          setCmntSystemPromt(res.data.data.cmntSystemPromt || "");
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+    setPageId(savedPageId);
   }, []);
-  const getPromt = async () => {
+
+  //   edit DM Prompt
+  const editDMPrompt = async () => {
     axios
       .get(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${pageId}`, {
         headers: { "ngrok-skip-browser-warning": "69420" },
@@ -33,13 +54,31 @@ const TrainPrompt = () => {
         console.log("getprompt", res.data.data.dmSystemPromt);
         if (res.data?.data) {
           setDmSystemPromt(res.data.data.dmSystemPromt || "");
-          setCmntSystemPromt(res.data.data.cmntSystemPromt || "");
+          setDmEdit(true);
         }
       })
       .catch(() => {
         toast.error("Failed to load existing prompts.");
       });
   };
+  // edit Comment Prompt
+  const editCmtPrompt = async () => {
+    axios
+      .get(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${pageId}`, {
+        headers: { "ngrok-skip-browser-warning": "69420" },
+      })
+      .then((res) => {
+        console.log("getDmprompt", res.data.data.cmntSystemPromt);
+        if (res.data?.data) {
+          setCmntSystemPromt(res.data.data.cmntSystemPromt || "");
+          setCmtEdit(true);
+        }
+      })
+      .catch(() => {
+        toast.error("Failed to load existing prompts.");
+      });
+  };
+
   // Save DM Prompt
   const handleSaveDM = async () => {
     if (!dmSystemPromt.trim()) {
@@ -56,6 +95,7 @@ const TrainPrompt = () => {
         }
       );
       toast.success("DM Prompt saved successfully!");
+      setDmEdit(false);
     } catch (error) {
       toast.error("Failed to save DM Prompt.");
     } finally {
@@ -79,6 +119,7 @@ const TrainPrompt = () => {
         }
       );
       toast.success("Comment Prompt saved successfully!");
+      setCmtEdit(false);
     } catch (error) {
       toast.error("Failed to save Comment Prompt.");
     } finally {
@@ -115,9 +156,9 @@ const TrainPrompt = () => {
                   messages.
                 </p>
               </div>
-              {pageId ? (
+              {pageId && !dmEdit ? (
                 <button
-                  onClick={getPromt}
+                  onClick={editDMPrompt}
                   disabled={isLoadingDM}
                   className={`mt-4 w-10 h-10 flex absolute right-4 top-2 items-center justify-center rounded-full 
     bg-gradient-to-r from-green-500 to-teal-500 text-white 
@@ -128,18 +169,33 @@ const TrainPrompt = () => {
                   <Pencil size={18} strokeWidth={2} />
                 </button>
               ) : (
-                ""
+                <button
+                  onClick={() => setDmEdit(false)}
+                  className={`mt-4 w-10 h-10 flex absolute right-4 top-2 items-center justify-center rounded-full 
+    bg-gradient-to-r from-rose-600 to-red-500 text-white 
+    hover:shadow-lg transition  cursor-pointer
+    ${isLoadingDM ? "opacity-50 cursor-not-allowed" : ""}`}
+                  aria-label="Close"
+                >
+                  <X size={18} strokeWidth={2} className="text-white " />
+                </button>
               )}
             </div>
-            <textarea
-              value={dmSystemPromt}
-              onChange={(e) => setDmSystemPromt(e.target.value)}
-              placeholder="Enter instructions for DM responses..."
-              className="min-h-[200px] w-full p-4 rounded-md bg-black/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <div className="text-xs text-gray-400 mt-1">
+            {!dmEdit ? (
+              <div className="min-h-[200px] w-full p-4 rounded-md bg-white/10 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500  overflow-y-auto">
+                {dmSystemPromt}
+              </div>
+            ) : (
+              <textarea
+                value={dmSystemPromt}
+                onChange={(e) => setDmSystemPromt(e.target.value)}
+                placeholder="Enter instructions for DM responses..."
+                className="min-h-[200px] w-full p-4 rounded-md bg-black/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            )}
+            <p className="text-xs text-gray-400 mt-1">
               Characters: {dmSystemPromt.length}
-            </div>
+            </p>
             <div className="flex gap-8">
               <button
                 onClick={handleSaveDM}
@@ -162,9 +218,9 @@ const TrainPrompt = () => {
                   Instructions for how your bot should reply to post comments.
                 </p>
               </div>
-              {pageId ? (
+              {pageId && !cmtEdit ? (
                 <button
-                  onClick={getPromt}
+                  onClick={editCmtPrompt}
                   disabled={isLoadingDM}
                   className={`mt-4 w-10 h-10 flex absolute right-4 top-2 items-center justify-center rounded-full 
     bg-gradient-to-r from-blue-500 to-purple-500 text-white 
@@ -175,15 +231,30 @@ const TrainPrompt = () => {
                   <Pencil size={18} strokeWidth={2} />
                 </button>
               ) : (
-                ""
+                <button
+                  onClick={() => setCmtEdit(false)}
+                  className={`mt-4 w-10 h-10 flex absolute right-4 top-2 items-center justify-center rounded-full 
+    bg-gradient-to-r from-rose-600 to-red-500 text-white 
+    hover:shadow-lg transition  cursor-pointer
+    ${isLoadingDM ? "opacity-50 cursor-not-allowed" : ""}`}
+                  aria-label="Close"
+                >
+                  <X size={18} strokeWidth={2} className="text-white " />
+                </button>
               )}
             </div>
-            <textarea
-              value={cmntSystemPromt}
-              onChange={(e) => setCmntSystemPromt(e.target.value)}
-              placeholder="Enter instructions for comment responses..."
-              className="min-h-[200px] w-full p-4 rounded-md bg-black/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+            {!cmtEdit ? (
+              <div className="min-h-[200px] w-full p-4 rounded-md bg-white/10 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto">
+                {cmntSystemPromt}
+              </div>
+            ) : (
+              <textarea
+                value={cmntSystemPromt}
+                onChange={(e) => setCmntSystemPromt(e.target.value)}
+                placeholder="Enter instructions for comment responses..."
+                className="min-h-[200px] w-full p-4 rounded-md bg-black/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            )}
             <div className="text-xs text-gray-400 mt-1">
               Characters: {cmntSystemPromt.length}
             </div>

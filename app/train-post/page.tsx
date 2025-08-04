@@ -20,7 +20,7 @@ type TTrainedPost = {
   full_picture: string;
   shopId: string;
   isTrained?: boolean;
-  createdAt?: Date;
+  createdAt: Date;
   updatedAt?: Date;
 };
 export default function Home() {
@@ -296,32 +296,43 @@ export default function Home() {
                 return (
                   <div
                     key={post?.postId}
-                    className="bg-white max-w-[350px] h-auto rounded-lg shadow p-4 flex flex-col justify-center"
+                    className=" group relative w-full max-w-[350px] rounded-lg p-4 shadow-lg
+    bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600
+    hover:scale-[1.02] transition-transform duration-300
+    text-white overflow-hidden "
                   >
-                    <img
-                      src={
-                        post.full_picture ||
-                        "https://t4.ftcdn.net/jpg/04/74/36/39/360_F_474363946_l1w7phLnR1vawp8gnSOZ4tNWW9t7RVfN.jpg"
-                      }
-                      className="w-full h-full aspect-square rounded"
+                    <div
+                      className="
+     absolute inset-0 bg-white/5 backdrop-blur-sm
+    opacity-0 group-hover:opacity-20 transition-opacity duration-300
+  "
                     />
-                    <p className="text-gray-800 font-semibold mb-2 line-clamp-1">
-                      {post?.message || "No message"}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Created:{" "}
-                      {post?.createdAt
-                        ? new Date(post.createdAt).toLocaleDateString()
-                        : "N/A"}
-                    </p>
+                    <div className="relative flex flex-col justify-center space-y-2">
+                      <img
+                        src={
+                          post.full_picture ||
+                          "https://t4.ftcdn.net/jpg/04/74/36/39/360_F_474363946_l1w7phLnR1vawp8gnSOZ4tNWW9t7RVfN.jpg"
+                        }
+                        className="w-full h-full aspect-square rounded "
+                      />
+                      <p className=" font-semibold text-lg my-2 line-clamp-2">
+                        {post?.message || "No message"}
+                      </p>
+                      <p className="text-xs ">
+                        Created: {new Date(post?.createdAt).toLocaleString()}
+                      </p>
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleNoTrain(post.shopId, post.postId)}
-                        className="mt-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer"
-                      >
-                        Not Train
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() =>
+                            handleNoTrain(post.shopId, post.postId)
+                          }
+                          className="mt-4 px-3 py-1 bg-red-600 text-white rounded  hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600 cursor-pointer relative"
+                        >
+                          Not Train
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );

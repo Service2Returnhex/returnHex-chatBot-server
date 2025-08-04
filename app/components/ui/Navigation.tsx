@@ -14,7 +14,7 @@ export default function Navigation({
   const router = useRouter();
   //   const navigate = useNavigate();
   return (
-    <div className="bg-blue-500 shadow-md  z-50 relative">
+    <div className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-xl bg-opacity-90 backdrop-blur-md z-50 relative">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center gap-4">
           {showBack && (

@@ -1,5 +1,6 @@
 "use client";
 import axios from "axios";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
@@ -198,7 +199,7 @@ Important Notes:
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left Side Form */}
           <div className="w-full  space-y-6 bg-gray-500/20  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
-            <h2 className="text-xl font-bold bg-blue-600 bg-clip-text text-transparent">
+            <h2 className="text-xl font-bold bg-blue-500 bg-clip-text text-transparent">
               Bot configuration
             </h2>
 
@@ -210,52 +211,65 @@ Important Notes:
               placeholder="Enter your Facebook page name"
               required
             />
-
-            <FormField
-              label="Address"
-              id="address"
-              value={formData.address}
-              onChange={(val) => setFormData((f) => ({ ...f, address: val }))}
-              placeholder="Enter business address"
-              required
-            />
-
-            <FormField
-              label="Phone"
-              id="phone"
-              value={formData.phone}
-              onChange={(val) => setFormData((f) => ({ ...f, phone: val }))}
-              placeholder="Enter contact phone number"
-              required
-            />
             <FormField
               label="Email"
               id="email"
-              value={formData.phone}
+              value={formData.email}
               onChange={(val) => setFormData((f) => ({ ...f, email: val }))}
               placeholder="Enter your email address"
               required
             />
+            <div className="flex gap-4 justify-center">
+              <div className="flex-1">
+                <FormField
+                  label="Address"
+                  id="address"
+                  value={formData.address}
+                  onChange={(val) =>
+                    setFormData((f) => ({ ...f, address: val }))
+                  }
+                  placeholder="Enter business address"
+                  required
+                />
+              </div>
 
-            <FormField
-              label="Page Category"
-              id="pageCategory"
-              value={formData.pageCategory}
-              onChange={(val) =>
-                setFormData((f) => ({ ...f, pageCategory: val }))
-              }
-              placeholder="e.g., Electronic,Service"
-              required
-            />
-
-            <FormField
-              label="Page ID"
-              id="pageId"
-              value={formData.pageId}
-              onChange={(val) => setFormData((f) => ({ ...f, pageId: val }))}
-              placeholder="Your Facebook page ID"
-              required
-            />
+              <div className="flex-1">
+                <FormField
+                  label="Phone"
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(val) => setFormData((f) => ({ ...f, phone: val }))}
+                  placeholder="Enter contact phone number"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex gap-4 justify-center">
+              <div className="flex-1">
+                <FormField
+                  label="Page Category"
+                  id="pageCategory"
+                  value={formData.pageCategory}
+                  onChange={(val) =>
+                    setFormData((f) => ({ ...f, pageCategory: val }))
+                  }
+                  placeholder="e.g., Electronic,Service"
+                  required
+                />
+              </div>
+              <div className="flex-1">
+                <FormField
+                  label="Page ID"
+                  id="pageId"
+                  value={formData.pageId}
+                  onChange={(val) =>
+                    setFormData((f) => ({ ...f, pageId: val }))
+                  }
+                  placeholder="Your Facebook page ID"
+                  required
+                />
+              </div>
+            </div>
 
             <FormField
               label="Verify Token"
@@ -271,9 +285,8 @@ Important Notes:
               label="More information"
               id="moreInformation"
               value={formData.moreInfo}
-              onChange={(val) =>
-                setFormData((f) => ({ ...f, moreInfo: val }))
-              }
+              type="textarea"
+              onChange={(val) => setFormData((f) => ({ ...f, moreInfo: val }))}
               placeholder="e.g., Some extra details…"
               required
             />
@@ -300,38 +313,41 @@ Important Notes:
               Note: If Webhook is configured then collect and submit the access
               token and start the app
             </p>
-            <FormField
-              label="Access Token"
-              id="accessToken"
-              value={formData.accessToken}
-              onChange={(val) =>
-                setFormData((f) => ({ ...f, accessToken: val }))
-              }
-              placeholder="Your page access token"
-              required
-            />
+            {webhookURL && (
+              <div>
+                <FormField
+                  label="Access Token"
+                  id="accessToken"
+                  value={formData.accessToken}
+                  onChange={(val) =>
+                    setFormData((f) => ({ ...f, accessToken: val }))
+                  }
+                  placeholder="Your page access token"
+                  required
+                />
 
-            <div className="flex gap-2">
-              <button
-                onClick={handleSendAccessToken}
-                className="bg-purple-600 text-white px-4 py-2 rounded hover:scale-105
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSendAccessToken}
+                    className="bg-purple-600 text-white px-4 py-2 rounded hover:scale-105
     transition-transform duration-300 hover:shadow-2xl hover:shadow-purple-600  cursor-pointer"
-              >
-                Submit Access Token
-              </button>
+                  >
+                    Submit Access Token
+                  </button>
 
-              <button
-                onClick={handleStartApp}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:scale-105
+                  <button
+                    onClick={handleStartApp}
+                    className="bg-green-600 text-white px-4 py-2 rounded hover:scale-105
     transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600  cursor-pointer"
-              >
-                Start App
-              </button>
-            </div>
-
-            <p className="text-sm text-gray-700">
-              {verifyStatus || startStatus}
-            </p>
+                  >
+                    Start App
+                  </button>
+                </div>
+                <p className="text-sm text-gray-700">
+                  {verifyStatus || startStatus}
+                </p>
+              </div>
+            )}
           </div>
           {/* Right Side Manual */}
           <div className="w-full bg-gray-500/20  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
@@ -342,9 +358,63 @@ Important Notes:
               <h2 className="text-xl font-bold bg-blue-500 bg-clip-text text-transparent">
                 Facebook Chatbot Configuration Guide
               </h2>
-              <pre className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">
-                {userManual}
-              </pre>
+              <ol className="list-decimal list-inside space-y-4 text-md text-gray-300 leading-relaxed">
+                <li>
+                  Create a Facebook account:{" "}
+                  <Link
+                    href="https://facebook.com"
+                    target="_blank"
+                    className="text-blue-400 hover:underline"
+                  >
+                    facebook.com
+                  </Link>
+                </li>
+                <li>Create a Facebook Page if you don’t already have one.</li>
+                <li>
+                  Go to Meta for Developers:{" "}
+                  <Link
+                    href="https://developers.facebook.com"
+                    target="_blank"
+                    className="text-blue-400 hover:underline"
+                  >
+                    developers.facebook.com
+                  </Link>
+                </li>
+                <li>Create a new App (Business type preferred).</li>
+                <li>Add Webhooks and Messenger products from the left menu.</li>
+                <li>Navigate to App Settings – Basic. Fill out the form.</li>
+                <li>
+                  Generate a free Privacy Policy:{" "}
+                  <Link
+                    href="https://www.freeprivacypolicy.com"
+                    target="_blank"
+                    className="text-blue-400 hover:underline"
+                  >
+                    freeprivacypolicy.com
+                  </Link>
+                </li>
+                <li>Switch App Mode to Live from the top navbar.</li>
+                <li>Connect your Page under Messenger → API Settings.</li>
+                <li>Copy the Page ID and submit it with the form.</li>
+                <li>Use the generated Webhook URL & Verify Token for setup.</li>
+                <li>
+                  Subscribe to messaging events (messages, messaging_postbacks,
+                  etc.).
+                </li>
+                <li>Use Graph API Explorer to generate an Access Token.</li>
+                <li>Submit the token in the form and start the app.</li>
+              </ol>
+
+              <p className="text-lg mt-4 font-bold text-gray-200">
+                📘 Detailed documentation:{" "}
+                <Link
+                  href="https://docs.google.com/document/d/1_eaQADKzvhlJxL2xGAZRO8lSDjiWsQ16_IREJHmzR-I/edit?usp=sharing"
+                  target="_blank"
+                  className="text-blue-400 hover:underline"
+                >
+                  View Full Guide
+                </Link>
+              </p>
             </div>
           </div>{" "}
         </div>

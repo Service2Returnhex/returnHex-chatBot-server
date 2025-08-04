@@ -11,14 +11,14 @@ export default function Home() {
       title: "Configure Bot",
       description: "Set up your Facebook page and webhook configuration",
       icon: Settings,
-      path: "/setup",
+      path: "/configure-bot",
       gradient: "from-blue-500 to-blue-600",
     },
     {
-      title: "Train Bot",
+      title: "Train Posts",
       description: "Train your chatbot with custom responses and behaviors",
       icon: Brain,
-      path: "/train-bot",
+      path: "/train-post",
       gradient: "from-purple-500 to-purple-600",
     },
     {
