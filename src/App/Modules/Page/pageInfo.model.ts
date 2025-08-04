@@ -1,4 +1,4 @@
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema} from "mongoose";
 
 export interface IPageInfo {
   pageName: string;
@@ -10,6 +10,7 @@ export interface IPageInfo {
   moreInfo?: string;
   dmSystemPromt?: string;
   cmntSystemPromt?: string;
+  isVerified?: boolean;
   accessToken: string; 
   verifyToken: string;
 }
@@ -24,6 +25,7 @@ const PageInfoSchema = new Schema<IPageInfo>({
   moreInfo: { type: String, default: ''},
   dmSystemPromt: {type: String, default: ''},
   cmntSystemPromt: {type: String, default: ''},
+  isVerified: {type: Boolean, default: false},
   accessToken: { type: String, default: ''},
   verifyToken: { type: String, required: true },
 });

@@ -120,7 +120,13 @@ const getShopById = async (id: string) => {
   return result;
 };
 
-const createShop = async (payload: any) => {
+const createShop = async (payload: IPageInfo) => {
+  const existing = await PageInfo.findOne({ shopId: payload.shopId });
+  if(existing) {
+    Logger(LogService.DB, LogPrefix.SHOP, LogMessage.CONFLICT);
+    throw new ApiError(httpStatus.CONFLICT, "Shop Already Exists!");
+  }
+
   const result = await PageInfo.create(payload);
   if (!result) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_CREATED);
@@ -137,7 +143,6 @@ const updateShop = async (id: string, payload: Partial<IPageInfo>) => {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_FOUND);
     throw new ApiError(httpStatus.NOT_FOUND, "Shop Not Found");
   }
-
   const result = await PageInfo.updateOne({ shopId: id }, payload, {
     new: true,
     runValidators: true,
@@ -172,11 +177,14 @@ const setDmPromt = async (id: string,  dmSystemPromt: string ) => {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_FOUND);
     throw new ApiError(httpStatus.NOT_FOUND, "Shop Not Found");
   }
+  console.log("here", dmSystemPromt);
   const result = await PageInfo.updateOne(
     { shopId: id },
     { dmSystemPromt},
     { new: true, runValidators: true }
   );
+
+  
   if (!result.modifiedCount) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_UPDATED);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Shop Not updated");

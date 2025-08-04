@@ -17,6 +17,7 @@ export const handleWebhook: RequestHandler = catchAsync(
 
     if (mode && token && mode === "subscribe" && token === shop.verifyToken) {
       console.log("Webhook verified!");
+      await PageService.updateShop(pageId, {isVerified: true});
       res.status(200).send(challenge);
     } else {
       console.log("Webhook Not Verified");

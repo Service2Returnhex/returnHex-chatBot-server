@@ -13,6 +13,9 @@ export enum LogPrefix {
 }
 
 export enum LogMessage {
+
+    CONFLICT = "CONFICT",
+    
     NOT_FOUND = "NOT FOUND",
     RETRIEVED = "RETRIEVED",
 
