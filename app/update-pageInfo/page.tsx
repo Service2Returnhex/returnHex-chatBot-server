@@ -44,16 +44,16 @@ export default function UpdatePageInfoForm() {
     setIsLoadingData(true);
     try {
       const res = await axios.get<{ success: boolean; data: ShopInfo }>(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop?${id}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${id}`,
         {
           headers: {
             "ngrok-skip-browser-warning": "69420",
           },
         }
       );
-      console.log("res", res.data.data);
+      console.log("res", res.data);
       if (res.data.success) {
-        const data = res.data?.data[0];
+        const data = res.data?.data;
 
         setFormData({
           shopId: data.shopId || "",
