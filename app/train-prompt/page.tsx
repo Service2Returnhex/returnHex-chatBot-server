@@ -7,8 +7,8 @@ import { toast } from "react-toastify";
 import Navigation from "../components/ui/Navigation";
 
 const TrainPrompt = () => {
-  const [dmPrompt, setDmPrompt] = useState("");
-  const [commentPrompt, setCommentPrompt] = useState("");
+  const [dmSystemPromt, setDmSystemPromt] = useState("");
+  const [cmntSystemPromt, setCmntSystemPromt] = useState("");
   const [isLoadingDM, setIsLoadingDM] = useState(false);
   const [isLoadingComment, setIsLoadingComment] = useState(false);
   const [pageId, setPageId] = useState("");
@@ -32,8 +32,8 @@ const TrainPrompt = () => {
       .then((res) => {
         console.log("getprompt", res.data.data.dmSystemPromt);
         if (res.data?.data) {
-          setDmPrompt(res.data.data.dmSystemPromt || "");
-          setCommentPrompt(res.data.data.cmntSystemPromt || "");
+          setDmSystemPromt(res.data.data.dmSystemPromt || "");
+          setCmntSystemPromt(res.data.data.cmntSystemPromt || "");
         }
       })
       .catch(() => {
@@ -42,7 +42,7 @@ const TrainPrompt = () => {
   };
   // Save DM Prompt
   const handleSaveDM = async () => {
-    if (!dmPrompt.trim()) {
+    if (!dmSystemPromt.trim()) {
       toast.error("Please enter a DM Message Prompt.");
       return;
     }
@@ -50,7 +50,7 @@ const TrainPrompt = () => {
     try {
       await axios.patch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/set-dm-promt/${pageId}`,
-        { dmPrompt },
+        { dmSystemPromt },
         {
           headers: { "ngrok-skip-browser-warning": "69420" },
         }
@@ -65,7 +65,7 @@ const TrainPrompt = () => {
 
   // Save Comment Prompt
   const handleSaveComment = async () => {
-    if (!commentPrompt.trim()) {
+    if (!cmntSystemPromt.trim()) {
       toast.error("Please enter a Comment Prompt.");
       return;
     }
@@ -73,7 +73,7 @@ const TrainPrompt = () => {
     try {
       await axios.patch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/set-cmnt-promt/${pageId}`,
-        { commentPrompt },
+        { cmntSystemPromt },
         {
           headers: { "ngrok-skip-browser-warning": "69420" },
         }
@@ -132,13 +132,13 @@ const TrainPrompt = () => {
               )}
             </div>
             <textarea
-              value={dmPrompt}
-              onChange={(e) => setDmPrompt(e.target.value)}
+              value={dmSystemPromt}
+              onChange={(e) => setDmSystemPromt(e.target.value)}
               placeholder="Enter instructions for DM responses..."
               className="min-h-[200px] w-full p-4 rounded-md bg-black/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <div className="text-xs text-gray-400 mt-1">
-              Characters: {dmPrompt.length}
+              Characters: {dmSystemPromt.length}
             </div>
             <div className="flex gap-8">
               <button
@@ -179,13 +179,13 @@ const TrainPrompt = () => {
               )}
             </div>
             <textarea
-              value={commentPrompt}
-              onChange={(e) => setCommentPrompt(e.target.value)}
+              value={cmntSystemPromt}
+              onChange={(e) => setCmntSystemPromt(e.target.value)}
               placeholder="Enter instructions for comment responses..."
               className="min-h-[200px] w-full p-4 rounded-md bg-black/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
             <div className="text-xs text-gray-400 mt-1">
-              Characters: {commentPrompt.length}
+              Characters: {cmntSystemPromt.length}
             </div>
             <button
               onClick={handleSaveComment}

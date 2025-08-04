@@ -17,7 +17,7 @@ export default function ChatbotUserSetupPage() {
     pageId: "",
     verifyToken: "",
     accessToken: "",
-    moreInformatio: "",
+    moreInfo: "",
   });
   const [webhookURL, setWebhookURL] = useState("");
   const [verifyStatus, setVerifyStatus] = useState("");
@@ -110,13 +110,17 @@ export default function ChatbotUserSetupPage() {
       const { data } = await axios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`
       );
+      console.log(data);
       if (data.success) {
+        console.log("Here");
         const fethcedData = {
           pageName: data.data.pageName,
           address: data.data.address,
           phone: data.data.phone,
+          email: data.data.email,
           pageCategory: data.data.pageCategory,
           pageId: data.data.shopId,
+          moreInfo: data.data.moreInfo,
           verifyToken: data.data.verifyToken,
           accessToken: data.data.accessToken,
         };
@@ -266,9 +270,9 @@ Important Notes:
             <FormField
               label="More information"
               id="moreInformation"
-              value={formData.verifyToken}
+              value={formData.moreInfo}
               onChange={(val) =>
-                setFormData((f) => ({ ...f, moreInformatio: val }))
+                setFormData((f) => ({ ...f, moreInfo: val }))
               }
               placeholder="e.g., Some extra details…"
               required
@@ -283,7 +287,7 @@ Important Notes:
             </button>
 
             {webhookURL && (
-              <div className="bg-green-100 p-2 rounded">
+              <div className="bg-green-100 p-2 rounded text-black">
                 <p>
                   <strong>Webhook URL:</strong> {webhookURL}
                 </p>
