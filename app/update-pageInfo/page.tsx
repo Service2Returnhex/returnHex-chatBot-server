@@ -135,9 +135,9 @@ export default function UpdatePageInfoForm() {
         className="absolute inset-0 z-0"
         style={{
           backgroundImage: `
-          radial-gradient(circle at 50% 100%, rgba(70, 85, 110, 0.5) 0%, transparent 50%),
-          radial-gradient(circle at 50% 100%, rgba(99, 102, 241, 0.4) 0%, transparent 20%),
-          radial-gradient(circle at 50% 100%, rgba(181, 184, 208, 0.3) 0%, transparent 20%)
+           radial-gradient(circle at 10% 10%, rgba(70, 85, 110, 0.5) 0%, transparent 50%),
+          radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.4) 0%, transparent 20%),
+          radial-gradient(circle at 50% 10%, rgba(181, 184, 208, 0.3) 0%, transparent 20%)
         `,
           backgroundAttachment: "fixed",
           backgroundRepeat: "no-repeat",
@@ -145,7 +145,7 @@ export default function UpdatePageInfoForm() {
       />
       <Navigation title="Update Page Information" />
 
-      <div className="container mx-auto px-4 py-8 w-1/2 relative z-10 ">
+      <div className="container mx-auto px-8 sm:px-4 py-8 md:w-1/2 relative z-10 ">
         <div className="w-full  space-y-6 bg-gray-500/20  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
           <h2 className="text-xl font-bold bg-blue-600 bg-clip-text text-transparent">
             Update Page Info
