@@ -41,6 +41,7 @@ export default function UpdatePageInfoForm() {
       toast.error("Please enter a valid Page ID");
       return;
     }
+    localStorage.setItem("pageId", id);
     setIsLoadingData(true);
     try {
       const res = await axios.get<{ success: boolean; data: ShopInfo }>(
@@ -86,6 +87,28 @@ export default function UpdatePageInfoForm() {
       }));
       fetchPageInfo(savedPageId);
     }
+    axios
+      .get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${savedPageId}`,
+        {
+          headers: {
+            "ngrok-skip-browser-warning": "69420",
+          },
+        }
+      )
+      .then((res) => {
+        const { data } = res;
+        // console.log("data", data);
+        if (data.success) {
+          setFormData((prev) => ({
+            ...prev,
+            shopId: data.shopId,
+          }));
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }, []);
 
   // Handle input changes

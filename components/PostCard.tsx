@@ -8,7 +8,7 @@ type NTProps = {
   setTrainLoading: Dispatch<SetStateAction<string | null>>;
 };
 export function PostCardNotTrained(prop: NTProps) {
-  const { post, handleTrainPosts, trainLoading} = prop;
+  const { post, handleTrainPosts, trainLoading } = prop;
   return (
     <>
       <div
@@ -65,7 +65,7 @@ export function PostCardTrained(props: TProps) {
   return (
     <div
       key={post?.postId}
-      className=" group relative w-full max-w-[350px] rounded-lg p-4 shadow-lg
+      className=" group relative w-full max-w-[350px] min-h-[505px] rounded-lg p-4 shadow-lg
     bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600
     hover:scale-[1.02] transition-transform duration-300
     text-white overflow-hidden "

@@ -46,12 +46,7 @@ export default function ChatbotUserSetupPage() {
   const handleSendAccessToken = async () => {
     try {
       const { data } = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`,
-        {
-          headers: {
-            "ngrok-skip-browser-warning": "69420",
-          },
-        }
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`
       );
       if (!data.data.isVerified) {
         toast.error("Verify the webhook first!");
@@ -61,19 +56,12 @@ export default function ChatbotUserSetupPage() {
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`,
         {
           accessToken: formData.accessToken,
-        },
-        {
-          headers: {
-            "ngrok-skip-browser-warning": "69420",
-          },
         }
       );
 
       toast.success("Access token submitted successfully.");
     } catch (err: any) {
-      toast.error(
-        err.response.data.message || "Failed to submit access token."
-      );
+      toast.error(err.response.data.message || "Failed to submit access token.");
     }
   };
 
@@ -91,12 +79,7 @@ export default function ChatbotUserSetupPage() {
   const handleStartApp = async () => {
     try {
       const { data } = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`,
-        {
-          headers: {
-            "ngrok-skip-browser-warning": "69420",
-          },
-        }
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`
       );
       if (data.success) {
         const fethcedData = {
