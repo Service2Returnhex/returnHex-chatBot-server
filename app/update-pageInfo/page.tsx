@@ -4,8 +4,8 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { FormField } from "../components/ui/FormField";
-import Navigation from "../components/ui/Navigation";
+import { FormField } from "../../components/ui/FormField";
+import Navigation from "../../components/ui/Navigation";
 
 interface ShopInfo {
   shopId: string;
@@ -51,7 +51,6 @@ export default function UpdatePageInfoForm() {
           },
         }
       );
-      // console.log("res", res.data);
       if (res.data.success) {
         const data = res.data?.data;
 
@@ -247,7 +246,7 @@ export default function UpdatePageInfoForm() {
           <button
             onClick={handleUpdate}
             disabled={loading}
-            className="mt-6 w-full bg-green-600  text-white py-2 rounded disabled:opacity-50 hover:scale-105
+            className="mt-6 w-full bg-green-600  text-white py-2 rounded disabled:opacity-50 hover:scale-[1.01]
     transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600 cursor-pointer"
           >
             {loading ? "Updating..." : "Update Page Info"}

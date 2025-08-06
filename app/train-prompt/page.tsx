@@ -4,7 +4,7 @@ import axios from "axios";
 import { Pencil, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import Navigation from "../components/ui/Navigation";
+import Navigation from "../../components/ui/Navigation";
 
 const TrainPrompt = () => {
   const [dmSystemPromt, setDmSystemPromt] = useState("");
@@ -14,7 +14,6 @@ const TrainPrompt = () => {
   const [pageId, setPageId] = useState("");
   const [dmEdit, setDmEdit] = useState(false);
   const [cmtEdit, setCmtEdit] = useState(false);
-  // Fetch pageId and existing prompts
   useEffect(() => {
     const savedPageId = localStorage.getItem("pageId");
     if (!savedPageId) {
@@ -68,7 +67,6 @@ const TrainPrompt = () => {
         headers: { "ngrok-skip-browser-warning": "69420" },
       })
       .then((res) => {
-        console.log("getDmprompt", res.data.data.cmntSystemPromt);
         if (res.data?.data) {
           setCmntSystemPromt(res.data.data.cmntSystemPromt || "");
           setCmtEdit(true);
@@ -196,7 +194,7 @@ const TrainPrompt = () => {
             <p className="text-xs text-gray-400 mt-1">
               Characters: {dmSystemPromt.length}
             </p>
-            <div className="flex gap-8">
+            {dmEdit && <div className="flex gap-8">
               <button
                 onClick={handleSaveDM}
                 disabled={isLoadingDM}
@@ -204,7 +202,7 @@ const TrainPrompt = () => {
               >
                 {isLoadingDM ? "Saving..." : "Save DM Prompt"}
               </button>
-            </div>
+            </div>}
           </div>
 
           {/* Comment Prompt Form */}
@@ -258,13 +256,13 @@ const TrainPrompt = () => {
             <div className="text-xs text-gray-400 mt-1">
               Characters: {cmntSystemPromt.length}
             </div>
-            <button
+            {cmtEdit && <button
               onClick={handleSaveComment}
               disabled={isLoadingComment}
               className="mt-4 w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-2 rounded-md hover:shadow-lg transition cursor-pointer"
             >
               {isLoadingComment ? "Saving..." : "Save Comment Prompt"}
-            </button>
+            </button>}
           </div>
         </div>
       </div>

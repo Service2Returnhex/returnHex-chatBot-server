@@ -1,14 +1,12 @@
 "use client";
 import axios from "axios";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { FormField } from "../components/ui/FormField";
-import Navigation from "../components/ui/Navigation";
+import { FormField } from "../../components/ui/FormField";
+import Navigation from "../../components/ui/Navigation";
 
 export default function ChatbotUserSetupPage() {
-  const router = useRouter();
   const [formData, setFormData] = useState({
     pageName: "",
     address: "",
@@ -21,40 +19,7 @@ export default function ChatbotUserSetupPage() {
     moreInfo: "",
   });
   const [webhookURL, setWebhookURL] = useState("");
-  const [verifyStatus, setVerifyStatus] = useState("");
-  const [startStatus, setStartStatus] = useState("");
-  //   useEffect(() => {
-  //     axios
-  //       .get(
-  //         `http://localhost:5002/api/v1/page/shop/${localStorage.getItem(
-  //           "pageId"
-  //         )}`
-  //       )
-  //       .then((res) => {
-  //         const { data } = res;
-  //         if (data.success) {
-  //     console.log(data.data.pageName);
 
-  //           setFormData({
-  //             pageName: data.data.pageName,
-  //             address: data.data.address,
-  //             phone: data.data.phone,
-  //             pageCategory: data.data.pageCategory,
-  //             pageId: data.data.shopId,
-  //             verifyToken: data.data.verifyToken,
-  //             accessToken: data.data.accessToken,
-  //           });
-  //         }
-  //       })
-  //       .catch((err) => {
-  //         console.log(err);
-  //       });
-  //   },[]);
-
-  const handleChange = (e: any) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
   const [isLoading, setIsLoading] = useState(false);
   const handleProvideInfo = async () => {
     setIsLoading(true);
@@ -68,12 +33,11 @@ export default function ChatbotUserSetupPage() {
       );
       const generatedURL = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/meta-webhook/${formData.pageId}/webhook`;
       setWebhookURL(generatedURL);
-      setVerifyStatus("Webhook URL and Verify Token generated successfully.");
+
       toast.success("Webhook URL and Verify Token generated successfully.");
       localStorage.setItem("pageId", formData.pageId);
-    } catch (err) {
-      setVerifyStatus("Failed to send info. Please check and try again.");
-      toast.error("Failed to send info. Please check and try again.");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err.message);
     } finally {
       setIsLoading(false);
     }
@@ -81,17 +45,23 @@ export default function ChatbotUserSetupPage() {
 
   const handleSendAccessToken = async () => {
     try {
+      const { data } = await axios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`
+      );
+      if (!data.data.isVerified) {
+        toast.error("Verify the webhook first!");
+        return;
+      }
       await axios.patch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`,
         {
           accessToken: formData.accessToken,
         }
       );
-      setVerifyStatus("Access token submitted successfully.");
+
       toast.success("Access token submitted successfully.");
-    } catch (err) {
-      setVerifyStatus("Failed to submit access token.");
-      toast.error("Failed to submit access token.");
+    } catch (err: any) {
+      toast.error(err.response.data.message || "Failed to submit access token.");
     }
   };
 
@@ -111,9 +81,7 @@ export default function ChatbotUserSetupPage() {
       const { data } = await axios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`
       );
-      console.log(data);
       if (data.success) {
-        console.log("Here");
         const fethcedData = {
           pageName: data.data.pageName,
           address: data.data.address,
@@ -125,60 +93,18 @@ export default function ChatbotUserSetupPage() {
           verifyToken: data.data.verifyToken,
           accessToken: data.data.accessToken,
         };
+        console.log(fethcedData, formData);
+        console.log(shallowEqual(fethcedData, formData));
         shallowEqual(fethcedData, formData)
           ? toast.success("App Started")
           : toast.error("Failed to start the app.");
-        setStartStatus("App Started");
       } else {
         toast.error("Failed to start the app.");
-        setStartStatus("Failed to start the app.");
       }
     } catch (err) {
       toast.error("Failed to start the app.");
-      setStartStatus("Failed to start the app.");
     }
   };
-
-  const userManual = `
-
-
-1. Create a Facebook App
-   - Go to Facebook Developers (developers.facebook.com)
-   - Create a new app for your business
-   - Select "Business" as the app type
-
-2. Add Messenger Product
-   - In your app dashboard, add the "Messenger" product
-   - Generate a Page Access Token for your Facebook page
-
-3. Set Up Webhook
-   - Add your webhook URL (your server endpoint)
-   - Use the verify token you set in this form
-   - Subscribe to messaging events
-
-4. Page Information
-   - Page Name: Your Facebook page name
-   - Address: Physical address of your business
-   - Phone: Contact phone number
-   - Page Category: Type of business (e.g., Restaurant, Retail)
-   - Page ID: Your Facebook page ID (found in page settings)
-
-5. Authentication Tokens
-   - Verify Token: A secret token you create for webhook verification
-   - Access Token: Page Access Token from Facebook Developers
-
-6. Testing
-   - Send a test message to your page
-   - Check webhook receives the message
-   - Verify bot responds correctly
-
-Important Notes:
-- Keep your tokens secure and never share them publicly
-- Test in a development environment first
-- Ensure your webhook URL is HTTPS
-- Subscribe to necessary webhook events (messages, messaging_postbacks)
-`;
-
   return (
     <div className="min-h-screen w-full relative bg-gray-900 text-white bg-fixed ">
       <div
@@ -309,44 +235,44 @@ Important Notes:
                 </p>
               </div>
             )}
-            <p>
-              Note: If Webhook is configured then collect and submit the access
-              token and start the app
-            </p>
+
             {webhookURL && (
-              <div>
-                <FormField
-                  label="Access Token"
-                  id="accessToken"
-                  value={formData.accessToken}
-                  onChange={(val) =>
-                    setFormData((f) => ({ ...f, accessToken: val }))
-                  }
-                  placeholder="Your page access token"
-                  required
-                />
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleSendAccessToken}
-                    className="bg-purple-600 text-white px-4 py-2 rounded hover:scale-105
-    transition-transform duration-300 hover:shadow-2xl hover:shadow-purple-600  cursor-pointer"
-                  >
-                    Submit Access Token
-                  </button>
-
-                  <button
-                    onClick={handleStartApp}
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:scale-105
-    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600  cursor-pointer"
-                  >
-                    Start App
-                  </button>
-                </div>
-                <p className="text-sm text-gray-700">
-                  {verifyStatus || startStatus}
+              <>
+                <p>
+                  Note: If Webhook is configured then collect and submit the
+                  access token and start the app
                 </p>
-              </div>
+                <div>
+                  <FormField
+                    label="Access Token"
+                    id="accessToken"
+                    value={formData.accessToken}
+                    onChange={(val) =>
+                      setFormData((f) => ({ ...f, accessToken: val }))
+                    }
+                    placeholder="Your page access token"
+                    required
+                  />
+
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={handleSendAccessToken}
+                      className="bg-purple-600 text-white px-4 py-2 rounded hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-purple-600  cursor-pointer"
+                    >
+                      Submit Access Token
+                    </button>
+
+                    <button
+                      onClick={handleStartApp}
+                      className="bg-green-600 text-white px-4 py-2 rounded hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600  cursor-pointer"
+                    >
+                      Start App
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
           {/* Right Side Manual */}
@@ -355,10 +281,10 @@ Important Notes:
             {/* <div className="absolute inset-0 bg-white/10 backdrop-blur-md rounded-2xl" /> */}
 
             <div className="relative z-10 h-96 lg:h-full overflow-y-auto pr-4">
-              <h2 className="text-xl font-bold bg-blue-500 bg-clip-text text-transparent">
+              <h2 className="text-xl font-bold bg-blue-500 bg-clip-text text-transparent mt">
                 Facebook Chatbot Configuration Guide
               </h2>
-              <ol className="list-decimal list-inside space-y-4 text-md text-gray-300 leading-relaxed">
+              <ol className="list-decimal list-inside space-y-4 mt-2 text-md text-gray-300 leading-relaxed">
                 <li>
                   Create a Facebook account:{" "}
                   <Link

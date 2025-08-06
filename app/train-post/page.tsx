@@ -3,26 +3,13 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { FormField } from "../components/ui/FormField";
-import Navigation from "../components/ui/Navigation";
-type TPost = {
-  id: string;
-  message: string;
-  full_picture: string;
-  created_time: Date;
-};
-type TTrainedPost = {
-  name?: string;
-  description?: string;
-  price?: string;
-  postId: string;
-  message: string;
-  full_picture: string;
-  shopId: string;
-  isTrained?: boolean;
-  createdAt: Date;
-  updatedAt?: Date;
-};
+import { FormField } from "../../components/ui/FormField";
+import Navigation from "../../components/ui/Navigation";
+import { PostCardNotTrained, PostCardTrained } from "../../components/PostCard";
+import { TPost } from "@/types/post.type";
+import { TTrainedPost } from "@/types/trainedPost.type";
+
+
 export default function Home() {
   const router = useRouter();
   const [pageId, setPageId] = useState("");
@@ -30,6 +17,9 @@ export default function Home() {
   const [posts, setPosts] = useState([]);
   const [trainedPosts, setTrainedPosts] = useState<TTrainedPost[]>([]);
   const [loading, setLoading] = useState(false);
+  const [trainLoading, setTrainLoading] = useState<string | null>(null);
+  const [notTrainLoading, setNotTrainLoading] = useState<string | null>(null);
+
   const [isTrained, setIsTraind] = useState(false);
   useEffect(() => {
     const savedPageId = localStorage.getItem("pageId");
@@ -46,7 +36,6 @@ export default function Home() {
       .then((res) => {
         const { data } = res;
         if (data.success) {
-          // console.log("pageid", data.data.shopId);
           setPageId(data.data.shopId);
           setAccessToken(data.data.accessToken);
         }
@@ -57,9 +46,7 @@ export default function Home() {
   }, []);
 
   const fetchPosts = async () => {
-    // console.log("pageid || accessToken", accessToken);
     if (!pageId || !accessToken) return;
-
     setLoading(true);
     try {
       const response = await axios.get(
@@ -78,13 +65,6 @@ export default function Home() {
           },
         }
       );
-
-      console.log(
-        "Fetching trained-products from:",
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/trained-products?pageId=${pageId}`
-      );
-      console.log("response", response);
-      console.log("res1", res1);
       setPosts(response.data.data);
       setTrainedPosts(res1.data.data);
       toast.success("Post Retrieved!");
@@ -99,22 +79,17 @@ export default function Home() {
     }
   };
 
-  const handleTrainPosts = async (
-    id: string,
-    message: string,
-    full_picture: string,
-    createdAt: Date
-  ) => {
+  const handleTrainPosts = async (post: TPost) => {
     try {
-      setLoading(true);
+      setTrainLoading(post.id);
       const { data } = await axios.post(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/product`,
         {
           shopId: pageId,
-          postId: id,
-          message,
-          full_picture,
-          createdAt,
+          postId: post.id,
+          message: post.message,
+          full_picture: post.full_picture,
+          createdAt: post.created_time,
         }
       );
       // console.log("data", data);
@@ -126,13 +101,13 @@ export default function Home() {
       console.error("Training post failed:", error);
       toast.error("Training failed. Please try again.");
     } finally {
-      setLoading(false);
+      setTrainLoading(null);
     }
   };
 
   const handleNoTrain = async (shopId: string, postId: string) => {
     try {
-      setLoading(true);
+      setNotTrainLoading(postId);
       const { data } = await axios.delete(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/product/${postId}?shopId=${shopId}`
       );
@@ -144,7 +119,7 @@ export default function Home() {
       console.error("Training removed post failed:", error);
       toast.error("Training remoded failed. Please try again.");
     } finally {
-      setLoading(false);
+      setNotTrainLoading(null);
     }
   };
   return (
@@ -244,97 +219,24 @@ export default function Home() {
                   }
                   return true;
                 })
-                .map((post: TPost) => (
-                  <div
-                    key={post?.id}
-                    className=" group relative w-full max-w-[350px] rounded-lg p-4 shadow-lg
-    bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600
-    hover:scale-[1.02] transition-transform duration-300
-    text-white overflow-hidden "
-                  >
-                    <div
-                      className="
-     absolute inset-0 bg-white/5 backdrop-blur-sm
-    opacity-0 group-hover:opacity-20 transition-opacity duration-300
-  "
-                    />
-                    <div className="relative flex flex-col justify-center space-y-2">
-                      <img
-                        src={
-                          post.full_picture ||
-                          "https://t4.ftcdn.net/jpg/04/74/36/39/360_F_474363946_l1w7phLnR1vawp8gnSOZ4tNWW9t7RVfN.jpg"
-                        }
-                        className="w-full h-full aspect-square rounded "
-                      />
-                      <p className=" font-semibold text-lg my-2 line-clamp-2">
-                        {post?.message || "No message"}
-                      </p>
-                      <p className="text-xs ">
-                        Created: {new Date(post?.created_time).toLocaleString()}
-                      </p>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() =>
-                            handleTrainPosts(
-                              post?.id,
-                              post?.message,
-                              post?.full_picture,
-                              post?.created_time
-                            )
-                          }
-                          className="mt-4 px-3 py-1 bg-green-600 text-white rounded hover:scale-105
-    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600 cursor-pointer relative"
-                        >
-                          Train
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                .map((post: TPost, idx: number) => (
+                  <PostCardNotTrained
+                    key={idx}
+                    post={post}
+                    handleTrainPosts={handleTrainPosts}
+                    trainLoading={trainLoading}
+                    setTrainLoading={setTrainLoading}
+                  />
                 ))
-            : trainedPosts?.map((post: TTrainedPost) => {
+            : trainedPosts?.map((post: TTrainedPost, idx: number) => {
                 return (
-                  <div
-                    key={post?.postId}
-                    className=" group relative w-full max-w-[350px] rounded-lg p-4 shadow-lg
-    bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600
-    hover:scale-[1.02] transition-transform duration-300
-    text-white overflow-hidden "
-                  >
-                    <div
-                      className="
-     absolute inset-0 bg-white/5 backdrop-blur-sm
-    opacity-0 group-hover:opacity-20 transition-opacity duration-300
-  "
-                    />
-                    <div className="relative flex flex-col justify-center space-y-2">
-                      <img
-                        src={
-                          post.full_picture ||
-                          "https://t4.ftcdn.net/jpg/04/74/36/39/360_F_474363946_l1w7phLnR1vawp8gnSOZ4tNWW9t7RVfN.jpg"
-                        }
-                        className="w-full h-full aspect-square rounded "
-                      />
-                      <p className=" font-semibold text-lg my-2 line-clamp-2">
-                        {post?.message || "No message"}
-                      </p>
-                      <p className="text-xs ">
-                        Created: {new Date(post?.createdAt).toLocaleString()}
-                      </p>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() =>
-                            handleNoTrain(post.shopId, post.postId)
-                          }
-                          className="mt-4 px-3 py-1 bg-red-600 text-white rounded  hover:scale-105
-    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600 cursor-pointer relative"
-                        >
-                          Not Train
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <PostCardTrained
+                    key={idx}
+                    post={post}
+                    handleNoTrain={handleNoTrain}
+                    notTrainLoading={notTrainLoading}
+                    setNotTrainLoading={setNotTrainLoading}
+                  />
                 );
               })}
         </div>
