@@ -177,7 +177,6 @@ const setDmPromt = async (id: string,  dmSystemPromt: string ) => {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_FOUND);
     throw new ApiError(httpStatus.NOT_FOUND, "Shop Not Found");
   }
-  console.log("here", dmSystemPromt);
   const result = await PageInfo.updateOne(
     { shopId: id },
     { dmSystemPromt},

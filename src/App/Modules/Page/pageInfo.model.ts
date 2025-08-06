@@ -26,7 +26,14 @@ const PageInfoSchema = new Schema<IPageInfo>({
   dmSystemPromt: {type: String, default: ''},
   cmntSystemPromt: {type: String, default: ''},
   isVerified: {type: Boolean, default: false},
-  accessToken: { type: String, default: ''},
+  accessToken: {
+    type: String,
+    default: '',
+    match: [
+      /^EAA[a-zA-Z0-9_\-]{50,}$/,
+      'Invalid Facebook Page Access Token format',
+    ],
+  },
   verifyToken: { type: String, required: true },
 });
 
