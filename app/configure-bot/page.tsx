@@ -1,7 +1,7 @@
 "use client";
 import axios from "axios";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { FormField } from "../../components/ui/FormField";
 import Navigation from "../../components/ui/Navigation";
@@ -19,8 +19,10 @@ export default function ChatbotUserSetupPage() {
     moreInfo: "",
   });
   const [webhookURL, setWebhookURL] = useState("");
+  const [verifyWebHook, setVerifyWebHook] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
+
   const handleProvideInfo = async () => {
     setIsLoading(true);
     try {
@@ -32,6 +34,7 @@ export default function ChatbotUserSetupPage() {
         }
       );
       const generatedURL = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/meta-webhook/${formData.pageId}/webhook`;
+      localStorage.setItem("webHookURL", generatedURL);
       setWebhookURL(generatedURL);
 
       toast.success("Webhook URL and Verify Token generated successfully.");
@@ -42,6 +45,50 @@ export default function ChatbotUserSetupPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const pageId = localStorage.getItem("pageId");
+    const generatedURL = localStorage.getItem("webHookURL");
+    setWebhookURL(generatedURL || "");
+    console.log("pageid", pageId);
+
+    try {
+      axios
+        .get(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${pageId}`, {
+          headers: {
+            "ngrok-skip-browser-warning": "69420",
+          },
+        })
+        .then((res) => {
+          if (!res.data.success) {
+            toast.error("Failed to load page info");
+            return;
+          }
+          const payload = res.data.data;
+          console.log("data", payload);
+          setFormData({
+            pageId: payload.shopId,
+            pageName: payload.pageName,
+            address: payload.address,
+            phone: payload.phone,
+            email: payload.email,
+            pageCategory: payload.pageCategory,
+            verifyToken: payload.verifyToken,
+            accessToken: payload.accessToken || "",
+            moreInfo: payload.moreInfo || "",
+          });
+
+          if (!payload.isVerified) {
+            toast.error("Verify the webhook first!");
+            return;
+          }
+          setVerifyWebHook(true);
+        });
+    } catch (error) {
+      console.log(error);
+      toast.error("Could not load page info");
+    }
+  }, []);
 
   const handleSendAccessToken = async () => {
     try {
@@ -122,6 +169,7 @@ export default function ChatbotUserSetupPage() {
       toast.error("Failed to start the app.");
     }
   };
+
   return (
     <div className="min-h-screen w-full relative bg-gray-900 text-white bg-fixed ">
       <div
@@ -231,7 +279,6 @@ export default function ChatbotUserSetupPage() {
               type="textarea"
               onChange={(val) => setFormData((f) => ({ ...f, moreInfo: val }))}
               placeholder="e.g., Some extra details…"
-              required
             />
 
             <button
@@ -253,7 +300,7 @@ export default function ChatbotUserSetupPage() {
               </div>
             )}
 
-            {webhookURL && (
+            {verifyWebHook && (
               <>
                 <p>
                   Note: If Webhook is configured then collect and submit the
