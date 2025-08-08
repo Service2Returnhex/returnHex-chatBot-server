@@ -1,19 +1,38 @@
 import { Router } from "express";
-import { UserRouter } from "../Modules/User/user.route";
-import { AuthRouter } from "../Modules/Auth/auth.route";
+import { ChatgptRouter } from "../Modules/Chatgpt/chatgpt.route";
+import { GeminiRouter } from "../Modules/Gemini/gemini.route";
+import { WebhookRouter } from "../Modules/WebHook/webhook.route";
+import { PageRouter } from "../Modules/Page/page.route";
+import { DeepSeekRouter } from "../Modules/DeepSeek/deepseek.route";
+import { GroqRouter } from "../Modules/Groq/grok.route";
 
 const router = Router();
 
 const moduleRoutes = [
     {
-        path: '/auth',
-        route: AuthRouter
-    }
-    ,
-    {
-        path: '/users',
-        route: UserRouter
+        path: '/meta-webhook', 
+        route: WebhookRouter 
     },
+    {
+        path: '/chatgpt',
+        route: ChatgptRouter
+    },
+    {
+        path: '/gemini',
+        route: GeminiRouter
+    },
+    {
+        path: '/deepseek',
+        route: DeepSeekRouter
+    },
+    {
+        path: '/groq',
+        route: GroqRouter
+    },
+    {
+        path: '/page',
+        route: PageRouter
+    }
 ]
 
 moduleRoutes.forEach(route => router.use(route.path, route.route));
