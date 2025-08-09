@@ -107,7 +107,7 @@ export default function Navbar({
             // default quick links (example)
             <div className="hidden sm:flex items-center gap-3">
               <Link
-                href="/dashboard/user"
+                href="/user-dashboard"
                 className="text-sm px-3 py-2 rounded-lg hover:bg-white/6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 Dashboard

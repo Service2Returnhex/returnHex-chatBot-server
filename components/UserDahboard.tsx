@@ -1,5 +1,5 @@
 import { Bot, Brain, MessageSquare, Settings } from "lucide-react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 export default function UserDahboard() {
   const router = useRouter();
@@ -9,35 +9,35 @@ export default function UserDahboard() {
       title: "Configure Bot",
       description: "Set up your Facebook page and webhook configuration",
       icon: Settings,
-      path: "/configure-bot",
+      path: "/user-dashboard/configure-bot",
       gradient: "from-blue-500 to-purple-600",
     },
     {
       title: "Train Posts",
       description: "Train your chatbot with custom responses and behaviors",
       icon: Brain,
-      path: "/train-post",
+      path: "/user-dashboard/train-post",
       gradient: "from-purple-500 to-pink-600",
     },
     {
       title: "Update Page Info",
       description: "Modify existing page information and settings",
       icon: Bot,
-      path: "/update-pageInfo",
+      path: "/user-dashboard/update-pageInfo",
       gradient: "from-pink-500 to-red-600",
     },
     {
       title: "Train Prompt",
       description: "Create and customize chatbot training prompts",
       icon: MessageSquare,
-      path: "/train-prompt",
+      path: "/user-dashboard/train-prompt",
       gradient: "from-red-500 to-orange-600",
     },
   ];
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className=" px-4 py-2 w-full">
       {/* Title Section */}
-      <div className="text-center mb-12">
+      {/* <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4 animate-fadeIn">
           Hex Bot Service
         </h1>
@@ -45,16 +45,16 @@ export default function UserDahboard() {
           Manage your Facebook chatbot configuration, training, and page
           information all in one place.
         </p>
-      </div>
+      </div> */}
 
       {/* Menu Cards */}
-      <div className="grid md:grid-cols-2 gap-10  mx-auto w-[70%]">
+      <div className="grid md:grid-cols-2 gap-10  mx-auto">
         {menuItems.map((item, index) => {
           const Icon = item.icon;
           return (
             <div
               key={item.path}
-              className="relative group rounded-xl overflow-hidden shadow-lg shadow-gray-700 bg-gray-800 border border-gray-700 hover:scale-[1.02] hover:border-gray-500 transition-all duration-300 cursor-pointer "
+              className="relative group rounded-xl overflow-hidden shadow-md shadow-gray-800 bg-gradient-to-b from-white/5 to-white/2 backdrop-blur-md border border-gray-700 hover:scale-[1.02] hover:border-gray-500 transition-all duration-300 cursor-pointer "
               onClick={() => router.push(item.path)}
             >
               <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-r from-purple-500 to-pink-500 transition-opacity duration-500" />

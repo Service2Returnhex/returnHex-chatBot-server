@@ -4,8 +4,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { FormField } from "../../components/ui/FormField";
-import Navigation from "../../components/ui/Navigation";
+import { FormField } from "../../../components/ui/FormField";
 
 interface ShopInfo {
   shopId: string;
@@ -152,23 +151,9 @@ export default function UpdatePageInfoForm() {
   };
 
   return (
-    <div className="min-h-screen w-full relative bg-gray-900 text-white bg-fixed ">
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: `
-           radial-gradient(circle at 10% 10%, rgba(70, 85, 110, 0.5) 0%, transparent 50%),
-          radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.4) 0%, transparent 20%),
-          radial-gradient(circle at 50% 10%, rgba(181, 184, 208, 0.3) 0%, transparent 20%)
-        `,
-          backgroundAttachment: "fixed",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
-      <Navigation title="Update Page Information" />
-
-      <div className="container mx-auto px-8 sm:px-4 py-8 lg:w-1/2 relative z-10 ">
-        <div className="w-full  space-y-6 bg-gray-500/20  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
+    <div className="min-h-screen w-full relative bg-radial-aurora text-white container mx-auto">
+      <div className=" px-8 sm:px-4 py-8  relative z-10 w-2/3 mx-auto">
+        <div className="w-full  space-y-6 bg-gradient-to-b from-white/3 to-white/2  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
           <h2 className="text-xl font-bold bg-blue-600 bg-clip-text text-transparent">
             Update Page Info
           </h2>

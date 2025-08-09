@@ -1,14 +1,15 @@
 "use client";
+import { TPost } from "@/types/post.type";
+import { TTrainedPost } from "@/types/trainedPost.type";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { FormField } from "../../components/ui/FormField";
-import Navigation from "../../components/ui/Navigation";
-import { PostCardNotTrained, PostCardTrained } from "../../components/PostCard";
-import { TPost } from "@/types/post.type";
-import { TTrainedPost } from "@/types/trainedPost.type";
-
+import {
+  PostCardNotTrained,
+  PostCardTrained,
+} from "../../../components/PostCard";
+import { FormField } from "../../../components/ui/FormField";
 
 export default function Home() {
   const router = useRouter();
@@ -123,20 +124,8 @@ export default function Home() {
     }
   };
   return (
-    <div className=" min-h-screen w-full relative bg-gray-900 ">
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: `
-          radial-gradient(circle at 10% 10%, rgba(70, 85, 110, 0.5) 0%, transparent 50%),
-          radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.4) 0%, transparent 20%),
-          radial-gradient(circle at 50% 10%, rgba(181, 184, 208, 0.3) 0%, transparent 20%)
-        `,
-          backgroundAttachment: "fixed",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
-      <Navigation title="Train Bot" />
+    <div className=" min-h-screen w-full relative bg-radial-aurora container">
+      {/* <Navigation title="Train Bot" /> */}
       <div className="container mx-auto p-6">
         <div className="w-full text-white space-y-6 bg-gray-500/20  border border-white/50 filter bg-blur-md p-4  backdrop-blur-xl transition-transform rounded-2xl">
           <h1 className="text-2xl font-bold text-blue-500 mb-4">

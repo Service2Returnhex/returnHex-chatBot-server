@@ -3,8 +3,7 @@ import axios from "axios";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { FormField } from "../../components/ui/FormField";
-import Navigation from "../../components/ui/Navigation";
+import { FormField } from "../../../components/ui/FormField";
 
 export default function ChatbotUserSetupPage() {
   const [formData, setFormData] = useState({
@@ -171,8 +170,8 @@ export default function ChatbotUserSetupPage() {
   };
 
   return (
-    <div className="min-h-screen w-full relative bg-gray-900 text-white bg-fixed ">
-      <div
+    <div className="min-h-screen w-full relative bg-radial-aurora text-white bg-fixed ">
+      {/* <div
         className="absolute inset-0 z-0"
         style={{
           backgroundImage: `
@@ -183,13 +182,13 @@ export default function ChatbotUserSetupPage() {
           backgroundAttachment: "fixed",
           backgroundRepeat: "no-repeat",
         }}
-      />
-      <Navigation title="Configure Bot" />
+      /> */}
+      {/* <Navigation title="Configure Bot" /> */}
 
       <div className="container mx-auto px-4 py-8 relative z-10 ">
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left Side Form */}
-          <div className="w-full  space-y-6 bg-gray-500/20  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
+          <div className="w-full  space-y-6 bg-gradient-to-b from-white/5 to-white/2   border border-white/50 filter bg-blur-xl p-4  backdrop-blur-xl transition-transform  rounded-2xl">
             <h2 className="text-xl font-bold bg-blue-500 bg-clip-text text-transparent">
               Bot configuration
             </h2>
@@ -340,7 +339,7 @@ export default function ChatbotUserSetupPage() {
             )}
           </div>
           {/* Right Side Manual */}
-          <div className="w-full bg-gray-500/20  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
+          <div className="w-full bg-gradient-to-b from-white/3 to-white/2  border border-white/50 filter bg-blur-sm p-4  backdrop-blur-xl transition-transform  rounded-2xl">
             {/* Frosted backdrop */}
             {/* <div className="absolute inset-0 bg-white/10 backdrop-blur-md rounded-2xl" /> */}
 

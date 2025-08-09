@@ -4,7 +4,6 @@ import axios from "axios";
 import { Pencil, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import Navigation from "../../components/ui/Navigation";
 
 const TrainPrompt = () => {
   const [dmSystemPromt, setDmSystemPromt] = useState("");
@@ -126,24 +125,11 @@ const TrainPrompt = () => {
   };
 
   return (
-    <div className="min-h-screen w-full relative bg-gray-900 text-white bg-fixed">
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: `
-          radial-gradient(circle at 10% 10%, rgba(70, 85, 110, 0.5) 0%, transparent 50%),
-          radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.4) 0%, transparent 20%),
-          radial-gradient(circle at 50% 10%, rgba(181, 184, 208, 0.3) 0%, transparent 20%)
-        `,
-          backgroundAttachment: "fixed",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
-      <Navigation title="Train Prompt" />
+    <div className="min-h-screen w-full relative bg-radial-aurora text-white bg-fixed">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-10">
           {/* DM Prompt Form */}
-          <div className="shadow-elegant p-6 rounded-lg bg-white/10 backdrop-blur-md border border-white/20">
+          <div className="shadow-elegant p-6 rounded-lg bg-gradient-to-b from-white/3 to-white/2 backdrop-blur-md border border-white/20">
             <div className="flex">
               <div className="w-2/3">
                 <h2 className="text-xl font-bold text-blue-400 mb-2">
@@ -194,19 +180,21 @@ const TrainPrompt = () => {
             <p className="text-xs text-gray-400 mt-1">
               Characters: {dmSystemPromt.length}
             </p>
-            {dmEdit && <div className="flex gap-8">
-              <button
-                onClick={handleSaveDM}
-                disabled={isLoadingDM}
-                className="mt-4 w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-2 rounded-md hover:shadow-lg transition cursor-pointer"
-              >
-                {isLoadingDM ? "Saving..." : "Save DM Prompt"}
-              </button>
-            </div>}
+            {dmEdit && (
+              <div className="flex gap-8">
+                <button
+                  onClick={handleSaveDM}
+                  disabled={isLoadingDM}
+                  className="mt-4 w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-2 rounded-md hover:shadow-lg transition cursor-pointer"
+                >
+                  {isLoadingDM ? "Saving..." : "Save DM Prompt"}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Comment Prompt Form */}
-          <div className="shadow-elegant p-6 rounded-lg bg-white/10 backdrop-blur-md border border-white/20">
+          <div className="shadow-elegant p-6 rounded-lg bg-gradient-to-b from-white/3 to-white/2  backdrop-blur-md border border-white/20">
             <div className="flex">
               <div className="w-2/3">
                 <h2 className="text-xl font-bold text-green-400 mb-2">
@@ -256,13 +244,15 @@ const TrainPrompt = () => {
             <div className="text-xs text-gray-400 mt-1">
               Characters: {cmntSystemPromt.length}
             </div>
-            {cmtEdit && <button
-              onClick={handleSaveComment}
-              disabled={isLoadingComment}
-              className="mt-4 w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-2 rounded-md hover:shadow-lg transition cursor-pointer"
-            >
-              {isLoadingComment ? "Saving..." : "Save Comment Prompt"}
-            </button>}
+            {cmtEdit && (
+              <button
+                onClick={handleSaveComment}
+                disabled={isLoadingComment}
+                className="mt-4 w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-2 rounded-md hover:shadow-lg transition cursor-pointer"
+              >
+                {isLoadingComment ? "Saving..." : "Save Comment Prompt"}
+              </button>
+            )}
           </div>
         </div>
       </div>
