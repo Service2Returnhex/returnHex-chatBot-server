@@ -132,7 +132,7 @@ export default function PricingGrid() {
               </ul>
 
               <button
-                className="mt-8 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                className="mt-8 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer "
                 onClick={() => toast.success(`Selected: ${plan.name}`)}
               >
                 {plan.cta}

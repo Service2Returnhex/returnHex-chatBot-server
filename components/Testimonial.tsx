@@ -135,13 +135,13 @@ export default function TestimonialCarousel() {
         {/* Controls */}
         <button
           onClick={goPrev}
-          className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-700 p-2 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-600"
+          className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-700 p-2 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
         >
           <IoChevronBack size={24} />
         </button>
         <button
           onClick={goNext}
-          className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-700 p-2 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-600"
+          className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-700 p-2 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer "
         >
           <IoChevronForward size={24} />
         </button>

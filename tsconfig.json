@@ -28,6 +28,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/configure-bot"
-  ],
+, "app/sign-up"  ],
   "exclude": ["node_modules"]
 }

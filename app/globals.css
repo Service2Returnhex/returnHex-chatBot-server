@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+@layer base {
+  .glass-container {
+    @apply backdrop-blur-md border border-white/10;
+    background: hsl(222 47% 11% / 0.8);
+    box-shadow: 0 8px 32px hsl(0 0% 0% / 0.2);
+  }
+
+  .gradient-background {
+    background: hsl(var(--background));
+    background-image: radial-gradient(var(--gradient-radial-1)),
+      radial-gradient(var(--gradient-radial-2)),
+      radial-gradient(var(--gradient-radial-3));
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+}
+
 @layer utilities {
   .box-shadow {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
@@ -28,5 +45,29 @@
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
+  }
+
+  .custom-card-bg {
+    @apply relative w-full max-w-md transform rounded-3xl bg-gradient-to-tr from-white/5 to-white/2 p-6 shadow-2xl backdrop-blur-md;
+  }
+
+  .auth-layout {
+    @apply min-h-screen w-full relative text-white;
+  }
+
+  .auth-overlay {
+    @apply absolute inset-0 z-0;
+  }
+
+  .auth-content {
+    @apply relative z-10 flex items-center justify-center min-h-screen p-4;
+  }
+}
+
+@layer components {
+  .form-container {
+    @apply rounded-2xl p-8 max-w-md w-full mx-auto backdrop-blur-md border border-white/10;
+    background: hsl(222 47% 11% / 0.8);
+    box-shadow: 0 8px 32px hsl(0 0% 0% / 0.2);
   }
 }
