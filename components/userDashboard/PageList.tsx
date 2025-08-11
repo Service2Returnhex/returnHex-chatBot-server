@@ -32,14 +32,14 @@ export default function PagesList({ pages, onDelete, onOpen }: Props) {
             </div>
             <button
               onClick={() => onOpen?.(p.pageId)}
-              className="p-2 rounded-md hover:bg-white/5"
+              className="p-2 rounded-md hover:bg-white/5 cursor-pointer"
               title="Open page"
             >
               <Eye className="h-4 w-4" />
             </button>
             <button
               onClick={() => onDelete?.(p.id)}
-              className="p-2 rounded-md hover:bg-red-600/20 text-red-400"
+              className="p-2 rounded-md hover:bg-red-600/20 text-red-400 cursor-pointer"
               title="Delete page"
             >
               <Trash className="h-4 w-4" />

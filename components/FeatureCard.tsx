@@ -52,7 +52,7 @@ export const FeatureCardGrid: React.FC<{ features?: Feature[] }> = ({
 }) => {
   return (
     <section className="py-12 ">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="container mx-auto px-10 ">
         <div className="mb-8 text-center">
           <h2 className="text-3xl font-extrabold bg-gradient-to-r from-blue-400  to-pink-600 bg-clip-text text-transparent mb-4 animate-fadeIn">
             Key Features

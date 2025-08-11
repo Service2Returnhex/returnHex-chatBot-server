@@ -38,7 +38,7 @@ export default function Navbar({
       className={`fixed left-0 right-0 top-4 z-50 flex justify-center ${className}`}
     >
       <div
-        className={`mx-4 w-full max-w-6xl rounded-2xl px-4 py-2 backdrop-blur-md border border-white/6 shadow-sm flex items-center gap-4 ${bgClass}`}
+        className={`mx-4 w-full max-w-[85%] rounded-2xl px-4 py-2 backdrop-blur-md border border-white/6 shadow-sm flex items-center gap-4 ${bgClass}`}
       >
         {/* Left: Back button / Home link */}
         <div className="flex items-center gap-3">

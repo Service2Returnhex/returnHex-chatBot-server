@@ -33,21 +33,6 @@ export default function PricingGrid() {
       cta: "Start Free",
     },
     {
-      id: "pro",
-      name: "Pro",
-      priceMonthly: 29,
-      tokensPerMonth: "50,000",
-      pagesAllowed: "5",
-      features: [
-        "All Free features",
-        "Priority email support",
-        "Advanced analytics dashboard",
-        "Bulk prompt training",
-        "Custom webhook event handling",
-      ],
-      cta: "Choose Pro",
-    },
-    {
       id: "enterprise",
       name: "Enterprise",
       priceMonthly: "Custom pricing",
@@ -61,6 +46,21 @@ export default function PricingGrid() {
         "Custom integrations & API extensions",
       ],
       cta: "Contact Sales",
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      priceMonthly: 29,
+      tokensPerMonth: "50,000",
+      pagesAllowed: "5",
+      features: [
+        "All Free features",
+        "Priority email support",
+        "Advanced analytics dashboard",
+        "Bulk prompt training",
+        "Custom webhook event handling",
+      ],
+      cta: "Choose Pro",
     },
   ];
 
@@ -88,7 +88,7 @@ export default function PricingGrid() {
 
   return (
     <section className="py-16 ">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="container mx-auto px-12 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400  to-pink-600 bg-clip-text text-transparent mb-4 animate-fadeIn">
             Subscription Plans
@@ -98,11 +98,15 @@ export default function PricingGrid() {
           </p>
         </div>
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 pt-8">
           {plansData.map((plan) => (
             <div
               key={plan.id}
-              className=" rounded-2xl bg-gray-800 shadow-lg shadow-black hover:shadow-2xl transition-shadow duration-300 p-8 flex flex-col"
+              className={`rounded-2xl bg-gray-800 shadow-lg shadow-black hover:shadow-2xl transition-shadow duration-300 p-8 flex flex-col ${
+                typeof plan.priceMonthly === "number"
+                  ? "lg:max-h-[500px]"
+                  : "lg:min-h-[560px] lg:-top-7 relative"
+              }`}
             >
               <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {plan.name}

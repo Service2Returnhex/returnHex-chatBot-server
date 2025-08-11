@@ -40,6 +40,11 @@ const images: GalleryItem[] = [
     src: "https://i.ibb.co.com/qYPXJGnF/IMG-20250809-WA0006.jpg",
     alt: "Bot interaction 6",
   },
+  {
+    id: 7,
+    src: "https://i.ibb.co.com/SDTySdxH/Whats-App-Image-2025-08-12-at-01-55-34-951acf14.jpg",
+    alt: "Bot interaction 6",
+  },
 ];
 
 export default function GalleryGrid() {
@@ -53,11 +58,11 @@ export default function GalleryGrid() {
         </h2>
 
         {/* Image Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="flex items-center gap-2 h-[400px] w-full max-w-4xl mt-10 mx-auto">
           {images.map((img) => (
             <div
               key={img.id}
-              className="relative cursor-pointer group overflow-hidden rounded-xl"
+              className="relative group flex-grow transition-all w-80 rounded-lg overflow-hidden h-[400px] duration-500 hover:w-full"
               onClick={() => setSelectedImage(img)}
             >
               <Image
@@ -65,14 +70,13 @@ export default function GalleryGrid() {
                 alt={img.alt}
                 width={400}
                 height={700}
-                className="object-cover w-full h-[450px] transform transition-transform duration-300 group-hover:scale-105"
+                className="h-full w-full object-cover object-center"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition "></div>
+              {/* <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition "></div> */}
             </div>
           ))}
         </div>
-
         {/* Lightbox Modal */}
         {selectedImage && (
           <div
@@ -85,7 +89,7 @@ export default function GalleryGrid() {
                 alt={selectedImage.alt}
                 width={1200}
                 height={800}
-                className="rounded-lg w-full h-[550px] object-contain"
+                className="rounded-lg w-full h-[550px] object-contain "
               />
               <button
                 className="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer"

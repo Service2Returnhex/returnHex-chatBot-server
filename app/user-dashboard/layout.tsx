@@ -1,5 +1,5 @@
 "use client";
-import UserSidebar from "@/components/userDashboard/UserSidebar";
+import UserSidebar from "@/components/userDashboard/Sidebar";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 

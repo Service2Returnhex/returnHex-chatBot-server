@@ -48,7 +48,7 @@ export default function StepsFlow() {
           {steps.map((step, index) => (
             <div
               key={index}
-              className="flex-1 bg-gray-800 p-6 rounded-xl shadow-lg shadow-black hover:shadow-xl transition-all duration-300"
+              className="flex-1 bg-gray-800 p-6 rounded-xl shadow-lg shadow-black hover:shadow-xl transition-all duration-300 md:min-h-[250px]"
             >
               <div className="flex items-center justify-center mb-4">
                 {step.icon}

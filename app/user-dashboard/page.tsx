@@ -105,14 +105,16 @@ export default function UserDashboardPage() {
             Logout
           </button>
         </div>
-        <div className="flex flex-col gap-16 p-4">
-          <div className="flex gap-8 justify-between w-full">
-            <TokenCard
-              available={available}
-              used={used}
-              monthlyLimit={usage ? usage.totalTokensAvailable : undefined}
-            />
-            <div className=" w-1/2">
+        <div className="flex flex-col gap-10 p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 justify-between w-full">
+            <div className="lg:col-span-2">
+              <TokenCard
+                available={available}
+                used={used}
+                monthlyLimit={usage ? usage.totalTokensAvailable : undefined}
+              />
+            </div>
+            <div className="lg:col-span-3 w-full">
               <div className="flex items-center justify-between mb-3 ">
                 <h3 className="text-sm text-gray-300">Active Pages</h3>
                 <button
@@ -140,8 +142,8 @@ export default function UserDashboardPage() {
                   onClick={() => setRange("daily")}
                   className={`px-3 py-1 rounded-md ${
                     range === "daily"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-white/5"
+                      ? "bg-indigo-600 text-white cursor-pointer"
+                      : "bg-white/5 cursor-pointer"
                   }`}
                 >
                   Daily
@@ -150,8 +152,8 @@ export default function UserDashboardPage() {
                   onClick={() => setRange("weekly")}
                   className={`px-3 py-1 rounded-md ${
                     range === "weekly"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-white/5"
+                      ? "bg-indigo-600 text-white cursor-pointer"
+                      : "bg-white/5 cursor-pointer"
                   }`}
                 >
                   Weekly

@@ -6,13 +6,13 @@ import {
   Brain,
   CreditCard,
   Home,
-  LayoutGrid,
   MessageSquare,
   Settings,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React from "react";
+import React, { useMemo } from "react";
 
 type NavItem = {
   href: string;
@@ -26,18 +26,18 @@ const nav: NavItem[] = [
     label: "Overview",
     icon: <Home className="w-5 h-5" />,
   },
+  // {
+  //   href: "/user-dashboard/pages",
+  //   label: "Pages",
+  //   icon: <LayoutGrid className="w-5 h-5" />,
+  // },
   {
-    href: "/user-dashboard/pages",
-    label: "Pages",
-    icon: <LayoutGrid className="w-5 h-5" />,
-  },
-  {
-    href: "/user-dashboard/usage",
+    href: "/user-dashboard/token-usage",
     label: "Token Usage",
     icon: <BarChart2 className="w-5 h-5" />,
   },
   {
-    href: "/dashboard/user/billing",
+    href: "/user-dashboard/billing",
     label: "Billing",
     icon: <CreditCard className="w-5 h-5" />,
   },
@@ -61,6 +61,11 @@ const nav: NavItem[] = [
     label: "Train Prompt",
     icon: <MessageSquare className="w-5 h-5" />,
   },
+  {
+    href: "/change-password",
+    label: "Change Password",
+    icon: <Shield className="w-5 h-5" />,
+  },
 ];
 
 type Props = {
@@ -70,7 +75,8 @@ type Props = {
   onSignOut?: () => void;
   className?: string;
 };
-
+const normalize = (p?: string) =>
+  p ? p.replace(/\/+$/, "").toLowerCase() : "";
 export default function UserSidebar({
   userName = "Fahim R.",
   userEmail = "fahim@example.com",
@@ -78,10 +84,25 @@ export default function UserSidebar({
   onSignOut,
   className = "",
 }: Props) {
-  const pathname = usePathname() || "";
+  const pathname = usePathname() ?? "";
+  const np = normalize(pathname);
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + "/");
+  const activeHref = useMemo(() => {
+    const matches = nav
+      .map((item) => ({
+        ...item,
+        nh: normalize(item.href),
+      }))
+      .filter(
+        (item) => item.nh && (np === item.nh || np.startsWith(item.nh + "/"))
+      );
+
+    if (matches.length === 0) return "";
+
+    // sort by length of nh descending, take first
+    matches.sort((a, b) => b.nh.length - a.nh.length);
+    return matches[0].nh;
+  }, [np]);
 
   return (
     <aside
@@ -108,7 +129,8 @@ export default function UserSidebar({
       {/* Nav */}
       <nav className="space-y-3" aria-label="Main">
         {nav.map((item) => {
-          const active = isActive(item.href);
+          const nh = normalize(item.href);
+          const active = nh !== "" && nh === activeHref;
           return (
             <Link
               key={item.href}

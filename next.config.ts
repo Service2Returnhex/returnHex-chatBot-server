@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/**", // Allow all paths
       },
+      {
+        protocol: "https",
+        hostname: "ibb.co.com",
+      },
     ],
   },
 };
