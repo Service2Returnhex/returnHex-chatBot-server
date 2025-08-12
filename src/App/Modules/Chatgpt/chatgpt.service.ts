@@ -42,7 +42,7 @@ const getResponseDM = async (
   });
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4.1-nano",
+    model: "gpt-5",
     messages,
   });
   //replay should be in 20 token
@@ -101,7 +101,7 @@ export const getCommnetResponse = async (
     apiKey: process.env.OPENAI_API_KEY,
   });
   const completion = await openai.chat.completions.create({
-    model: "gpt-4.1-nano",
+    model: "gpt-5",
     messages,
   });
   const reply = `@[${commenterId}] ` + completion.choices[0].message.content;
