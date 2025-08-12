@@ -20,9 +20,13 @@ const handleDM = async (
   const senderId = event.sender.id;
   const userMsg = event.message.text;
   console.log("💬 DM Message:", userMsg);
-  if(event.message.attachments) {
+  if (event.message.attachments) {
     console.log("📎 Attachment detected!");
-    await sendMessage(senderId, pageId, "Attachments or voices, videos, images, files are not allowed yet.");
+    await sendMessage(
+      senderId,
+      pageId,
+      "😅 Oops — I can't process images, voice notes, videos, or other attachments yet. Please paste the text or type what you want me to do. Our team will get back to you as soon as possible.Thank you for joining us!"
+    );
     return;
   }
 
@@ -124,9 +128,13 @@ const handleAddComment = async (value: any, pageId: string, method: string) => {
   const { comment_id, message, post_id, from } = value;
   const commenterId = from?.id;
   const userName = from?.name;
-  if(!value.message) {
+  if (!value.message) {
     console.log("📎 Attachment detected in comment!");
-    await replyToComment(comment_id, pageId, "Attachments or videos, images, files are not allowed yet.");
+    await replyToComment(
+      comment_id,
+      pageId,
+      "Attachments or videos, images, files are not allowed yet."
+    );
     return;
   }
 
