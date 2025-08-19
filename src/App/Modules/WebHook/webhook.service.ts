@@ -126,7 +126,7 @@ const handleAddComment = async (value: any, pageId: string, method: string) => {
   const userName = from?.name;
   if(!value.message) {
     console.log("📎 Attachment detected in comment!");
-    await replyToComment(comment_id, pageId, "Attachments or videos, images, files are not allowed yet.");
+    await replyToComment(comment_id, pageId, "Attachments or videos, images, files are not allowed yet.", commenterId);
     return;
   }
 
@@ -186,7 +186,7 @@ const handleAddComment = async (value: any, pageId: string, method: string) => {
   }
 
   try {
-    await replyToComment(comment_id, pageId, reply as string);
+    await replyToComment(comment_id, pageId, reply as string, commenterId);
   } catch (error: any) {
     console.log("Error Sending Comment Replay: ", error?.message);
   }

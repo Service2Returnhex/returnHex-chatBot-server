@@ -16,14 +16,15 @@ const getResponseDM = async (
   let userHistoryDoc = await ChatHistory.findOne({ senderId });
   if (!userHistoryDoc)
     userHistoryDoc = new ChatHistory({ senderId, messages: [] });
-  userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
 
   const products = await Post.find({ shopId });
 
-  const getPrompt = makePromtDM(shop, products, prompt);
+  const getPrompt = makePromtDM(shop, products, userHistoryDoc.messages);
+  userHistoryDoc.messages.push({ role: "user", content: prompt });
+
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
     { role: "user", content: getPrompt },
@@ -69,11 +70,7 @@ export const getCommnetResponse = async (
       userName,
       messages: [],
     });
-  userCommnetHistoryDoc.messages.push({
-    commentId,
-    role: "user",
-    content: message,
-  });
+  
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
@@ -81,7 +78,12 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPrompt = makePromtComment(shop, products, specificProduct);
+  const getPrompt = makePromtComment(shop, products, specificProduct, userCommnetHistoryDoc.messages);
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "user",
+    content: message,
+  });
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
     { role: "user", content: message },

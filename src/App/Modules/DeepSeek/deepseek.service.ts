@@ -16,7 +16,6 @@ const getResponseDM = async (
   if (!userHistoryDoc)
     userHistoryDoc = new ChatHistory({ userId: senderId, messages: [] });
 
-  userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) {
@@ -25,7 +24,9 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPrompt = makePromtDM(shop, products, prompt);
+  const getPrompt = makePromtDM(shop, products, userHistoryDoc.messages);
+  userHistoryDoc.messages.push({ role: "user", content: prompt });
+
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt }, //as much as optimize
@@ -89,11 +90,7 @@ export const getCommnetResponse = async (
       messages: [],
     });
 
-  userCommnetHistoryDoc.messages.push({
-    commentId,
-    role: "user",
-    content: message,
-  });
+ 
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) {
@@ -103,7 +100,12 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPromt = makePromtComment(shop, products, specificProduct);
+  const getPromt = makePromtComment(shop, products, specificProduct, userCommnetHistoryDoc.messages);
+   userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "user",
+    content: message,
+  });
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
     { role: "user", content: message },

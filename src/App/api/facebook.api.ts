@@ -23,14 +23,15 @@ export const sendMessage = async (
 export const replyToComment = async (
   commentId: string,
   pageId: string,
-  message: string
+  message: string,
+  userId: string
 ) => {
   const shop = await PageInfo.findOne({ shopId: pageId });
   if (!shop) throw new ApiError(404, "Shop Not Found!");
   const response = await axios.post(
     `https://graph.facebook.com/v23.0/${commentId}/comments`,
     {
-      message,
+      message: `@[${userId}] ${message}`,
     },
     {
       params: {
