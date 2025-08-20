@@ -8,17 +8,12 @@ on:
 
 jobs:
   run-and-deploy:
-    runs-on: hex-machine
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-  
-      - name: Install dependencies
-        run: npm install
-      
+    runs-on: hex-machine   
       - name: Deploy & restart app
         run: |
-          ls -a
-          pm2 status
+          cd /home/github-runner/returnHex-chatBot-server/
+          git pull origin dev
+          npm install
           pm2 delete hex-bot || true
           pm2 start npm --name "hex-bot" -- run start:dev
+          pm2 save
