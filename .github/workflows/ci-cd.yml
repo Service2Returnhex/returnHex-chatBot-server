@@ -1,0 +1,28 @@
+name: Hex-Bot CI/CD Pipeline
+
+on:
+    push:
+        branches:
+            - main
+            - dev
+
+jobs:
+    run-and-deploy
+    runs-on: hex-machine
+    steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+        
+        - name: Setup Node.js
+          uses: actions/setup-node@v3
+          with:
+            node-version: '20'
+        
+        - name: Install dependencies
+          run: npm install
+        
+        - name: Deploy & restart app
+          run: |
+            pm2 delete hex-bot || true
+            pm2 start npm --name "hex-bot" -- run start:dev
+            pm2 save
