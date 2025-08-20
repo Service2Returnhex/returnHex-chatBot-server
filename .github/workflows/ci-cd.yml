@@ -23,6 +23,7 @@ jobs:
       
       - name: Deploy & restart app
         run: |
+          cd /home/github-runner/returnHex-chatBot-server/
           pm2 delete hex-bot || true
           pm2 start npm --name "hex-bot" -- run start:dev
           pm2 save
