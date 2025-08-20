@@ -8,7 +8,8 @@ on:
 
 jobs:
   run-and-deploy:
-    runs-on: hex-machine   
+    runs-on: hex-machine
+    steps:
       - name: Deploy & restart app
         run: |
           cd /home/github-runner/returnHex-chatBot-server/
