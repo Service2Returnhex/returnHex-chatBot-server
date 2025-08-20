@@ -7,7 +7,7 @@ on:
             - dev
 
 jobs:
-    run-and-deploy
+    run-and-deploy:
     runs-on: hex-machine
     steps:
         - name: Checkout code
