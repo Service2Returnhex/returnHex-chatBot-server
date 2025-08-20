@@ -14,7 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/v1", router);
 
 app.get("/", (req, res) => {
-  res.send("Hello Server");
+  res.send("Welcome to hex-bot Server");
 });
 
 app.get("/api/health", (req, res) => {
