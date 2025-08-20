@@ -32,9 +32,7 @@ ${i + 1}. ${p.message}`
       cnt++;
     });
   }
-
-  console.log(recentUserDMPromt);
-
+  
   const systemPrompt = `
   You are an AI assistant for Facebook page that manages users by giving dm answer regarding page information
   and page posts and answer based on recent messages. Here is the page info: - PageName: ${
