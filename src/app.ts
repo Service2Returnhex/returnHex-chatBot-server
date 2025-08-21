@@ -18,7 +18,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
-  res.send("Server health is good!");
+  res.send("Server health is very good!");
 });
 
 app.use(notFound);
