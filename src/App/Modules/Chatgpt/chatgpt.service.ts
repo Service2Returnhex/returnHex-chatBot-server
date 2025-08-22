@@ -20,9 +20,10 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPromt = makePromtDM(shop, products, userHistoryDoc.messages);
+  const getPromt = await makePromtDM(shop, products, userHistoryDoc.messages);
 
   userHistoryDoc.messages.push({ role: "user", content: prompt });
+  console.log("getDmPrompt", getPromt);
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
@@ -34,7 +35,7 @@ const getResponseDM = async (
   });
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5",
+    model: "gpt-4o-mini",
     messages,
   });
 
@@ -67,7 +68,6 @@ export const getCommnetResponse = async (
       userName,
       messages: [],
     });
-  
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
@@ -75,8 +75,13 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPrompt = makePromtComment(shop, products, specificProduct, userCommnetHistoryDoc.messages);
-  
+  const getPrompt = makePromtComment(
+    shop,
+    products,
+    specificProduct,
+    userCommnetHistoryDoc.messages
+  );
+
   userCommnetHistoryDoc.messages.push({
     commentId,
     role: "user",
@@ -95,7 +100,7 @@ export const getCommnetResponse = async (
     model: "gpt-5",
     messages,
   });
-  const reply = completion.choices[0].message.content || "Something Went Wrong"
+  const reply = completion.choices[0].message.content || "Something Went Wrong";
 
   userCommnetHistoryDoc.messages.push({
     commentId,

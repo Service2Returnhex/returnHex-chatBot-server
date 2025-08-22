@@ -4,8 +4,8 @@ import { ChatCompletionMessageParam } from "openai/resources/index";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { makePromtComment, makePromtDM } from "../Page/page.promt";
-import { Post } from "../Page/post.mode";
 import { PageInfo } from "../Page/pageInfo.model";
+import { Post } from "../Page/post.mode";
 
 const getResponseDM = async (
   senderId: string,
@@ -22,7 +22,7 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPrompt = makePromtDM(shop, products, userHistoryDoc.messages);
+  const getPrompt = await makePromtDM(shop, products, userHistoryDoc.messages);
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   const messages: ChatCompletionMessageParam[] = [
@@ -70,7 +70,6 @@ export const getCommnetResponse = async (
       userName,
       messages: [],
     });
-  
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
@@ -78,7 +77,12 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPrompt = makePromtComment(shop, products, specificProduct, userCommnetHistoryDoc.messages);
+  const getPrompt = makePromtComment(
+    shop,
+    products,
+    specificProduct,
+    userCommnetHistoryDoc.messages
+  );
   userCommnetHistoryDoc.messages.push({
     commentId,
     role: "user",

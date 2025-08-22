@@ -24,7 +24,7 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPrompt = makePromtDM(shop, products, userHistoryDoc.messages);
+  const getPrompt =await makePromtDM(shop, products, userHistoryDoc.messages);
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
 
