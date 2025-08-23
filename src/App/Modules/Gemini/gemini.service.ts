@@ -77,7 +77,7 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPrompt = makePromtComment(
+  const getPrompt =await makePromtComment(
     shop,
     products,
     specificProduct,

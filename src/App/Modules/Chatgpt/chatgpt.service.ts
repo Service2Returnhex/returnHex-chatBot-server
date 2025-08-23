@@ -35,7 +35,7 @@ const getResponseDM = async (
   });
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     messages,
   });
 
@@ -75,7 +75,7 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPrompt = makePromtComment(
+  const getPrompt =await makePromtComment(
     shop,
     products,
     specificProduct,
@@ -97,7 +97,7 @@ export const getCommnetResponse = async (
     apiKey: process.env.OPENAI_API_KEY,
   });
   const completion = await openai.chat.completions.create({
-    model: "gpt-5",
+    model: "gpt-5-mini",
     messages,
   });
   const reply = completion.choices[0].message.content || "Something Went Wrong";
