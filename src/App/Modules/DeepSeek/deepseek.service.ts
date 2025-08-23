@@ -24,7 +24,7 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPrompt = makePromtDM(shop, products, userHistoryDoc.messages);
+  const getPrompt =await makePromtDM(shop, products, userHistoryDoc.messages);
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
 
@@ -100,7 +100,7 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPromt = makePromtComment(shop, products, specificProduct, userCommnetHistoryDoc.messages);
+  const getPromt =await makePromtComment(shop, products, specificProduct, userCommnetHistoryDoc.messages);
    userCommnetHistoryDoc.messages.push({
     commentId,
     role: "user",

@@ -12,7 +12,6 @@ export const handleWebhook: RequestHandler = catchAsync(
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
 
-    console.log(pageId);
     const shop = await PageService.getShopById(pageId);
 
     if (mode && token && mode === "subscribe" && token === shop.verifyToken) {

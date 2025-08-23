@@ -1,13 +1,18 @@
 import { IChatMessages } from "../Chatgpt/chat-history.model";
-import { ICommentHistory, IComments } from "../Chatgpt/comment-histroy.model";
+import { IComments } from "../Chatgpt/comment-histroy.model";
+import {
+  localDmSummarizer,
+  summarizeRecentDmMessage,
+} from "./customize.recent.message";
 import { IPageInfo } from "./pageInfo.model";
 import { IPost } from "./post.mode";
 
-export const makePromtDM = (
+export const makePromtDM = async (
   page: IPageInfo,
   posts: IPost[],
-  userPromts: IChatMessages[]
-): string => {
+  userPromts: IChatMessages[],
+  options?: { summaryFromLLM?: boolean }
+): Promise<string> => {
   let postList = "";
 
   if (posts.length > 0) {
@@ -19,38 +24,53 @@ ${i + 1}. ${p.message}`
       .join(",");
   }
 
-  let recentUserDMPromt = "";
-  let cnt = 1;
-  if (userPromts.length >= 10) {
-    for (let i = userPromts.length - 1; i >= userPromts.length - 10; i--) {
-      recentUserDMPromt += `${cnt} - role: ${userPromts[i].role}, content: ${userPromts[i].content},`;
-      cnt++;
-    }
-  } else {
-    userPromts.forEach((promts, idx) => {
-      recentUserDMPromt += `${cnt} - role: ${promts.role}, content: ${promts.content},`;
-      cnt++;
-    });
-  }
-  
+  // let recentUserDMPromt = "";
+  // let cnt = 1;
+  // if (userPromts.length >= 10) {
+  //   for (let i = userPromts.length - 1; i >= userPromts.length - 10; i--) {
+  //     recentUserDMPromt += `${cnt} - role: ${userPromts[i].role}, content: ${userPromts[i].content},`;
+  //     cnt++;
+  //   }
+  // } else {
+  //   userPromts.forEach((promts, idx) => {
+  //     recentUserDMPromt += `${cnt} - role: ${promts.role}, content: ${promts.content},`;
+  //     cnt++;
+  //   });
+  // }
+  // const formatted = summarizeRecentMessage(recentUserDMPromt);
+
+  // console.log("recent Dm Prompt", recentUserDMPromt);
+  const useLLM = options?.summaryFromLLM ?? true;
+  const recentSummary = useLLM
+    ? await summarizeRecentDmMessage(userPromts || [])
+    : localDmSummarizer(userPromts || []);
+
   const systemPrompt = `
-  You are an AI assistant for Facebook page that manages users by giving dm answer regarding page information
-  and page posts and answer based on recent messages. Here is the page info: - PageName: ${
-    page.pageName
-  }
-  - Category: ${page.pageCategory} - Address: ${page?.address} - Phone: ${
-    page?.phone
-  }
-  - Email: ${page?.email} - MoreInfo: ${page?.moreInfo} 
-  Post Lists:
-  ${
-    postList.length
-      ? "Then response about the posts" + postList
-      : "No posts available. and answer smartly"
-  }
-  Recent DM Messages: ${recentUserDMPromt}
-  more promt: ${page?.dmSystemPromt ? page.dmSystemPromt : ""}
-  `.trim();
+You are an AI assistant for the Facebook page that manages users by answering DM questions about page info and posts.
+Page information:
+- PageName: ${page.pageName}
+- Category: ${page.pageCategory ?? "N/A"}
+- Address: ${page?.address ?? "N/A"}
+- Phone: ${page?.phone ? "[REDACTED_PHONE]" : "N/A"}
+- Email: ${page?.email ? "[REDACTED_EMAIL]" : "N/A"}
+- MoreInfo: ${page?.moreInfo ?? "N/A"}
+
+Recent posts:
+${
+  postList.length
+    ? postList
+    : "No posts available. Answer smartly about the page."
+}
+
+Customized recent messages summary (short):
+${recentSummary}
+
+Additional system instructions:
+${page?.dmSystemPromt ?? ""}
+
+Respond as a helpful, concise assistant. If user asks about items in the summary, use the context above. 
+`.trim();
+
   return systemPrompt;
 };
 
