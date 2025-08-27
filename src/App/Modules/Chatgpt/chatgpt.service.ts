@@ -100,14 +100,16 @@ export const getCommnetResponse = async (
     model: "gpt-5-mini",
     messages,
   });
-  const reply = completion.choices[0].message.content || "Something Went Wrong";
+  
+  let reply = completion.choices[0].message.content || "Something Went Wrong";
+  reply = `@[${commenterId}] ${reply}`
 
   userCommnetHistoryDoc.messages.push({
     commentId,
     role: "assistant",
     content: reply,
   });
-  
+
   await userCommnetHistoryDoc.save();
   return reply;
 };
