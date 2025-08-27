@@ -7,6 +7,8 @@ import { IAuth } from "./auth.interface";
 import { createToken, verifyToken } from "./auth.utils";
 import { User } from "../users/user.model";
 import ApiError from "../../utility/AppError";
+import sendEmail from "../../utility/sendEmail";
+import { RefreshToken } from "./auth.refreshToken.model";
 
 export const loginUser = async (paylaod: IAuth) => {
   const user = await User.findOne({ email: paylaod.email });
@@ -20,27 +22,33 @@ export const loginUser = async (paylaod: IAuth) => {
     paylaod.password,
     user.password
   );
+
   if (!isPasswordMatched)
-    throw new ApiError(httpStatus.FORBIDDEN, "Passowrd did not matched!");
+    throw new ApiError(httpStatus.UNAUTHORIZED, "Passowrd did not matched!");
+  
   const jwtPayload = {
     userId: user._id.toString(),
     email: user.email,
     role: user.role,
-    status: user.status,
-    name: user.name,
   };
 
   const accessToken = createToken(
     jwtPayload,
     config.jwt_access_secret as string,
-    config.jwt_access_expiresIn as string
+    config.jwt_access_expires_in as string
   );
 
   const refreshToken = createToken(
     jwtPayload,
-    config.jwt_access_secret as string,
-    config.jwt_access_expiresIn as string
+    config.jwt_refresh_secret as string,
+    config.jwt_refresh_expires_in as string
   );
+
+  await RefreshToken.create({
+    token: refreshToken,
+    user: user._id,
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  })
 
   return {
     accessToken,
@@ -54,10 +62,8 @@ const changePassword = async (
   userData: JwtPayload,
   payload: { oldPassword: string; newPassword: string }
 ) => {
-  // console.log(userData);
-  console.log("oldPassword", payload.oldPassword);
+  console.log("Came herer");
   const user = await User.findById(userData.userId).select("+password");
-  console.log("user ", user?.password);
   if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User Not Found!");
 
   if (user?.isDeleted) {
@@ -70,11 +76,10 @@ const changePassword = async (
     payload.oldPassword,
     user.password
   );
-  // console.log("isPasswordMatched", isPasswordMatched);
+
   if (!isPasswordMatched)
     throw new ApiError(httpStatus.FORBIDDEN, "Passowrd did not matched!");
 
-  // console.log("newHashPassword", payload.newPassword);
   const newHashPassword = await bcrypt.hash(payload.newPassword, 10);
 
   const result = await User.findOneAndUpdate(
@@ -87,14 +92,15 @@ const changePassword = async (
   return result;
 };
 
-const refreshToken = async (token: string) => {
-  if (!token)
+const refreshToken = async (oldToken: string) => {
+  if (!oldToken)
     throw new ApiError(
       httpStatus.UNAUTHORIZED,
       "Token not Found. Unauthorized User!"
     );
-  const decoded = verifyToken(
-    token,
+
+   const decoded = verifyToken(
+    oldToken,
     config.jwt_refresh_secret as string
   ) as JwtPayload;
   if (!decoded)
@@ -103,26 +109,40 @@ const refreshToken = async (token: string) => {
       "Couldn't verify the token. Unauthorized User!"
     );
 
+  const existingToken = await RefreshToken.findOne({token: oldToken});
+  if(!existingToken) throw new ApiError(httpStatus.UNAUTHORIZED, "Token expired or invalid!");
+
   const { userId } = decoded;
   const user = await User.findById(userId);
   if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User Not Found!");
   if (user.isDeleted)
-    throw new ApiError(httpStatus.NOT_FOUND, "User is Deleted");
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User is Deleted");
   if (user.status === "blocked")
-    throw new ApiError(httpStatus.NOT_FOUND, "User is blocked");
+    throw new ApiError(httpStatus.FORBIDDEN, "User is blocked");
 
   const jwtPayload = {
     userId: user._id.toString(),
     role: user.role,
   };
 
-  const newAcceessToken = createToken(
+  const newAccessToken = createToken(
     jwtPayload,
-    config.jwt_refresh_secret as string,
-    config.jwt_access_expiresIn as string
+    config.jwt_access_secret as string,
+    config.jwt_access_expires_in as string
   );
+  const newRefreshToken = createToken(jwtPayload, 
+    config.jwt_refresh_secret as string, 
+    config.jwt_refresh_expires_in as string)
+  
+  await RefreshToken.create({
+    token: newRefreshToken,
+    user: userId,
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  });
 
-  return { newAcceessToken };
+  await existingToken.deleteOne();
+
+  return { newAccessToken, newRefreshToken };
 };
 
 const forgetPassword = async (email: string) => {
@@ -140,13 +160,12 @@ const forgetPassword = async (email: string) => {
 
   const resetPassToken = createToken(
     jwtPayload,
-    config.jwt_access_secret as string,
-    "10m"
+    config.jwt_reset_secret as string,
+    config.jwt_reset_expires_in as string
   );
 
   const resetUILink = `${process.env.RESET_PASS_UI_LINK}?id=${user?._id}&token=${resetPassToken}`;
   const resetUI = createEmailHtml(user?.name, resetUILink);
-  // console.log(resetUI);
   sendEmail(user?.email, "Reset your password", resetUI);
 };
 
@@ -157,13 +176,13 @@ const resetPassword = async (
   const user = await User.findById(payload.id);
   if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User Not Found!");
   if (user.isDeleted)
-    throw new ApiError(httpStatus.NOT_FOUND, "User is deleted");
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User is deleted");
   if (user.status == "blocked")
-    throw new ApiError(httpStatus.NOT_FOUND, "User is blocked");
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User is blocked");
 
   const decoded = verifyToken(
     token,
-    config.jwt_access_secret as string
+    config.jwt_reset_secret as string
   ) as JwtPayload;
   if (payload.id !== decoded.userId)
     throw new ApiError(httpStatus.FORBIDDEN, "Forbidden Access!");

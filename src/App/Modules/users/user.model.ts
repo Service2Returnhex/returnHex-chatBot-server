@@ -11,7 +11,6 @@ const userSchema = new Schema<IUser>({
     required: [true, "email is required"], 
     unique: [true, "email must be unique"]
   },
-  bio: {type: String, default: "No bio available"},
   contact: {type: String, default: "No contact available"},
   address: {type: String, default: "No address available"},
   password: { 
@@ -23,7 +22,7 @@ const userSchema = new Schema<IUser>({
   },
   role: { 
     type: String, 
-    enum: ["admin", "teacher", "student"], 
+    enum: ["admin", "user"], 
     required: [true, "role is required"] 
   },
   status: {

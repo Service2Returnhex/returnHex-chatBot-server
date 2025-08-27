@@ -8,13 +8,14 @@ import sendResponse from "../../utility/sendResponse";
 export const loginUser: RequestHandler = catchAsync(
   async (req: Request, res: Response): Promise<any> => {
     const result = await AuthServices.loginUser(req.body);
+
     const { accessToken, refreshToken, userRole, id } = result;
 
     res.cookie("refreshToken", refreshToken, {
       secure: config.node_env === "production",
       httpOnly: true,
       sameSite: "none",
-      maxAge: 1000 * 60 * 60 * 24 * 365,
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     });
 
     sendResponse(res, {
@@ -28,7 +29,6 @@ export const loginUser: RequestHandler = catchAsync(
 
 const changePassword: RequestHandler = catchAsync(
   async (req: Request, res: Response): Promise<any> => {
-    // console.log(req.body);
     const result = await AuthServices.changePassword(req.user, req.body);
     sendResponse(res, {
       statusCode: httpStatus.OK,
@@ -42,11 +42,21 @@ const changePassword: RequestHandler = catchAsync(
 const refreshToken: RequestHandler = catchAsync(
   async (req: Request, res: Response): Promise<any> => {
     const result = await AuthServices.refreshToken(req.cookies.refreshToken);
+    
+    const { newRefreshToken, newAccessToken } = result;
+
+    res.cookie("refreshToken", newRefreshToken, {
+      secure: config.node_env === "production",
+      httpOnly: true,
+      sameSite: "none",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
+    });
+
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: "Token is refresed Successfully",
-      data: result,
+      data: { newAccessToken },
     });
   }
 );

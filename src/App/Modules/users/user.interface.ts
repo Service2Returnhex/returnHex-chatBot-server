@@ -5,10 +5,9 @@ export interface IUser {
   email: string
   contact?: string
   address?:string
-  bio: string
   password: string
   image?: string
-  role: "admin" | "teacher" | "student"
+  role: "admin" | "user"
   status: 'in-progress' | 'blocked'
   isDeleted: boolean
 }

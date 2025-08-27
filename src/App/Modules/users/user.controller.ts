@@ -18,7 +18,8 @@ const createUser: RequestHandler = catchAsync(
 
 const getAllUsers: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await UserServices.getAllUsersFromDB();
+    const { status } = req.query;
+    const result = await UserServices.getAllUsersFromDB(status as string);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
@@ -54,10 +55,38 @@ const updateOneUser: RequestHandler = catchAsync(
   }
 );
 
+const softDeleteUser: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await UserServices.softDeleteSingleUserToDB(id);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "One User deleted Successfully",
+      data: result,
+    });
+  }
+)
+
+const restoreOneUser: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await UserServices.restoreSingleUserFromDB(id);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "One User restored Successfully",
+      data: result,
+    });
+  }
+)
+
 
 export const UserController = {
     createUser,
     getAllUsers,
     getOneUser,
-    updateOneUser
+    updateOneUser,
+    softDeleteUser,
+    restoreOneUser
 }

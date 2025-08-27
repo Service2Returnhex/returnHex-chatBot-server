@@ -7,7 +7,7 @@ const router = express.Router();
 router.post("/login", AuthController.loginUser);
 router.post(
   "/change-password",
-  auth(USER_ROLE.admin, USER_ROLE.student, USER_ROLE.teacher),
+  auth(USER_ROLE.admin, USER_ROLE.user),
   AuthController.changePassword
 );
 
