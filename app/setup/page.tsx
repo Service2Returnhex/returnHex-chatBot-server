@@ -1,7 +1,7 @@
 "use client";
 import axios from "axios";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { FormField } from "../../components/ui/FormField";
 import Navigation from "../../components/ui/Navigation";
@@ -18,9 +18,13 @@ export default function ChatbotUserSetupPage() {
     accessToken: "",
     moreInfo: "",
   });
-  const [webhookURL, setWebhookURL] = useState("");
+  const [webhookURL, setWebhookURL] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean | string>(false);
 
-  const [isLoading, setIsLoading] = useState(false);
+  useEffect(() => {
+    
+  },[])
+
   const handleProvideInfo = async () => {
     setIsLoading(true);
     try {
@@ -61,7 +65,9 @@ export default function ChatbotUserSetupPage() {
 
       toast.success("Access token submitted successfully.");
     } catch (err: any) {
-      toast.error(err.response.data.message || "Failed to submit access token.");
+      toast.error(
+        err.response.data.message || "Failed to submit access token."
+      );
     }
   };
 
@@ -95,9 +101,11 @@ export default function ChatbotUserSetupPage() {
         };
         console.log(fethcedData, formData);
         console.log(shallowEqual(fethcedData, formData));
-        shallowEqual(fethcedData, formData)
-          ? toast.success("App Started")
-          : toast.error("Failed to start the app.");
+        if (shallowEqual(fethcedData, formData)) {
+          toast.success("App Started");
+        } else {
+          toast.error("Failed to start the app.");
+        }
       } else {
         toast.error("Failed to start the app.");
       }
@@ -268,7 +276,7 @@ export default function ChatbotUserSetupPage() {
                       className="bg-green-600 text-white px-4 py-2 rounded hover:scale-105
     transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600  cursor-pointer"
                     >
-                      Start App
+                      {/* {isStarted ? "Stop App" : "Start App"} */}
                     </button>
                   </div>
                 </div>

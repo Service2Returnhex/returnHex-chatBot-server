@@ -31,6 +31,7 @@ export default function UpdatePageInfoForm() {
     accessToken: "",
     moreInfo: "",
   });
+  console.log("Form Data", formData);
   const [loading, setLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
@@ -118,6 +119,7 @@ export default function UpdatePageInfoForm() {
   // Update API
   const handleUpdate = async () => {
     const { shopId, ...rest } = formData;
+    console.log(formData)
     const payload = Object.fromEntries(
       Object.entries(rest).filter(([, v]) => v !== "")
     );

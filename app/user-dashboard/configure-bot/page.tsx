@@ -17,8 +17,11 @@ export default function ChatbotUserSetupPage() {
     accessToken: "",
     moreInfo: "",
   });
+
   const [webhookURL, setWebhookURL] = useState("");
   const [verifyWebHook, setVerifyWebHook] = useState(false);
+
+  const [isStarted, setIsStarted] = useState<boolean | string>(false);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -76,7 +79,7 @@ export default function ChatbotUserSetupPage() {
             accessToken: payload.accessToken || "",
             moreInfo: payload.moreInfo || "",
           });
-
+          setIsStarted(payload?.isStarted)
           if (!payload.isVerified) {
             toast.error("Verify the webhook first!");
             return;
@@ -158,9 +161,23 @@ export default function ChatbotUserSetupPage() {
         };
         console.log(fethcedData, formData);
         console.log(shallowEqual(fethcedData, formData));
-        shallowEqual(fethcedData, formData)
-          ? toast.success("App Started")
-          : toast.error("Failed to start the app.");
+        const { data: pageData } = await axios.patch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`,
+        {
+          isStarted: true
+        },
+        {
+          headers: {
+            "ngrok-skip-browser-warning": "69420",
+          },
+        }
+      );
+        if (shallowEqual(fethcedData, formData) && pageData?.success) {
+          toast.success("App Started");
+          setIsStarted(true);
+        } else {
+          toast.error("Failed to start the app.");
+        }
       } else {
         toast.error("Failed to start the app.");
       }
@@ -169,6 +186,25 @@ export default function ChatbotUserSetupPage() {
     }
   };
 
+  const handleStopApp = async () => {
+    const { data } = await axios.patch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop/${formData.pageId}`,
+        {
+          isStarted: false
+        },
+        {
+          headers: {
+            "ngrok-skip-browser-warning": "69420",
+          },
+        }
+      );
+
+    if(data?.success) {
+      setIsStarted(false)
+      toast.warning("App Stopped")
+    }
+    else toast.error("App not stopped!");
+  }
   return (
     <div className="min-h-screen w-full relative bg-radial-aurora text-white bg-fixed ">
       {/* <div
@@ -327,11 +363,15 @@ export default function ChatbotUserSetupPage() {
                     </button>
 
                     <button
-                      onClick={handleStartApp}
-                      className="bg-green-600 text-white px-4 py-2 rounded hover:scale-105
-    transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600  cursor-pointer"
+                      onClick={() => {
+                        if(!isStarted) handleStartApp()
+                        else handleStopApp()
+                      }}
+                      className={`${isStarted ? "bg-red-600 hover:shadow-red-600" : "bg-green-600 hover:shadow-green-600"} text-white px-4 py-2 rounded hover:scale-105
+    transition-transform duration-300 hover:shadow-2xl   cursor-pointer`}
                     >
-                      Start App
+                    {isStarted ? "Stop App" : "Start App"}
+
                     </button>
                   </div>
                 </div>
