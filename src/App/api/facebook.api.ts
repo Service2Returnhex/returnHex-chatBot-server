@@ -1,23 +1,26 @@
 import axios from "axios";
-import ApiError from "../utility/AppError";
 import { PageInfo } from "../Modules/Page/pageInfo.model";
+import ApiError from "../utility/AppError";
 
 export const sendMessage = async (
   recipientId: string,
   pageId: string,
   text: string
 ) => {
-  const shop = await PageInfo.findOne({ shopId: pageId });
-  if (!shop) throw new ApiError(404, "Shop Not Found!");
-
-  const res = await axios.post(
-    `https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`,
-    {
-      recipient: { id: recipientId },
-      message: { text },
-    }
-  );
-  console.log(res.data);
+  try {
+    const shop = await PageInfo.findOne({ shopId: pageId });
+    if (!shop) throw new ApiError(404, "Shop Not Found!");
+    const res = await axios.post(
+      `https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`,
+      {
+        recipient: { id: recipientId },
+        message: { text },
+      }
+    );
+    console.log(res.data);
+  } catch (error: any) {
+    console.error(error.message);
+  }
 };
 
 export const replyToComment = async (
@@ -26,18 +29,22 @@ export const replyToComment = async (
   message: string,
   userId: string
 ) => {
-  const shop = await PageInfo.findOne({ shopId: pageId });
-  if (!shop) throw new ApiError(404, "Shop Not Found!");
-  const response = await axios.post(
-    `https://graph.facebook.com/v23.0/${commentId}/comments`,
-    {
-      message: `@[${userId}] ${message}`,
-    },
-    {
-      params: {
-        access_token: shop.accessToken,
+  try {
+    const shop = await PageInfo.findOne({ shopId: pageId });
+    if (!shop) throw new ApiError(404, "Shop Not Found!");
+    const response = await axios.post(
+      `https://graph.facebook.com/v23.0/${commentId}/comments`,
+      {
+        message: `@[${userId}] ${message}`,
       },
-    }
-  );
-  console.log("✅ Comment reply sent:", response.data);
+      {
+        params: {
+          access_token: shop.accessToken,
+        },
+      }
+    );
+    console.log("✅ Comment reply sent:", response.data);
+  } catch (error: any) {
+    console.error(error.message);
+  }
 };
