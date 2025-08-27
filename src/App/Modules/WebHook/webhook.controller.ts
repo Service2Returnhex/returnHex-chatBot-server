@@ -16,7 +16,7 @@ export const handleWebhook: RequestHandler = catchAsync(
 
     if (mode && token && mode === "subscribe" && token === shop.verifyToken) {
       console.log("Webhook verified!");
-      await PageService.updateShop(pageId, {isVerified: true});
+      await PageService.updateShop(pageId, { isVerified: true });
       res.status(200).send(challenge);
     } else {
       console.log("Webhook Not Verified");
@@ -53,16 +53,27 @@ export const handleIncomingMessages: RequestHandler = catchAsync(
       4.2 If '' '' '' 10 token - "" "" "" 20 token 
     5. Rest of the wortk
     */
-    const result = await WebHookService.handleIncomingMessages(
-      req,
-      res,
-      pageId as string,
-      WebHookMethods.CHATGPT
-    );
+
+    const shop = await PageService.getShopById(pageId);
+    const isStartedApp = shop?.isStarted;
+
+    let result = null;
+
+    if (isStartedApp) {
+      result = await WebHookService.handleIncomingMessages(
+        req,
+        res,
+        pageId as string,
+        WebHookMethods.CHATGPT
+      );
+    }
+
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: "Incoming messages handled successfully",
+      message: isStartedApp
+        ? "Incoming messages handled successfully"
+        : "App is on Off State",
       data: result,
     });
   }

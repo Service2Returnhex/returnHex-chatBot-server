@@ -11,6 +11,7 @@ export interface IPageInfo {
   dmSystemPromt?: string;
   cmntSystemPromt?: string;
   isVerified?: boolean;
+  isStarted?: boolean;
   accessToken: string; 
   verifyToken: string;
 }
@@ -26,6 +27,7 @@ const PageInfoSchema = new Schema<IPageInfo>({
   dmSystemPromt: {type: String, default: ''},
   cmntSystemPromt: {type: String, default: ''},
   isVerified: {type: Boolean, default: false},
+  isStarted: {type: Boolean, default: false},
   accessToken: {
     type: String,
     default: '',
