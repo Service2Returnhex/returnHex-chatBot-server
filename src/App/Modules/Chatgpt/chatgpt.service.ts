@@ -107,6 +107,7 @@ export const getCommnetResponse = async (
     role: "assistant",
     content: reply,
   });
+  
   await userCommnetHistoryDoc.save();
   return reply;
 };

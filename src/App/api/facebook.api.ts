@@ -32,6 +32,7 @@ export const replyToComment = async (
   try {
     const shop = await PageInfo.findOne({ shopId: pageId });
     if (!shop) throw new ApiError(404, "Shop Not Found!");
+    console.log("Access Token: ", shop.accessToken);
     const response = await axios.post(
       `https://graph.facebook.com/v23.0/${commentId}/comments`,
       {
