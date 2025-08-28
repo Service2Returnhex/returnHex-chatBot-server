@@ -9,6 +9,7 @@ import { User } from "../users/user.model";
 import ApiError from "../../utility/AppError";
 import sendEmail from "../../utility/sendEmail";
 import { RefreshToken } from "./auth.refreshToken.model";
+import jwt from 'jsonwebtoken'
 
 export const loginUser = async (paylaod: IAuth) => {
   const user = await User.findOne({ email: paylaod.email });
@@ -197,10 +198,28 @@ const resetPassword = async (
   );
 };
 
+const logoutUser = async (token: string) => {
+  
+  const decoded = jwt.verify(token, config.jwt_refresh_secret as string) as JwtPayload;
+  if (!decoded) throw new ApiError(httpStatus.UNAUTHORIZED, "Invalid Token");
+
+  const user = await User.findById(decoded.userId);
+  if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User Not Found!");
+
+  if (user.isDeleted)
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User is deleted");
+  if (user.status == "blocked")
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User is blocked"); 
+  await RefreshToken.deleteMany({ user: decoded.userId });
+  return { message: "User logged out successfully" };
+  
+};
+
 export const AuthServices = {
   loginUser,
   changePassword,
   refreshToken,
   forgetPassword,
   resetPassword,
+  logoutUser
 };

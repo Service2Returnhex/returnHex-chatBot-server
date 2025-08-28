@@ -17,4 +17,6 @@ router.patch("/forget-password", AuthController.forgetPassword);
 
 router.post("/reset-password", AuthController.resetPassword);
 
+router.post('/logout', AuthController.logoutUser);
+
 export const authRoute = router;
