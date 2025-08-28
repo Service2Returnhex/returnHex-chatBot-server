@@ -14,11 +14,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/v1", router);
 
 app.get("/", (req, res) => {
-  res.send("Hello Server");
+  res.send("Welcome to hex-bot latest(v1.1.0) Server");
 });
 
 app.get("/api/health", (req, res) => {
-  res.send("Server health is good!");
+  res.send("Server health is very good!");
 });
 
 app.use(notFound);

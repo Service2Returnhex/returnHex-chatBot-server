@@ -22,7 +22,10 @@ const handleDM = async (
   console.log("💬 DM Message:", userMsg);
   if(event.message.attachments) {
     console.log("📎 Attachment detected!");
-    await sendMessage(senderId, pageId, "Attachments or voices, videos, images, files are not allowed yet.");
+    await sendMessage(senderId, 
+      pageId, 
+      "সংযুক্তি বা ভিডিও, ছবি, ফাইল এখনও অনুমোদিত নয়। আমাদের কাস্টমার সার্ভিস আপনার সাথে যোগাযোগ করবে।\nAttachments or videos, images, files are not allowed yet. Our customer service will contact you.",
+    );
     return;
   }
 
@@ -126,7 +129,10 @@ const handleAddComment = async (value: any, pageId: string, method: string) => {
   const userName = from?.name;
   if(!value.message) {
     console.log("📎 Attachment detected in comment!");
-    await replyToComment(comment_id, pageId, "Attachments or videos, images, files are not allowed yet.", commenterId);
+    await replyToComment(comment_id, pageId, 
+      "সংযুক্তি বা ভিডিও, ছবি, ফাইল এখনও অনুমোদিত নয়। আমাদের কাস্টমার সার্ভিস আপনার সাথে যোগাযোগ করবে।\nAttachments or videos, images, files are not allowed yet. Our customer service will contact you.", 
+      commenterId
+    );
     return;
   }
 

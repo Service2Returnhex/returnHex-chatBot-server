@@ -3,12 +3,10 @@ import { IChatMessages } from "../Chatgpt/chat-history.model";
 
 function redactPII(text: string) {
   if (!text) return text;
-  // redact emails
   let t = text.replace(
     /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
     "[REDACTED_EMAIL]"
   );
-  // redact phone-like sequences (simple)
   t = t.replace(/(\+?\d[\d\-\s]{6,}\d)/g, "[REDACTED_PHONE]");
   return t;
 }

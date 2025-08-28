@@ -1,0 +1,20 @@
+name: Hex-Bot CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  run-and-deploy:
+    runs-on: hex-machine
+    steps:
+      - name: Deploy & restart app
+        run: |
+          cd /home/github-runner/returnHex-chatBot-server/
+          git pull origin dev
+          npm install
+          pm2 delete hex-bot || true
+          pm2 start npm --name "hex-bot" -- run start:dev
+          pm2 save
