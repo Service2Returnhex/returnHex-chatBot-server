@@ -54,7 +54,7 @@ export default function UserDahboard() {
           return (
             <div
               key={item.path}
-              className="relative group rounded-xl overflow-hidden shadow-md shadow-gray-800 bg-gradient-to-b from-white/5 to-white/2 backdrop-blur-md border border-gray-700 hover:scale-[1.02] hover:border-gray-500 transition-all duration-300 cursor-pointer "
+              className="relative group rounded-xl overflow-hidden shadow-md shadow-gray-800 bg-gradient-to-b card-bg backdrop-blur-md border border-gray-800 hover:scale-[1.02] hover:border-gray-500 transition-all duration-300 cursor-pointer "
               onClick={() => router.push(item.path)}
             >
               <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-r from-purple-500 to-pink-500 transition-opacity duration-500" />

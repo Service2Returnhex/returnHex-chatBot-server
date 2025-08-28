@@ -48,7 +48,10 @@
   }
 
   .custom-card-bg {
-    @apply relative w-full max-w-md transform rounded-3xl bg-gradient-to-tr from-white/5 to-white/2 p-6 shadow-2xl backdrop-blur-md;
+    @apply relative w-full max-w-md transform rounded-3xl bg-gradient-to-tr bg-[#020817] p-6 shadow-2xl backdrop-blur-md;
+  }
+  .card-bg {
+    @apply bg-[#020817];
   }
 
   .auth-layout {

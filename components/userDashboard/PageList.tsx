@@ -19,7 +19,7 @@ export default function PagesList({ pages, onDelete, onOpen }: Props) {
       {pages.map((p) => (
         <div
           key={p.id}
-          className="flex items-center justify-between bg-white/3 backdrop-blur rounded-xl p-3 "
+          className="flex items-center justify-between card-bg backdrop-blur rounded-xl p-3 "
         >
           <div>
             <div className="font-medium text-gray-100">{p.name}</div>

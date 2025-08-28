@@ -12,7 +12,7 @@ export default function TokenCard({ available, used, monthlyLimit }: Props) {
     : undefined;
 
   return (
-    <div className="bg-gradient-to-tr from-white/5 to-white/2 backdrop-blur-md p-6 rounded-2xl shadow-lg ">
+    <div className="custom-card-bg">
       <h3 className="text-sm text-gray-300">Token Balance</h3>
 
       <div className="flex items-center justify-between mt-4">
