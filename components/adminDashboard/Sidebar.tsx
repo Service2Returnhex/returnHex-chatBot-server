@@ -107,7 +107,7 @@ export default function AdminSidebar({
   return (
     <aside
       className={`w-72 bg-gradient-to-b from-white/3 to-white/2 backdrop-blur-md p-4 rounded-2xl min-h-screen fixed ${className}`}
-      aria-label="User sidebar"
+      aria-label="Admin sidebar"
     >
       {/* User info */}
       <div className="flex items-center gap-3 mb-6">

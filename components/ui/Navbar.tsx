@@ -1,3 +1,4 @@
+"use client";
 // src/components/Navbar.tsx
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -31,11 +32,12 @@ export default function Navbar({
       router.back();
     }
   };
+  
 
   return (
     <nav
       aria-label={title ? `${title} navigation` : "main navigation"}
-      className={`fixed left-0 right-0 top-4 z-50 flex justify-center ${className}`}
+      className={`fixed left-0 right-0 top-4 z-50 flex justify-center text-white ${className}`}
     >
       <div
         className={`mx-4 w-full max-w-[85%] rounded-2xl px-4 py-2 backdrop-blur-md border border-white/6 shadow-sm flex items-center gap-4 ${bgClass}`}

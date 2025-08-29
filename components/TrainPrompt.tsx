@@ -166,7 +166,7 @@ const TrainPrompt = () => {
               )}
             </div>
             {!dmEdit ? (
-              <div className="min-h-[200px] w-full p-4 rounded-md bg-white/10 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500  overflow-y-auto">
+              <div className="min-h-[200px] w-full p-4 rounded-md card-bg text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500  overflow-y-auto">
                 {dmSystemPromt}
               </div>
             ) : (
@@ -230,7 +230,7 @@ const TrainPrompt = () => {
               )}
             </div>
             {!cmtEdit ? (
-              <div className="min-h-[200px] w-full p-4 rounded-md bg-white/10 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto">
+              <div className="min-h-[200px] w-full p-4 rounded-md card-bg text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto">
                 {cmntSystemPromt}
               </div>
             ) : (

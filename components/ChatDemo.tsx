@@ -56,7 +56,7 @@ export default function ChatDemo() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 space-y-3 overflow-y-auto h-72">
+      <div className="flex-1 p-4 space-y-3 overflow-y-auto max-h-72 ">
         {messages.map((msg, idx) => (
           <div
             key={idx}
@@ -92,7 +92,7 @@ export default function ChatDemo() {
           className="bg-indigo-500 hover:bg-indigo-600 p-2 rounded-lg"
         >
           <Send className="w-4 h-4" />
-        </button>
+        </button> 
       </div>
     </motion.div>
   );

@@ -1,6 +1,6 @@
 "use client";
 import FormInput from "@/components/ui/FormInput";
-import Navigation from "@/components/ui/Navigation";
+import axios from "axios";
 import { Lock, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,7 +11,7 @@ const ChangePassword = () => {
   const [formData, setFormData] = useState({
     oldPassword: "",
     newPassword: "",
-    confirmNewPassword: "",
+    // confirmNewPassword: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -20,17 +20,17 @@ const ChangePassword = () => {
 
     if (
       !formData.oldPassword ||
-      !formData.newPassword ||
-      !formData.confirmNewPassword
+      !formData.newPassword
+      // !formData.confirmNewPassword
     ) {
       toast.error("Please fill in all fields");
       return;
     }
 
-    if (formData.newPassword !== formData.confirmNewPassword) {
-      toast.error("New passwords do not match");
-      return;
-    }
+    // if (formData.newPassword !== formData.confirmNewPassword) {
+    //   toast.error("New passwords do not match");
+    //   return;
+    // }
 
     if (formData.newPassword.length < 6) {
       toast.error("New password must be at least 6 characters long");
@@ -43,20 +43,31 @@ const ChangePassword = () => {
     }
 
     setLoading(true);
-    // try {
-    //   await api.patch("/auth/change-password", {
-    //     oldPassword: formData.oldPassword,
-    //     newPassword: formData.newPassword,
-    //     confirmNewPassword: formData.confirmNewPassword,
-    //   });
+    const token = localStorage.getItem("accessToken");
+    console.log("token", token);
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/auth/change-password`,
+        {
+          oldPassword: formData.oldPassword,
+          newPassword: formData.newPassword,
+          // confirmNewPassword: formData.confirmNewPassword,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${token}`,
+          },
+        }
+      );
 
-    //   toast.success("Password changed successfully!");
-    //   router.push("/dashboard/user");
-    // } catch (error) {
-    //   console.error("Change password error:", error);
-    // } finally {
-    //   setLoading(false);
-    // }
+      toast.success("Password changed successfully!");
+      router.push("/user-dashboard");
+    } catch (error) {
+      console.error("Change password error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +80,7 @@ const ChangePassword = () => {
   return (
     <div className="auth-layout  bg-radial-aurora">
       <div className="auth-overlay" />
-      <Navigation title="Change Password" />
+      {/* <Navigation title="Change Password" /> */}
       <div className="auth-content pt-20">
         <div className="form-container">
           <div className="text-center mb-8">
@@ -119,7 +130,7 @@ const ChangePassword = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <div className="relative">
                 <FormInput
                   id="confirmNewPassword"
@@ -134,7 +145,7 @@ const ChangePassword = () => {
                   required
                 />
               </div>
-            </div>
+            </div> */}
 
             <button
               type="submit"

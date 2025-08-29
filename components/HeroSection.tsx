@@ -1,9 +1,43 @@
+import { Send } from "lucide-react";
 import Link from "next/link";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 type Props = {
   title?: string;
   subtitle?: string;
+};
+
+interface Message {
+  sender: "user" | "bot";
+  text: string;
+}
+
+const presetResponses: Record<string, string> = {
+  hello: "Hi there! 👋 I'm your Facebook bot. How can I help?",
+  hi: "Hello! 👋 Welcome to our Hex Bot service. How can I assist you today?",
+  "how are you":
+    "I'm running smoothly 🤖, ready to help you set up your chatbot! How about you?",
+  pricing:
+    "Our pricing plans start from $0 for testing — upgrade anytime for advanced features 💰",
+  features:
+    "Our chatbot supports automated replies, webhooks, Messenger integration, and analytics 📊",
+  setup:
+    "To set up your chatbot, provide your Facebook Page ID and Access Token. I’ll guide you through it 🔧",
+  support:
+    "Need help? Reach our support anytime via chat or email at support@yourbot.com 📧",
+  contact: "Contact us at +123456789 or email support@yourbot.com ☎️",
+  thanks: "You're welcome! 😊 Happy to help you with your chatbot setup!",
+  bye: "Goodbye! 👋 Wishing you a smooth chatbot experience!",
+  feedback: "We’d love your feedback on our Messenger chatbot service 📝",
+  default:
+    "I'm not sure about that, but I can assist with Facebook Messenger chatbot setup! 🤖",
+  webhook:
+    "Our service provides easy webhook integration for Messenger. Simply provide your callback URL 🌐",
+  broadcast:
+    "You can send automated broadcasts to your Messenger subscribers using our dashboard 📢",
+  analytics:
+    "Track user interactions, message stats, and performance with real-time analytics 📊",
+  help: "I can help you with page setup, webhook configuration, automated responses, and analytics. What would you like to do?",
 };
 
 const CTAButton: React.FC<
@@ -25,6 +59,41 @@ const CTAButton: React.FC<
 };
 
 export default function HeroSection({ title, subtitle }: Props) {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      sender: "bot",
+      text: "Absolutely! You can schedule and send automated messages to your subscribers using our Messenger webhook setup. 🚀.",
+    },
+  ]);
+  const [input, setInput] = useState("");
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+
+    // User message
+    const userMsg: Message = { sender: "user", text: input.trim() };
+
+    // Bot response (basic match)
+    const lower = input.trim().toLowerCase();
+    const botReply =
+      presetResponses[lower as keyof typeof presetResponses] ||
+      presetResponses.default;
+    const botMsg: Message = { sender: "bot", text: botReply };
+
+    setMessages((prev) => [...prev, userMsg, botMsg]);
+    setInput("");
+  };
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [messages]);
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSend();
+  };
   return (
     <section className="relative overflow-hidden pt-6">
       <div className="container mx-auto px-6 lg:px-12 py-20">
@@ -110,32 +179,62 @@ export default function HeroSection({ title, subtitle }: Props) {
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div
+                className=" p-4 space-y-3 overflow-y-auto max-h-76 "
+                ref={containerRef}
+              >
                 <div className="ml-auto max-w-xs rounded-2xl bg-indigo-600/95 px-4 py-3 text-sm text-white shadow">
-                  Hi there 👋 How can I help you plan your tour today?
+                  Hi! I want to set up a Messenger chatbot for my page.
                 </div>
 
                 <div className="max-w-[85%] rounded-2xl bg-white/8 px-4 py-3 text-sm text-gray-200">
-                  I’d like to see all your tour packages.
+                  Hello! 👋 Sure, I can guide you through connecting your
+                  Facebook Page and setting up webhooks.
                 </div>
 
                 <div className="ml-auto max-w-xs rounded-2xl bg-indigo-600/95 px-4 py-3 text-sm text-white shadow animate-pulse/50">
-                  Great — here are our popular packages. Would you like to
-                  filter by destination or price?
+                  Can you help me send automated messages to my subscribers?
                 </div>
+                {messages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex ${
+                      msg.sender === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`py-2 rounded-2xl  min-w-[80%] text-sm ${
+                        msg.sender === "user"
+                          ? "ml-auto max-w-xs  bg-indigo-600/95 px-4 py-3 text-sm text-white shadow"
+                          : "max-w-[85%]bg-white/8 px-4 py-3 text-sm text-gray-200"
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="mt-5 flex items-center gap-3">
                 <input
                   aria-label="Type a message"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyPress}
                   placeholder="Type a quick message..."
                   className="flex-1 rounded-full bg-white/6 px-4 py-2 text-sm text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
-                <button
+                {/* <button
                   aria-label="Send"
                   className="rounded-full bg-indigo-500 px-3 py-2 text-white hover:bg-indigo-400"
                 >
                   ➤
+                </button> */}
+                <button
+                  onClick={handleSend}
+                  className="bg-indigo-500 hover:bg-indigo-600 p-2 rounded-lg"
+                >
+                  <Send className="w-4 h-4" />
                 </button>
               </div>
             </div>

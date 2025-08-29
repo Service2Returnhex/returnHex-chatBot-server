@@ -35,7 +35,7 @@ export default function UserDahboard() {
     },
   ];
   return (
-    <div className=" px-4 py-2 w-full">
+    <div className=" px-0 py-2 w-full">
       {/* Title Section */}
       {/* <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4 animate-fadeIn">

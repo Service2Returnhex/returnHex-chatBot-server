@@ -4,6 +4,7 @@ import UserDahboard from "@/components/UserDahboard";
 import PagesList from "@/components/userDashboard/PageList";
 import TokenCard from "@/components/userDashboard/TokenCard";
 import TokenChart from "@/components/userDashboard/TokenChart";
+import axios, { AxiosError } from "axios";
 import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PageInfo, TokenUsageResponse } from "../types/user";
@@ -64,6 +65,38 @@ export default function UserDashboardPage() {
   const [range, setRange] = useState<"daily" | "weekly">("daily");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const onLogout = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+
+      if (!token) {
+        localStorage.clear();
+        window.location.href = "/login";
+        return;
+      }
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/logout`,
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      );
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
+
+      // Redirect to login
+      window.location.href = "/login";
+    } catch (err) {
+      const error = err as AxiosError<{ message: string }>;
+      console.error("Logout error:", error?.response?.data || error?.message);
+      // Even if API fails, clear storage and redirect
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    }
+  };
+
   useEffect(() => {
     // simulate fetch + small delay
     setLoading(true);
@@ -83,27 +116,37 @@ export default function UserDashboardPage() {
   const points = usage ? usage.points : [];
 
   return (
-    <div className="p-0 space-y-6 bg-radial-aurora text-white min-h-screen ">
+    <div className="p-6 space-y-6 bg-radial-aurora text-white min-h-screen ">
       {/* <div className="lg:flex lg:gap-6  "> */}
 
-      <div className="flex flex-col gap-8 p-6">
-        <div className="flex items-center justify-between gap-">
-          <div className="w-2/3">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Welcome back, Mustafijur Rahman Fahim ! 👋
+      <div className="flex flex-col gap-8 ">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          {/* LEFT: Welcome text */}
+          <div className="min-w-0 md:flex-1">
+            <h1 className="text-lg sm:text-xl xl:text-3xl md:text-3xl font-bold text-white mb-1 leading-tight truncate">
+              Welcome back,{" "}
+              <span className="text-gradient inline-block max-w-[60ch] sm:max-w-[40ch] md:max-w-[30ch] truncate ">
+                Mustafijur <span aria-hidden="true">👋</span>
+              </span>
             </h1>
-            <p className="text-gray-300">
+
+            <p className="text-sm sm:text-base text-gray-300 max-w-prose">
               Here's an overview of your bot activity and usage statistics.
             </p>
           </div>
-          <button
-            //    onClick={() => onSignOut?.()}
-            //   variant="outline"
-            className="border-white/20 border-1 py-2 px-4 rounded-xl text-white font-semibold hover:bg-white/10 flex items-center cursor-pointer"
-          >
-            <LogOut className="h-6 w-6 mr-2" />
-            Logout
-          </button>
+
+          {/* RIGHT: Logout / controls */}
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* On small screens make button full width (stacked under text) */}
+            <button
+              onClick={onLogout}
+              aria-label="Logout"
+              className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-white font-semibold border border-white/20 hover:bg-white/8 transition bg-transparent text-sm sm:text-base"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
         <div className="flex flex-col gap-10 p-4">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 justify-between w-full">
@@ -170,7 +213,9 @@ export default function UserDashboardPage() {
             )}
           </div>
 
-          <UserDahboard />
+          <div className="w-full">
+            <UserDahboard />
+          </div>
         </div>
       </div>
       {/* </div> */}

@@ -12,7 +12,7 @@ export default function layout({
   return (
     <section>
       <div className="bg-radial-aurora text-white min-h-screen flex">
-        <div className="flex items-center justify-between mb-6 lg:hidden">
+        <div className="flex fixed top-2 left-2 items-center justify-between mb-6 lg:hidden">
           <button
             onClick={() => setSidebarOpen((s) => !s)}
             className="p-2 rounded-md bg-white/5"
@@ -53,7 +53,7 @@ export default function layout({
 
           {/* <UserSidebar /> */}
         </div>
-        <div className="w-full">{children}</div>
+        <div className="w-full ml-4 mt-4">{children}</div>
       </div>
     </section>
   );

@@ -1,7 +1,7 @@
 "use client";
 import FormInput from "@/components/ui/FormInput";
-import Navigation from "@/components/ui/Navigation";
-import { Lock, Mail, User, UserPlus } from "lucide-react";
+import axios from "axios";
+import { Image, Lock, Mail, MapPin, Phone, User, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -12,6 +12,10 @@ const Signup = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    contact: "",
+    address: "",
+    image: "",
+    role: "",
     password: "",
     confirmPassword: "",
   });
@@ -23,6 +27,10 @@ const Signup = () => {
     if (
       !formData.name ||
       !formData.email ||
+      !formData.contact ||
+      !formData.address ||
+      !formData.image ||
+      !formData.role ||
       !formData.password ||
       !formData.confirmPassword
     ) {
@@ -41,25 +49,38 @@ const Signup = () => {
     }
 
     setLoading(true);
-    // try {
-    //   const response = await api.post("/auth/signup", {
-    //     name: formData.name,
-    //     email: formData.email,
-    //     password: formData.password,
-    //   });
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/users/create-user`,
+        {
+          name: formData.name,
+          email: formData.email,
+          contact: formData.contact,
+          address: formData.address,
+          image: formData.image,
+          role: formData.role,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+        }
+      );
+      console.log("response", response);
 
-    //   localStorage.setItem("authToken", response.data.token);
-    //   localStorage.setItem("user", JSON.stringify(response.data.user));
-    //   toast.success("Account created successfully!");
-    //   navigate("/dashboard/user");
-    // } catch (error) {
-    //   console.error("Signup error:", error);
-    // } finally {
-    //   setLoading(false);
-    // }
+      localStorage.setItem("authToken", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      toast.success("Account created successfully!");
+      router.push("/user-dashboard");
+    } catch (error) {
+      console.error("Signup error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -67,7 +88,7 @@ const Signup = () => {
   return (
     <div className="auth-layout bg-radial-aurora">
       <div className="auth-overlay" />
-      <Navigation title="Sign Up" />
+      {/* <Navigation title="Sign Up" /> */}
       <div className="auth-content pt-20">
         <div className="form-container ">
           <div className="text-center mb-8">
@@ -109,6 +130,62 @@ const Signup = () => {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <FormInput
+                label="Contact"
+                name="contact"
+                type="phone"
+                value={formData.contact}
+                onChange={handleChange}
+                placeholder="Enter your phone number"
+                icon={<Phone className="h-5 w-5 text-gray-400" />}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <FormInput
+                label="Address"
+                name="address"
+                type="text"
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="Enter your address"
+                icon={<MapPin className="h-5 w-5 text-gray-400" />}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <FormInput
+                label="Profile Image"
+                name="image"
+                type="file"
+                onChange={handleChange}
+                icon={<Image className="h-5 w-5 text-gray-400" />}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Role
+              </label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full glass-input pl-3 pr-10 py-2 text-white bg-transparent border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 px-4 text-sm  transition "
+                required
+              >
+                <option value="" className="card-bg text-gray-100">
+                  Select a role
+                </option>
+                <option value="user" className="card-bg text-gray-100">
+                  User
+                </option>
+                <option value="admin" className="card-bg text-gray-100">
+                  Admin
+                </option>
+              </select>
+            </div>
 
             <div className="space-y-2">
               <FormInput
@@ -124,7 +201,7 @@ const Signup = () => {
               />
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <FormInput
                 label="Confirm Password"
                 name="confirmPassword"
@@ -136,7 +213,7 @@ const Signup = () => {
                 icon={<Lock className="h-5 w-5 text-gray-400" />}
                 required
               />
-            </div>
+            </div> */}
 
             <button
               type="submit"

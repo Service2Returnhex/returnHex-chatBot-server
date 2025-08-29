@@ -28,7 +28,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/user-dashboard/configure-bot",
-    "app/sign-up"
+    "app/(auth)/sign-up"
   ],
   "exclude": ["node_modules"]
 }

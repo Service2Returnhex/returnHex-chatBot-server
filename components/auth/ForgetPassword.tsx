@@ -1,12 +1,12 @@
 "use client";
 import FormInput from "@/components/ui/FormInput";
-import Navigation from "@/components/ui/Navigation";
+import axios from "axios";
 import { KeyRound, Mail } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "react-toastify";
 
-const ForgotPassword = () => {
+const ForgetPassword = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -20,22 +20,25 @@ const ForgotPassword = () => {
     }
 
     setLoading(true);
-    // try {
-    //   await api.post('/auth/forgot-password', { email });
-    //   setEmailSent(true);
-    //   toast.success('Password reset link sent to your email!');
-    // } catch (error) {
-    //   console.error('Forgot password error:', error);
-    // } finally {
-    //   setLoading(false);
-    // }
+    try {
+      await axios.patch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/auth/forget-password`,
+        { email }
+      );
+      setEmailSent(true);
+      toast.success("Password reset link sent to your email!");
+    } catch (error) {
+      console.error("Forget password error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (emailSent) {
     return (
       <div className="auth-layout bg-radial-aurora">
         <div className="auth-overlay" />
-        <Navigation title="Check Your Email" />
+        {/* <Navigation title="Check Your Email" /> */}
         <div className="auth-content pt-20">
           <div className="form-container text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full mb-6">
@@ -74,7 +77,7 @@ const ForgotPassword = () => {
   return (
     <div className="auth-layout bg-radial-aurora">
       <div className="auth-overlay" />
-      <Navigation title="Forgot Password" />
+      {/* <Navigation title="Forget Password" /> */}
       <div className="auth-content pt-20">
         <div className="form-container">
           <div className="text-center mb-8">
@@ -131,4 +134,4 @@ const ForgotPassword = () => {
   );
 };
 
-export default ForgotPassword;
+export default ForgetPassword;

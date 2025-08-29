@@ -31,7 +31,7 @@ type Props = {
   label?: string;
 };
 
-export default function TokenChart({ points, label = "Tokens" }: Props) {
+export default function Chart({ points, label = "Tokens" }: Props) {
   const labels = useMemo(() => points.map((p) => p.date), [points]);
   const dataPoints = useMemo(() => points.map((p) => p.tokens), [points]);
 
