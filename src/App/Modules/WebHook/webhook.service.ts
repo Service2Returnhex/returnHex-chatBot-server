@@ -6,6 +6,14 @@ import { DeepSeekService } from "../DeepSeek/deepseek.service";
 import { GeminiService } from "../Gemini/gemini.service";
 import { GroqService } from "../Groq/grok.service";
 import { PageService } from "../Page/page.service";
+import { Post } from "../Page/post.mode";
+import {
+  computeHashFromBuffer,
+  downloadImageBuffer,
+  HAMMING_THRESHOLD,
+  hammingDistanceGeneric,
+  sendTyping,
+} from "./image.detection";
 
 enum ActionType {
   DM = "reply",
@@ -14,48 +22,110 @@ enum ActionType {
 
 const handleDM = async (
   event: any,
-  pageId: string,
+  shopId: string,
   method: "gemini" | "chatgpt" | "deepseek" | "groq"
 ) => {
   const senderId = event.sender.id;
-  const userMsg = event.message.text;
+  if (!senderId) return;
+  if (event.message?.is_echo) return;
+
+  const userMsg = event.message?.text || "";
   console.log("💬 DM Message:", userMsg);
-  if(event.message.attachments) {
-    console.log("📎 Attachment detected!");
-    await sendMessage(senderId, 
-      pageId, 
-      "সংযুক্তি বা ভিডিও, ছবি, ফাইল এখনও অনুমোদিত নয়। আমাদের কাস্টমার সার্ভিস আপনার সাথে যোগাযোগ করবে।\nAttachments or videos, images, files are not allowed yet. Our customer service will contact you.",
-    );
+
+  if (event.message?.attachments && event.message.attachments.length > 0) {
+    const att = event.message.attachments[0];
+    const imageUrl = att.payload?.url;
+    if (!imageUrl) {
+      await sendMessage(
+        senderId,
+        shopId,
+        "ইমেজ URL পাওয়া যায়নি — আবার পাঠান দয়া করে।"
+      );
+      return;
+    }
+
+    try {
+      await sendTyping(senderId, true);
+
+      // 1) compute user image hash (in-memory)
+      const userBuf = await downloadImageBuffer(imageUrl);
+      const userHash = await computeHashFromBuffer(userBuf);
+
+      // 2) get all shop posts for this page (only posts with hash)
+      const posts = await Post.find({
+        shopId,
+        imageHash: { $exists: true, $ne: "" },
+      })
+        .lean()
+        .exec();
+
+      console.log("posts", posts);
+
+      // 3) find best match
+      let best: any = null;
+      for (const p of posts) {
+        if (!p.imageHash) continue;
+        const dist = hammingDistanceGeneric(userHash, p.imageHash);
+        if (!best || dist < best.distance) best = { post: p, distance: dist };
+      }
+      console.log("best", best);
+
+      if (best && best.distance <= HAMMING_THRESHOLD) {
+        // match found — send post caption / details to user
+        const matched = best.post;
+        const reply = `আমি মিল পেয়েছি:\n\n${
+          matched.message || "(No caption)"
+        }\n\nPost ID: ${
+          matched.postId
+        }\nআপনি কি এটি দেখতে চান / কার্টে যোগ করতে চান?`;
+        await sendMessage(senderId, shopId, reply);
+      } else {
+        // no match
+        await sendMessage(
+          senderId,
+          shopId,
+          "দুঃখিত, কোন ম্যাচ পাওয়া যায়নি। 'Show similar' দেখতে চান অথবা একজন এজেন্টের সাথে যুক্ত হব?"
+        );
+      }
+    } catch (err: any) {
+      console.error("Image compare error:", err?.message || err);
+      await sendMessage(
+        senderId,
+        shopId,
+        "ইমেজ বিশ্লেষণে ত্রুটি হয়েছে — পরে চেষ্টা করুন বা 'Talk to human' নিন।"
+      );
+    } finally {
+      await sendTyping(senderId, false);
+    }
     return;
   }
-
   let reply = "";
   try {
     if (method === "gemini") {
       reply = await GeminiService.getResponseDM(
         senderId,
-        pageId,
+        shopId,
         userMsg,
         ActionType.DM
       );
     } else if (method === "chatgpt") {
       reply = await ChatgptService.getResponseDM(
         senderId,
-        pageId,
+        shopId,
         userMsg,
         ActionType.DM
       );
     } else if (method === "deepseek") {
       reply = await DeepSeekService.getResponseDM(
         senderId,
-        pageId,
+        shopId,
         userMsg,
         ActionType.DM
       );
     } else if (method === "groq") {
       reply = await GroqService.getResponseDM(
         senderId,
-        pageId,
+        shopId,
         userMsg,
         ActionType.DM
       );
@@ -65,7 +135,7 @@ const handleDM = async (
   }
 
   try {
-    await sendMessage(senderId, pageId, reply);
+    await sendMessage(senderId, shopId, reply);
   } catch (error: any) {
     console.log("Error sending reply:", error?.message);
   }
@@ -73,17 +143,45 @@ const handleDM = async (
 
 const handleAddFeed = async (value: any, pageId: string) => {
   try {
-    const result = await PageService.createProduct({
+    // value.link বা value.full_picture বা value.picture — আপনার FB payload অনুযায়ী ঠিক করুন
+    const imageUrl = value.link || value.full_picture || value.picture || null;
+    console.log("imgUrl", imageUrl);
+    let imageHash = "";
+    if (imageUrl) {
+      try {
+        const buf = await downloadImageBuffer(imageUrl);
+        console.log("buf", buf);
+        imageHash = await computeHashFromBuffer(buf);
+        console.log("imgHash", imageHash);
+      } catch (err: any) {
+        console.warn("Image hash compute failed:", err?.message || err);
+      }
+    }
+
+    const payload = {
       postId: value.post_id,
       message: value.message,
       shopId: pageId,
       createdAt: value.created_time,
-      full_picture: value.link,
-    });
+      full_picture: imageUrl,
+      imageHash,
+    };
 
-    !result
-      ? console.log("Feed Not Created")
-      : console.log("Feed Created Successfully");
+    // Save to DB (update if exists)
+    const result = await Post.findOneAndUpdate(
+      { postId: value.post_id },
+      { $set: { ...payload, pageId } },
+      { upsert: true, new: true }
+    ).exec();
+
+    if (!result) console.log("Feed Not Created");
+    else
+      console.log(
+        "Feed Created/Updated Successfully",
+        result.postId,
+        "hash:",
+        result.imageHash
+      );
   } catch (error: any) {
     console.log("Feed Not Created, Error: ", error?.message);
   }
@@ -127,10 +225,12 @@ const handleAddComment = async (value: any, pageId: string, method: string) => {
   const { comment_id, message, post_id, from } = value;
   const commenterId = from?.id;
   const userName = from?.name;
-  if(!value.message) {
+  if (!value.message) {
     console.log("📎 Attachment detected in comment!");
-    await replyToComment(comment_id, pageId, 
-      "সংযুক্তি বা ভিডিও, ছবি, ফাইল এখনও অনুমোদিত নয়। আমাদের কাস্টমার সার্ভিস আপনার সাথে যোগাযোগ করবে।\nAttachments or videos, images, files are not allowed yet. Our customer service will contact you.", 
+    await replyToComment(
+      comment_id,
+      pageId,
+      "সংযুক্তি বা ভিডিও, ছবি, ফাইল এখনও অনুমোদিত নয়। আমাদের কাস্টমার সার্ভিস আপনার সাথে যোগাযোগ করবে।\nAttachments or videos, images, files are not allowed yet. Our customer service will contact you.",
       commenterId
     );
     return;
