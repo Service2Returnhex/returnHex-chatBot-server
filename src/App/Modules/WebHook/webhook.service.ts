@@ -7,25 +7,26 @@ import { GeminiService } from "../Gemini/gemini.service";
 import { GroqService } from "../Groq/grok.service";
 import { PageService } from "../Page/page.service";
 import { Post } from "../Page/post.mode";
+import { downloadImageBuffer, sendTyping } from "./image.detection";
 import {
-  computeHashFromBuffer,
-  downloadImageBuffer,
-  HAMMING_THRESHOLD,
-  hammingDistanceGeneric,
-  sendTyping,
-} from "./image.detection";
+  cosineSimilarity,
+  createTextEmbedding,
+  extractTextFromImageBuffer,
+} from "./image.embedding";
 
 enum ActionType {
   DM = "reply",
   COMMENT = "comment",
 }
 
-const handleDM = async (
+const SIMILARITY_THRESHOLD = 0.5;
+
+export const handleDM = async (
   event: any,
   shopId: string,
   method: "gemini" | "chatgpt" | "deepseek" | "groq"
 ) => {
-  const senderId = event.sender.id;
+  const senderId = event.sender?.id;
   if (!senderId) return;
   if (event.message?.is_echo) return;
 
@@ -47,44 +48,70 @@ const handleDM = async (
     try {
       await sendTyping(senderId, true);
 
-      // 1) compute user image hash (in-memory)
-      const userBuf = await downloadImageBuffer(imageUrl);
-      const userHash = await computeHashFromBuffer(userBuf);
-
-      // 2) get all shop posts for this page (only posts with hash)
-      const posts = await Post.find({
-        shopId,
-        imageHash: { $exists: true, $ne: "" },
-      })
-        .lean()
-        .exec();
-
-      console.log("posts", posts);
-
-      // 3) find best match
-      let best: any = null;
-      for (const p of posts) {
-        if (!p.imageHash) continue;
-        const dist = hammingDistanceGeneric(userHash, p.imageHash);
-        if (!best || dist < best.distance) best = { post: p, distance: dist };
+      // 1) compute user embedding
+      const buf = await downloadImageBuffer(imageUrl);
+      const ocrText = await extractTextFromImageBuffer(buf);
+      const textForEmbedding = ocrText && ocrText.length > 5 ? ocrText : ""; // small text fallback
+      // If OCR gives little/none text, you could optionally send the image through a vision LLM or use CLIP
+      if (!textForEmbedding) {
+        // optional: also try using the incoming message text (if user wrote something with the image)
+        // or fallback to using pHash approach if desired
       }
-      console.log("best", best);
+      const userEmbedding = textForEmbedding
+        ? await createTextEmbedding(textForEmbedding)
+        : null;
 
-      if (best && best.distance <= HAMMING_THRESHOLD) {
-        // match found — send post caption / details to user
-        const matched = best.post;
-        const reply = `আমি মিল পেয়েছি:\n\n${
-          matched.message || "(No caption)"
-        }\n\nPost ID: ${
-          matched.postId
-        }\nআপনি কি এটি দেখতে চান / কার্টে যোগ করতে চান?`;
-        await sendMessage(senderId, shopId, reply);
-      } else {
-        // no match
+      if (!userEmbedding) {
+        // fallback: we couldn't get semantic text representation — reply fallback
         await sendMessage(
           senderId,
           shopId,
-          "দুঃখিত, কোন ম্যাচ পাওয়া যায়নি। 'Show similar' দেখতে চান অথবা একজন এজেন্টের সাথে যুক্ত হব?"
+          "আপনার ছবির টেক্সট আমরা বুঝতে পারিনি — অনুগ্রহ করে ছবির সঙ্গে কিছু লিখে পাঠান বা 'Talk to human' চাপুন।"
+        );
+        await sendTyping(senderId, false);
+        return;
+      }
+
+      // 2) retrieve candidate posts for this page (only those with embedding)
+      const posts = await Post.find({
+        shopId,
+        embedding: { $exists: true, $ne: [] },
+      })
+        .lean()
+        .exec();
+      console.log("posts", posts);
+      if (!posts || posts.length === 0) {
+        await sendMessage(
+          senderId,
+          shopId,
+          "দুঃখিত, এখনই কোন পণ্যের তথ্যও পাওয়া যাচ্ছে না।"
+        );
+        await sendTyping(senderId, false);
+        return;
+      }
+
+      // 3) compute best similarity (linear scan)
+      let best: { post: any; score: number } | null = null;
+      for (const p of posts) {
+        if (!p.embedding || !Array.isArray(p.embedding)) continue;
+        const score = cosineSimilarity(userEmbedding, p.embedding);
+        if (!best || score > best.score) best = { post: p, score };
+      }
+
+      console.log("best match score:", best?.score);
+      if (best && best.score >= SIMILARITY_THRESHOLD) {
+        const matched = best.post;
+        const reply = `আমি মিল পেয়েছি:\n\n${
+          matched.message || "(No caption)"
+        }\n\nPost ID: ${matched.postId}\nSimilarity: ${best.score.toFixed(
+          3
+        )}\nআপনি কি এটি দেখতে চান / কার্টে যোগ করতে চান?`;
+        await sendMessage(senderId, shopId, reply);
+      } else {
+        await sendMessage(
+          senderId,
+          shopId,
+          "দুঃখিত, কোন ম্যাচ পাওয়া যায়নি। 'Show similar' বা 'Talk to human' বেছে নিন।"
         );
       }
     } catch (err: any) {
@@ -99,6 +126,7 @@ const handleDM = async (
     }
     return;
   }
+
   let reply = "";
   try {
     if (method === "gemini") {
@@ -141,36 +169,38 @@ const handleDM = async (
   }
 };
 
-const handleAddFeed = async (value: any, pageId: string) => {
+export const handleAddFeed = async (value: any, pageId: string) => {
   try {
-    // value.link বা value.full_picture বা value.picture — আপনার FB payload অনুযায়ী ঠিক করুন
     const imageUrl = value.link || value.full_picture || value.picture || null;
-    console.log("imgUrl", imageUrl);
-    let imageHash = "";
+    let embedding: number[] | null = null;
+
     if (imageUrl) {
       try {
         const buf = await downloadImageBuffer(imageUrl);
-        console.log("buf", buf);
-        imageHash = await computeHashFromBuffer(buf);
-        console.log("imgHash", imageHash);
+        const ocrText = await extractTextFromImageBuffer(buf);
+        // prefer OCR text; if none, fall back to caption/message
+        const textForEmbedding =
+          ocrText && ocrText.length > 10 ? ocrText : value.message || "";
+        if (textForEmbedding && textForEmbedding.trim().length > 0) {
+          embedding = await createTextEmbedding(textForEmbedding);
+        }
       } catch (err: any) {
-        console.warn("Image hash compute failed:", err?.message || err);
+        console.warn("Image embedding compute failed:", err?.message || err);
       }
     }
-
-    const payload = {
+    console.log("embedding", embedding);
+    const payload: any = {
       postId: value.post_id,
-      message: value.message,
       shopId: pageId,
+      message: value.message,
       createdAt: value.created_time,
       full_picture: imageUrl,
-      imageHash,
     };
+    if (embedding) payload.embedding = embedding;
 
-    // Save to DB (update if exists)
     const result = await Post.findOneAndUpdate(
       { postId: value.post_id },
-      { $set: { ...payload, pageId } },
+      { $set: payload },
       { upsert: true, new: true }
     ).exec();
 
@@ -179,8 +209,8 @@ const handleAddFeed = async (value: any, pageId: string) => {
       console.log(
         "Feed Created/Updated Successfully",
         result.postId,
-        "hash:",
-        result.imageHash
+        "embedding:",
+        !!result.embedding
       );
   } catch (error: any) {
     console.log("Feed Not Created, Error: ", error?.message);
