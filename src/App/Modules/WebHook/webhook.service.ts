@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import { Request, Response } from "express";
 import { replyToComment, sendMessage } from "../../api/facebook.api";
 import { ChatgptService } from "../Chatgpt/chatgpt.service";
@@ -9,8 +10,10 @@ import { PageService } from "../Page/page.service";
 import { Post } from "../Page/post.mode";
 import { downloadImageBuffer, sendTyping } from "./image.detection";
 import {
+  averageEmbeddings,
   cosineSimilarity,
   createTextEmbedding,
+  extractImageUrlsFromFeed,
   extractTextFromImageBuffer,
 } from "./image.embedding";
 
@@ -51,17 +54,19 @@ export const handleDM = async (
       // 1) compute user embedding
       const buf = await downloadImageBuffer(imageUrl);
       const ocrText = await extractTextFromImageBuffer(buf);
-      const textForEmbedding = ocrText && ocrText.length > 5 ? ocrText : ""; // small text fallback
+      const userText = ocrText || ""; // or include any user caption
+      const userEmb = userText ? await createTextEmbedding(userText) : null;
+      // const textForEmbedding = ocrText && ocrText.length > 5 ? ocrText : ""; // small text fallback
       // If OCR gives little/none text, you could optionally send the image through a vision LLM or use CLIP
-      if (!textForEmbedding) {
+      if (!userEmb) {
         // optional: also try using the incoming message text (if user wrote something with the image)
         // or fallback to using pHash approach if desired
       }
-      const userEmbedding = textForEmbedding
-        ? await createTextEmbedding(textForEmbedding)
-        : null;
+      // const userEmbedding = userEmb
+      //   ? await createTextEmbedding(userEmb)
+      //   : null;
 
-      if (!userEmbedding) {
+      if (!userEmb) {
         // fallback: we couldn't get semantic text representation — reply fallback
         await sendMessage(
           senderId,
@@ -73,13 +78,16 @@ export const handleDM = async (
       }
 
       // 2) retrieve candidate posts for this page (only those with embedding)
-      const posts = await Post.find({
-        shopId,
-        embedding: { $exists: true, $ne: [] },
-      })
-        .lean()
-        .exec();
+      // const posts = await Post.find({
+      //   shopId,
+      //   embedding: { $exists: true, $ne: [] },
+      // })
+      //   .lean()
+      //   .exec();
+      const posts = await Post.find({ shopId }).lean().exec();
+
       console.log("posts", posts);
+
       if (!posts || posts.length === 0) {
         await sendMessage(
           senderId,
@@ -91,11 +99,14 @@ export const handleDM = async (
       }
 
       // 3) compute best similarity (linear scan)
-      let best: { post: any; score: number } | null = null;
-      for (const p of posts) {
-        if (!p.embedding || !Array.isArray(p.embedding)) continue;
-        const score = cosineSimilarity(userEmbedding, p.embedding);
-        if (!best || score > best.score) best = { post: p, score };
+      // let best: { post: any; score: number } | null = null;
+      let best = null;
+      for (const post of posts) {
+        for (const img of post.images || []) {
+          if (!img.embedding || !img.embedding.length) continue;
+          const score = cosineSimilarity(userEmb, img.embedding);
+          if (!best || score > best.score) best = { post, image: img, score };
+        }
       }
 
       console.log("best match score:", best?.score);
@@ -171,32 +182,69 @@ export const handleDM = async (
 
 export const handleAddFeed = async (value: any, pageId: string) => {
   try {
-    const imageUrl = value.link || value.full_picture || value.picture || null;
-    let embedding: number[] | null = null;
+    // 1) extract image URLs (may be multiple)
+    const imageUrls = extractImageUrlsFromFeed(value);
+    console.log("Found imageUrls:", imageUrls);
 
-    if (imageUrl) {
-      try {
-        const buf = await downloadImageBuffer(imageUrl);
-        const ocrText = await extractTextFromImageBuffer(buf);
-        // prefer OCR text; if none, fall back to caption/message
-        const textForEmbedding =
-          ocrText && ocrText.length > 10 ? ocrText : value.message || "";
-        if (textForEmbedding && textForEmbedding.trim().length > 0) {
-          embedding = await createTextEmbedding(textForEmbedding);
-        }
-      } catch (err: any) {
-        console.warn("Image embedding compute failed:", err?.message || err);
-      }
+    const images: { url: string; embedding?: number[] }[] = [];
+
+    // process each image concurrently with limit (to avoid too many parallel requests)
+    const limit = 3;
+    const chunks: string[][] = [];
+    for (let i = 0; i < imageUrls.length; i += limit) {
+      chunks.push(imageUrls.slice(i, i + limit));
     }
-    console.log("embedding", embedding);
+
+    for (const chunk of chunks) {
+      const promises = chunk.map(async (url) => {
+        try {
+          const buf = await downloadImageBuffer(url); // in-memory
+          // optional: run OCR
+          let ocrText = "";
+          try {
+            ocrText = await extractTextFromImageBuffer(buf); // may be "" if none
+          } catch (ocrErr) {
+            const ocrError = ocrErr as AxiosError<{ message: string }>;
+            console.warn("OCR failed for", url, ocrError?.message || ocrErr);
+          }
+
+          const textForEmbedding =
+            [ocrText, value.message].filter(Boolean).join("\n").trim() ||
+            "product image";
+          const emb = await createTextEmbedding(textForEmbedding);
+          return { url, embedding: emb ?? undefined };
+        } catch (err: any) {
+          console.warn(
+            "Failed processing image url:",
+            url,
+            err?.message || err
+          );
+          return { url, embedding: undefined };
+        }
+      });
+
+      const results = await Promise.all(promises);
+      images.push(...results);
+    }
+
+    // aggregated embedding (mean of all non-empty embeddings)
+    const embeddingsList = images
+      .filter((it) => it.embedding && it.embedding.length > 0)
+      .map((it) => it.embedding as number[]);
+    const aggregatedEmbedding = embeddingsList.length
+      ? averageEmbeddings(embeddingsList)
+      : [];
+
+    // save to DB (upsert)
     const payload: any = {
       postId: value.post_id,
       shopId: pageId,
       message: value.message,
       createdAt: value.created_time,
-      full_picture: imageUrl,
+      images,
     };
-    if (embedding) payload.embedding = embedding;
+    if (aggregatedEmbedding.length)
+      payload.aggregatedEmbedding = aggregatedEmbedding;
 
     const result = await Post.findOneAndUpdate(
       { postId: value.post_id },
@@ -204,16 +252,16 @@ export const handleAddFeed = async (value: any, pageId: string) => {
       { upsert: true, new: true }
     ).exec();
 
-    if (!result) console.log("Feed Not Created");
-    else
-      console.log(
-        "Feed Created/Updated Successfully",
-        result.postId,
-        "embedding:",
-        !!result.embedding
-      );
+    console.log(
+      "Feed Created/Updated Successfully",
+      result.postId,
+      "images:",
+      result.images?.length,
+      "embedding stored:",
+      !!result.aggregatedEmbedding
+    );
   } catch (error: any) {
-    console.log("Feed Not Created, Error: ", error?.message);
+    console.log("Feed Not Created, Error: ", error?.message || error);
   }
 };
 

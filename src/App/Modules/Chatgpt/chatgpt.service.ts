@@ -75,7 +75,7 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPrompt =await makePromtComment(
+  const getPrompt = await makePromtComment(
     shop,
     products,
     specificProduct,
@@ -100,9 +100,9 @@ export const getCommnetResponse = async (
     model: "gpt-5-mini",
     messages,
   });
-  
+
   let reply = completion.choices[0].message.content || "Something Went Wrong";
-  reply = `@[${commenterId}] ${reply}`
+  reply = `@[${commenterId}] ${reply}`;
 
   userCommnetHistoryDoc.messages.push({
     commentId,

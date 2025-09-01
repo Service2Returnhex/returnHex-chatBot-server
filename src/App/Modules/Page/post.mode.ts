@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import { IImageItem, ImageItemSchema } from "./image.model";
 export interface IPost {
   name?: string;
   description?: string;
@@ -6,11 +7,13 @@ export interface IPost {
 
   postId: string;
   message: string;
-  full_picture: string;
   shopId: string;
   isTrained?: boolean;
-  imageHash?: string;
-  embedding?: number[];
+  // full_picture: string;
+  // imageHash?: string;
+  // embedding?: number[];
+  images?: IImageItem;
+  aggregatedEmbedding?: number[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -25,9 +28,11 @@ const PostSchema = new Schema<IPost>({
     unique: true,
   },
   message: { type: String, required: true, default: "" },
-  full_picture: { type: String, default: "" },
-  imageHash: String,
-  embedding: { type: [Number], default: [] },
+  // full_picture: { type: String, default: "" },
+  // imageHash: String,
+  // embedding: { type: [Number], default: [] },
+  images: { type: [ImageItemSchema], default: [] },
+  aggregatedEmbedding: { type: [Number], default: [] },
   shopId: { type: String, required: true },
   isTrained: { type: Boolean, required: true, default: false },
   createdAt: { type: Date, default: Date.now },
