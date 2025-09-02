@@ -41,6 +41,7 @@ const createProduct = async (payload: IPost) => {
     shopId: payload.shopId,
     postId: payload.postId,
   });
+  // console.log("create product", payload);
   if (findProduct) return "Product Already Created";
   const result = await Post.create({ ...payload, isTrained: true });
   if (!result) {
@@ -61,6 +62,7 @@ const updateProduct = async (
   payload: Partial<IPost>
 ) => {
   const existing = await Post.findOne({ shopId: pageId, postId: id });
+  // console.log("update existing", existing);
   if (!existing) {
     Logger(LogService.DB, LogPrefix.PRODUCT, LogMessage.NOT_FOUND);
     throw new ApiError(httpStatus.NOT_FOUND, "Product Not Found!");
@@ -70,7 +72,7 @@ const updateProduct = async (
     new: true,
     runValidators: true,
   });
-
+  // console.log("update result", result);
   if (!result.modifiedCount) {
     Logger(LogService.DB, LogPrefix.PRODUCT, LogMessage.NOT_UPDATED);
     throw new ApiError(
@@ -84,12 +86,13 @@ const updateProduct = async (
 
 const deleteProduct = async (pageId: string, id: string) => {
   const existing = await Post.findOne({ shopId: pageId, postId: id });
+  // console.log("remove existing", existing);
   if (!existing) {
     Logger(LogService.DB, LogPrefix.PRODUCT, LogMessage.NOT_FOUND);
     throw new ApiError(httpStatus.NOT_FOUND, "Product Not Found!");
   }
-  const result = await Post.deleteOne({ shopId: pageId, postId: id });
-  if (!result.deletedCount) {
+  const result = await Post.findOneAndDelete({ shopId: pageId, postId: id });
+  if (!result) {
     Logger(LogService.DB, LogPrefix.PRODUCT, LogMessage.NOTE_DELETED);
     throw new ApiError(httpStatus.NOT_FOUND, "Product Not Deleted!");
   }
@@ -122,7 +125,7 @@ const getShopById = async (id: string) => {
 
 const createShop = async (payload: IPageInfo) => {
   const existing = await PageInfo.findOne({ shopId: payload.shopId });
-  if(existing) {
+  if (existing) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.CONFLICT);
     throw new ApiError(httpStatus.CONFLICT, "Shop Already Exists!");
   }
@@ -171,7 +174,7 @@ const deleteShop = async (id: string) => {
   return result;
 };
 
-const setDmPromt = async (id: string,  dmSystemPromt: string ) => {
+const setDmPromt = async (id: string, dmSystemPromt: string) => {
   const isExists = await PageInfo.findOne({ shopId: id });
   if (!isExists) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_FOUND);
@@ -179,11 +182,10 @@ const setDmPromt = async (id: string,  dmSystemPromt: string ) => {
   }
   const result = await PageInfo.updateOne(
     { shopId: id },
-    { dmSystemPromt},
+    { dmSystemPromt },
     { new: true, runValidators: true }
   );
 
-  
   if (!result.modifiedCount) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_UPDATED);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Shop Not updated");
@@ -201,7 +203,7 @@ const setCmntPromt = async (id: string, cmntSystemPromt: string) => {
   }
   const result = await PageInfo.updateOne(
     { shopId: id },
-    { cmntSystemPromt},
+    { cmntSystemPromt },
     { new: true, runValidators: true }
   );
   if (!result.modifiedCount) {
@@ -227,5 +229,5 @@ export const PageService = {
   updateShop,
   deleteShop,
   setDmPromt,
-  setCmntPromt
+  setCmntPromt,
 };

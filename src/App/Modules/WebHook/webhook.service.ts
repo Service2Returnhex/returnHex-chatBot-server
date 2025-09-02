@@ -7,12 +7,16 @@ import { DeepSeekService } from "../DeepSeek/deepseek.service";
 import { GeminiService } from "../Gemini/gemini.service";
 import { GroqService } from "../Groq/grok.service";
 import { PageService } from "../Page/page.service";
+import { PageInfo } from "../Page/pageInfo.model";
 import { Post } from "../Page/post.mode";
-import { downloadImageBuffer, sendTyping } from "./image.detection";
+import { fetchPostAttachments } from "./image.caption";
+import { sendTyping } from "./image.detection";
 import {
   averageEmbeddings,
   cosineSimilarity,
   createTextEmbedding,
+  downloadImageBuffer,
+  extractImageCaptions,
   extractImageUrlsFromFeed,
   extractTextFromImageBuffer,
 } from "./image.embedding";
@@ -48,81 +52,158 @@ export const handleDM = async (
       return;
     }
 
+    // CONFIG
+    // const SIMILARITY_THRESHOLD = 0.7; // তোমার প্রয়োজনে 0.65-0.80 এ অ্যাডজাস্ট করো
+
+    // Replace your try { ... } block with this updated version
     try {
       await sendTyping(senderId, true);
 
-      // 1) compute user embedding
-      const buf = await downloadImageBuffer(imageUrl);
-      const ocrText = await extractTextFromImageBuffer(buf);
-      const userText = ocrText || ""; // or include any user caption
-      const userEmb = userText ? await createTextEmbedding(userText) : null;
-      // const textForEmbedding = ocrText && ocrText.length > 5 ? ocrText : ""; // small text fallback
-      // If OCR gives little/none text, you could optionally send the image through a vision LLM or use CLIP
-      if (!userEmb) {
-        // optional: also try using the incoming message text (if user wrote something with the image)
-        // or fallback to using pHash approach if desired
-      }
-      // const userEmbedding = userEmb
-      //   ? await createTextEmbedding(userEmb)
-      //   : null;
+      const shop = await PageInfo.findOne({ shopId });
+      const pageAccessToken = shop?.accessToken || "";
 
-      if (!userEmb) {
-        // fallback: we couldn't get semantic text representation — reply fallback
+      // 1) compute user embedding from image OCR
+      const buf = await downloadImageBuffer(imageUrl, pageAccessToken);
+      let ocrText = "";
+      try {
+        ocrText = (await extractTextFromImageBuffer(buf)) || "";
+      } catch (ocrErr) {
+        console.warn("OCR failed:", (ocrErr as any)?.message || ocrErr);
+        ocrText = "";
+      }
+      const userText = ocrText.trim();
+      const userEmb = userText ? await createTextEmbedding(userText) : null;
+
+      if (!userEmb || !Array.isArray(userEmb) || userEmb.length === 0) {
         await sendMessage(
           senderId,
           shopId,
-          "আপনার ছবির টেক্সট আমরা বুঝতে পারিনি — অনুগ্রহ করে ছবির সঙ্গে কিছু লিখে পাঠান বা 'Talk to human' চাপুন।"
+          "আপনার ছবির টেক্সট থেকে আমরা কোন সেমান্টিক রিপ্রেজেন্টেশন পাইনি — অনুগ্রহ করে ছবির সাথে কিছু লেখা পাঠান বা 'Talk to human' বেছে নিন।"
         );
-        await sendTyping(senderId, false);
         return;
       }
 
-      // 2) retrieve candidate posts for this page (only those with embedding)
-      // const posts = await Post.find({
-      //   shopId,
-      //   embedding: { $exists: true, $ne: [] },
-      // })
-      //   .lean()
-      //   .exec();
+      // 2) fetch posts for the page
       const posts = await Post.find({ shopId }).lean().exec();
-
-      console.log("posts", posts);
-
       if (!posts || posts.length === 0) {
         await sendMessage(
           senderId,
           shopId,
-          "দুঃখিত, এখনই কোন পণ্যের তথ্যও পাওয়া যাচ্ছে না।"
+          "দুঃখিত, এখনই কোন পণ্যের তথ্য পাওয়া যাচ্ছে না।"
         );
-        await sendTyping(senderId, false);
         return;
       }
 
-      // 3) compute best similarity (linear scan)
-      // let best: { post: any; score: number } | null = null;
-      let best = null;
-      for (const post of posts) {
-        for (const img of post.images || []) {
-          if (!img.embedding || !img.embedding.length) continue;
-          const score = cosineSimilarity(userEmb, img.embedding);
-          if (!best || score > best.score) best = { post, image: img, score };
-        }
-      }
+      // 3) search best match: prefer per-image embedding, fallback to per-image caption embedding (on-the-fly),
+      //    then fallback to post.aggregatedEmbedding
+      let best: {
+        post: any;
+        image?: any | null;
+        score: number;
+        matchedBy: "imageEmbedding" | "imageCaptionEmbedding" | "postEmbedding";
+      } | null = null;
 
-      console.log("best match score:", best?.score);
+      // cache for caption embeddings to avoid duplicate createTextEmbedding calls
+      const captionEmbCache = new Map<string, number[] | null>();
+
+      for (const post of posts) {
+        const images = Array.isArray(post.images) ? post.images : [];
+
+        // 3a): try image-level embeddings first (fast path)
+        for (const img of images) {
+          // if image stored explicit embedding
+          if (
+            img?.embedding &&
+            Array.isArray(img.embedding) &&
+            img.embedding.length
+          ) {
+            const score = cosineSimilarity(userEmb, img.embedding);
+            if (!best || score > best.score) {
+              best = { post, image: img, score, matchedBy: "imageEmbedding" };
+            }
+          }
+        }
+
+        // 3b) if not matched by stored image embeddings, try per-image caption embeddings (on-demand)
+        for (const img of images) {
+          if (
+            img?.embedding &&
+            Array.isArray(img.embedding) &&
+            img.embedding.length
+          ) {
+            // we already handled stored embeddings above
+            continue;
+          }
+
+          const caption = (img?.caption || "").toString().trim();
+          if (!caption) continue;
+
+          // get or compute caption embedding
+          if (!captionEmbCache.has(caption)) {
+            try {
+              const emb = await createTextEmbedding(caption);
+              const normalized = Array.isArray(emb) && emb.length ? emb : null;
+              captionEmbCache.set(caption, normalized);
+            } catch (e) {
+              console.warn(
+                "caption embedding failed:",
+                (e as any)?.message || e
+              );
+              captionEmbCache.set(caption, null);
+            }
+          }
+
+          const captionEmb = captionEmbCache.get(caption) || null;
+          if (!captionEmb) continue;
+
+          const score = cosineSimilarity(userEmb, captionEmb);
+          if (!best || score > best.score) {
+            best = {
+              post,
+              image: img,
+              score,
+              matchedBy: "imageCaptionEmbedding",
+            };
+          }
+        }
+
+        // 3c) fallback: compare with post-level aggregatedEmbedding if exists
+        if (
+          (!best || best.matchedBy === "postEmbedding") &&
+          post?.aggregatedEmbedding &&
+          Array.isArray(post.aggregatedEmbedding) &&
+          post.aggregatedEmbedding.length
+        ) {
+          const score = cosineSimilarity(userEmb, post.aggregatedEmbedding);
+          if (!best || score > best.score) {
+            best = { post, image: null, score, matchedBy: "postEmbedding" };
+          }
+        }
+      } // end posts loop
+
+      console.log("best match:", best);
+
       if (best && best.score >= SIMILARITY_THRESHOLD) {
-        const matched = best.post;
-        const reply = `আমি মিল পেয়েছি:\n\n${
-          matched.message || "(No caption)"
-        }\n\nPost ID: ${matched.postId}\nSimilarity: ${best.score.toFixed(
-          3
-        )}\nআপনি কি এটি দেখতে চান / কার্টে যোগ করতে চান?`;
-        await sendMessage(senderId, shopId, reply);
+        const matchedPost = best.post;
+        // prefer image-level caption if we've matched an image
+        const imageCaption = best.image?.caption ?? null;
+        const replyText =
+          imageCaption && imageCaption.toString().trim()
+            ? `আমি মিল পেয়েছি (image caption):\n\n${imageCaption}\n\nPost ID: ${
+                matchedPost.postId
+              }\nSimilarity: ${best.score.toFixed(3)}`
+            : `আমি মিল পেয়েছি (post message):\n\n${
+                matchedPost.message || "(No caption)"
+              }\n\nPost ID: ${
+                matchedPost.postId
+              }\nSimilarity: ${best.score.toFixed(3)}`;
+
+        await sendMessage(senderId, shopId, replyText);
       } else {
         await sendMessage(
           senderId,
           shopId,
-          "দুঃখিত, কোন ম্যাচ পাওয়া যায়নি। 'Show similar' বা 'Talk to human' বেছে নিন।"
+          "দুঃখিত, কোন মিল পাওয়া যায়নি। 'Show similar' বা 'Talk to human' বেছে নিন।"
         );
       }
     } catch (err: any) {
@@ -135,6 +216,7 @@ export const handleDM = async (
     } finally {
       await sendTyping(senderId, false);
     }
+
     return;
   }
 
@@ -180,95 +262,241 @@ export const handleDM = async (
   }
 };
 
+// create Post
 export const handleAddFeed = async (value: any, pageId: string) => {
   try {
-    // 1) extract image URLs (may be multiple)
-    const imageUrls = extractImageUrlsFromFeed(value);
-    console.log("Found imageUrls:", imageUrls);
+    const shop = await PageInfo.findOne({ shopId: pageId });
+    if (!shop) {
+      console.warn("handleAddFeed: PageInfo not found for", pageId);
+      return;
+    }
+    const pageAccessToken = shop.accessToken || "";
+    if (!pageAccessToken) {
+      console.warn("handleAddFeed: No page access token for", pageId);
+      return;
+    }
+    const postId = String(value.post_id || value.id || "");
+    if (!postId) {
+      console.warn("handleAddFeed: no post_id in webhook value", value);
+      return;
+    }
+    // 1) fetch post attachments (to get per-image captions via subattachments)
+    let postData: any = null;
+    try {
+      postData = await fetchPostAttachments(postId, pageAccessToken);
+    } catch (err: any) {
+      console.warn("fetchPostAttachments failed:", err?.message || err);
+      // continue — we'll still try fallback with value.photos
+    }
+    // console.log("postData", postData.attachments.data);
+    // console.log(
+    //   "postData image",
+    //   postData.attachments.data[0].media.subattachments.data[0]
+    // );
+    const attachments = Array.isArray(postData)
+      ? postData
+      : postData &&
+        postData.attachments &&
+        Array.isArray(postData.attachments.data)
+      ? postData.attachments.data
+      : [];
 
-    const images: { url: string; embedding?: number[] }[] = [];
+    // 4) safe subattachment access
+    const firstSub = attachments[0]?.subattachments?.data?.[0] ?? null;
+
+    // console.log("attachments (length):", attachments.length);
+    // console.log(
+    //   "first attachment (pretty):",
+    //   JSON.stringify(attachments[0] || null, null, 2)
+    // );
+    console.log(
+      "first subattachment (pretty):",
+      JSON.stringify(firstSub, null, 2)
+    );
+    // 2) extract image captions from Graph response (if available)
+
+    const imagesDescription = postData
+      ? await extractImageCaptions(postData)
+      : ([] as { photoId?: string; url?: string; caption?: string }[]);
+
+    console.log("imagesDescription", imagesDescription);
+
+    const urlToCaption = new Map<string, string>();
+    const idToCaption = new Map<string, string>();
+
+    imagesDescription.forEach((it: any) => {
+      if (it.url) urlToCaption.set(it.url, it.caption ?? "");
+      if (it.photoId) idToCaption.set(String(it.photoId), it.caption ?? "");
+    });
+
+    // 3) extract image URLs from webhook `value` (fallback if Graph not available)
+    const imageUrls: string[] = extractImageUrlsFromFeed(value) || [];
+
+    // If no imageUrls found in webhook, try to collect from postData attachments
+    if (imageUrls.length === 0 && imagesDescription?.length > 0) {
+      // take URLs from imagesDescription
+      for (const it of imagesDescription) {
+        if (it.url) imageUrls.push(it.url);
+      }
+    }
+    // console.log("Found imageUrls:", imageUrls);
+    // If still empty, nothing to process
+    if (imageUrls.length === 0) {
+      console.log("handleAddFeed: no image URLs found for", postId);
+    }
+
+    // 4) process each image: download, OCR (optional), create embedding
+    type ImageResult = {
+      url: string;
+      photoId?: string | null;
+      caption?: string | null;
+      embedding?: number[] | null;
+    };
 
     // process each image concurrently with limit (to avoid too many parallel requests)
-    const limit = 3;
-    const chunks: string[][] = [];
-    for (let i = 0; i < imageUrls.length; i += limit) {
-      chunks.push(imageUrls.slice(i, i + limit));
-    }
-
-    for (const chunk of chunks) {
-      const promises = chunk.map(async (url) => {
-        try {
-          const buf = await downloadImageBuffer(url); // in-memory
-          // optional: run OCR
-          let ocrText = "";
+    const imagesProcessed: ImageResult[] = [];
+    const CONCURRENCY = 6; // safe default
+    // split into chunks for concurrency control
+    for (let i = 0; i < imageUrls.length; i += CONCURRENCY) {
+      const chunk = imageUrls.slice(i, i + CONCURRENCY);
+      const promises: Promise<ImageResult>[] = chunk.map(
+        async (url): Promise<ImageResult> => {
           try {
-            ocrText = await extractTextFromImageBuffer(buf); // may be "" if none
-          } catch (ocrErr) {
-            const ocrError = ocrErr as AxiosError<{ message: string }>;
-            console.warn("OCR failed for", url, ocrError?.message || ocrErr);
-          }
+            // find matching caption (exact URL match)
+            let caption: string | null = null;
+            if (urlToCaption.has(url)) {
+              caption = urlToCaption.get(url) || null;
+            } else {
+              // try fuzzy match: some Graph URLs may differ by params — match by pathname or last segment
+              const matched = Array.from(urlToCaption.keys()).find((u) => {
+                try {
+                  const a = new URL(u).pathname;
+                  const b = new URL(url).pathname;
+                  return a === b || a.endsWith(b) || b.endsWith(a);
+                } catch (e) {
+                  return u === url;
+                }
+              });
+              if (matched) caption = urlToCaption.get(matched) || null;
+            }
 
-          const textForEmbedding =
-            [ocrText, value.message].filter(Boolean).join("\n").trim() ||
-            "product image";
-          const emb = await createTextEmbedding(textForEmbedding);
-          return { url, embedding: emb ?? undefined };
-        } catch (err: any) {
-          console.warn(
-            "Failed processing image url:",
-            url,
-            err?.message || err
-          );
-          return { url, embedding: undefined };
+            // try to discover photoId by scanning imagesDescription entries
+            // let photoId: string | null = null;
+            // const cd = imagesDescription.find(
+            //   (d) =>
+            //     d.url === url ||
+            //     d.url?.includes(url) ||
+            //     (d.photoId && url.includes(d.photoId))
+            // );
+            // console.log("photo id ", cd?.photoId);
+            // if (cd?.photoId) photoId = String(cd.photoId);
+
+            let emb: number[] | null = null;
+            try {
+              // download image into buffer (pass pageToken if needed)
+              const buf = await downloadImageBuffer(url, pageAccessToken);
+              // console.log("buf", buf);
+
+              // optional OCR (non-fatal)
+              let ocrText = "";
+
+              try {
+                ocrText = (await extractTextFromImageBuffer(buf)) || "";
+                // console.log("ocrText", ocrText);
+              } catch (ocrErr) {
+                const err = ocrErr as AxiosError<{ message: string }>;
+                console.warn("OCR failed for", url, err?.message || ocrErr);
+                ocrText = "";
+              }
+              const textForEmbedding =
+                [ocrText, value.message].filter(Boolean).join("\n").trim() ||
+                "image";
+              emb = await createTextEmbedding(textForEmbedding);
+              // console.log("emb", emb);
+              // return emb ;
+            } catch (err: any) {
+              console.warn(
+                "Failed processing image url:",
+                url,
+                err?.message || err
+              );
+            }
+
+            return {
+              url,
+              // photoId: photoId ?? null,
+              caption: caption ?? null,
+              embedding: emb ?? undefined,
+            };
+          } catch (err: any) {
+            console.warn("Failed processing image:", url, err?.message || err);
+            return { url, photoId: null, caption: null, embedding: null };
+          }
         }
-      });
+      );
 
       const results = await Promise.all(promises);
-      images.push(...results);
+      imagesProcessed.push(...results);
+      console.log("imagesProcessed", imagesProcessed);
     }
 
-    // aggregated embedding (mean of all non-empty embeddings)
-    const embeddingsList = images
-      .filter((it) => it.embedding && it.embedding.length > 0)
-      .map((it) => it.embedding as number[]);
+    // 5) aggregated embedding (mean of non-null embeddings)
+    const embeddingsList = imagesProcessed
+      .map((it) => it.embedding)
+      .filter((e): e is number[] => Array.isArray(e) && e.length > 0);
+
     const aggregatedEmbedding = embeddingsList.length
       ? averageEmbeddings(embeddingsList)
       : [];
 
-    // save to DB (upsert)
+    // 6) prepare payload & upsert to DB
     const payload: any = {
-      postId: value.post_id,
+      postId,
       shopId: pageId,
-      message: value.message,
-      createdAt: value.created_time,
-      images,
+      message: (postData?.message || value.message || "") as string,
+      createdAt: value.created_time
+        ? new Date(value.created_time * 1000)
+        : new Date(),
+      updatedAt: new Date(),
+      images: imagesProcessed.map((it) => ({
+        // photoId: it.photoId,
+        url: it.url,
+        caption: it.caption,
+        // don't store raw embeddings per-image to DB here unless you want them:
+        embedding: it.embedding ?? undefined,
+      })),
     };
+
     if (aggregatedEmbedding.length)
       payload.aggregatedEmbedding = aggregatedEmbedding;
 
-    const result = await Post.findOneAndUpdate(
-      { postId: value.post_id },
-      { $set: payload },
-      { upsert: true, new: true }
-    ).exec();
+    // Persist: use PageService.createProduct (or adapt to your Post model)
+    const result = await PageService.createProduct(payload);
 
-    console.log(
-      "Feed Created/Updated Successfully",
-      result.postId,
-      "images:",
-      result.images?.length,
-      "embedding stored:",
-      !!result.aggregatedEmbedding
-    );
-  } catch (error: any) {
-    console.log("Feed Not Created, Error: ", error?.message || error);
+    if (!result) {
+      console.warn("handleAddFeed: createProduct returned falsy for", postId);
+    } else {
+      console.log(
+        "handleAddFeed: saved post",
+        postId,
+        "images:",
+        payload.images.length
+      );
+    }
+
+    return result;
+  } catch (err: any) {
+    console.error("handleAddFeed: unexpected error:", err?.message || err);
+    // Do not throw — webhook should return 200, but you can rethrow if you want failure visibility
+    return null;
   }
 };
 
 const handleEditFeed = async (value: any, pageId: string) => {
   const { post_id, message } = value;
+  // console.log("update value", value);
   try {
-    const result = await PageService.updateProduct(pageId, post_id, {
+    const result = await PageService.updateProduct(value.from.id, post_id, {
       message,
       updatedAt: new Date(),
     });
@@ -282,8 +510,9 @@ const handleEditFeed = async (value: any, pageId: string) => {
 
 const handleRemoveFeed = async (value: any, pageId: string) => {
   const { post_id } = value;
+  console.log("remove value", value);
   try {
-    const result = await PageService.deleteProduct(pageId, post_id);
+    const result = await PageService.deleteProduct(value.from.id, post_id);
     const result1 = await CommentHistory.findOneAndDelete({ postId: post_id });
     !result
       ? console.log("Feed Not Deleted")

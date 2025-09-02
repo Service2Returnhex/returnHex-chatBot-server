@@ -6,15 +6,11 @@ import Tesseract from "tesseract.js";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // download image as buffer (no disk)
-export async function downloadImageBuffer(url: string) {
+export async function downloadImageBuffer(url: string, access_token: string) {
   // FB private URLs sometimes require token appended
   const safeUrl =
-    url.includes("scontent") &&
-    process.env.PAGE_ACCESS_TOKEN &&
-    !url.includes("access_token")
-      ? `${url}${url.includes("?") ? "&" : "?"}access_token=${
-          process.env.PAGE_ACCESS_TOKEN
-        }`
+    url.includes("scontent") && access_token && !url.includes("access_token")
+      ? `${url}${url.includes("?") ? "&" : "?"}access_token=${access_token}`
       : url;
 
   const res = await axios.get(safeUrl, {
@@ -85,7 +81,7 @@ export function averageEmbeddings(list: number[][]) {
 // services/fbHelpers.ts
 export function extractImageUrlsFromFeed(value: any): string[] {
   const urls: string[] = [];
-  console.log("value", value);
+  // console.log("value", value);
 
   // common single fields
   if (value.full_picture) urls.push(value.full_picture);
@@ -119,7 +115,7 @@ export function extractImageUrlsFromFeed(value: any): string[] {
       if (a.payload?.url) urls.push(a.payload.url);
     }
   }
-  console.log("urls", urls);
+  // console.log("atts", value.attachments?.data);
 
   // some feeds provide 'attachments' as array directly
   if (Array.isArray(value.attachments)) {
@@ -131,4 +127,34 @@ export function extractImageUrlsFromFeed(value: any): string[] {
 
   // dedupe & filter empties
   return Array.from(new Set(urls.filter(Boolean)));
+}
+
+export async function extractImageCaptions(postData: any) {
+  const results = [];
+  const attachments =
+    (postData && postData.attachments && postData.attachments.data) || [];
+
+  for (const att of attachments) {
+    if (att.subattachments && Array.isArray(att.subattachments.data)) {
+      for (const sub of att.subattachments.data) {
+        const url = sub.media?.image?.src || null;
+        const caption = sub.description || sub.title || null;
+        const photoId = sub.target?.id || null;
+        results.push({ photoId, url, caption });
+      }
+    } else {
+      // single attachment fallback
+      const url = att.media?.image?.src || null;
+      const caption = att.description || att.title || null;
+      const photoId = att.target?.id || null;
+      results.push({ photoId, url, caption });
+    }
+  }
+
+  // if no attachment but message exists, optionally add a fallback record
+  if (results.length === 0 && postData.message) {
+    results.push({ photoId: null, url: null, caption: postData.message });
+  }
+
+  return results;
 }
