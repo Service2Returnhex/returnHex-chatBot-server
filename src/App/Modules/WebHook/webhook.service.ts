@@ -1,6 +1,22 @@
 import { AxiosError } from "axios";
 import { Request, Response } from "express";
 import { replyToComment, sendMessage } from "../../api/facebook.api";
+import { pickBestCaptionSimple } from "../../utility/caption.match";
+import { fetchPostAttachments } from "../../utility/image.caption";
+import {
+  averageEmbeddings,
+  cleanText,
+  computeHashFromBuffer,
+  cosineSimilarity,
+  createTextEmbedding,
+  downloadImageBuffer,
+  extractImageCaptions,
+  extractImageUrlsFromFeed,
+  extractTextFromImageBuffer,
+  hammingDistanceGeneric,
+  sendImageAttachment,
+  sendTyping,
+} from "../../utility/image.embedding";
 import { ChatgptService } from "../Chatgpt/chatgpt.service";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { DeepSeekService } from "../DeepSeek/deepseek.service";
@@ -9,24 +25,22 @@ import { GroqService } from "../Groq/grok.service";
 import { PageService } from "../Page/page.service";
 import { PageInfo } from "../Page/pageInfo.model";
 import { Post } from "../Page/post.mode";
-import { fetchPostAttachments } from "./image.caption";
-import { sendTyping } from "./image.detection";
-import {
-  averageEmbeddings,
-  cosineSimilarity,
-  createTextEmbedding,
-  downloadImageBuffer,
-  extractImageCaptions,
-  extractImageUrlsFromFeed,
-  extractTextFromImageBuffer,
-} from "./image.embedding";
 
 enum ActionType {
   DM = "reply",
   COMMENT = "comment",
 }
 
-const SIMILARITY_THRESHOLD = 0.5;
+const SIMILARITY_THRESHOLD = 0.7;
+const PHASH_HAMMING_THRESHOLD = 16;
+
+// normalize and regex escape helpers
+function normalize(s?: string) {
+  return (s || "").toString().trim().toLowerCase();
+}
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 export const handleDM = async (
   event: any,
@@ -36,13 +50,19 @@ export const handleDM = async (
   const senderId = event.sender?.id;
   if (!senderId) return;
   if (event.message?.is_echo) return;
+  const shop = await PageInfo.findOne({ shopId });
+  const pageAccessToken = shop?.accessToken || "";
 
-  const userMsg = event.message?.text || "";
+  const userMsg = (event.message?.text || "").toString();
   console.log("💬 DM Message:", userMsg);
 
+  // --------------------------
+  // If there's an attachment (image) -> image matching flow
+  // --------------------------
   if (event.message?.attachments && event.message.attachments.length > 0) {
     const att = event.message.attachments[0];
     const imageUrl = att.payload?.url;
+    console.log("imgurl==", imageUrl);
     if (!imageUrl) {
       await sendMessage(
         senderId,
@@ -52,18 +72,12 @@ export const handleDM = async (
       return;
     }
 
-    // CONFIG
-    // const SIMILARITY_THRESHOLD = 0.7; // তোমার প্রয়োজনে 0.65-0.80 এ অ্যাডজাস্ট করো
-
-    // Replace your try { ... } block with this updated version
     try {
       await sendTyping(senderId, true);
 
-      const shop = await PageInfo.findOne({ shopId });
-      const pageAccessToken = shop?.accessToken || "";
-
-      // 1) compute user embedding from image OCR
+      // 1) OCR -> user embedding
       const buf = await downloadImageBuffer(imageUrl, pageAccessToken);
+
       let ocrText = "";
       try {
         ocrText = (await extractTextFromImageBuffer(buf)) || "";
@@ -71,103 +85,317 @@ export const handleDM = async (
         console.warn("OCR failed:", (ocrErr as any)?.message || ocrErr);
         ocrText = "";
       }
-      const userText = ocrText.trim();
-      const userEmb = userText ? await createTextEmbedding(userText) : null;
+      let userText = (ocrText || "").trim();
+      userText = cleanText(userText);
+      console.log("userText", userText);
 
+      const exact4All = Array.from(
+        new Set(
+          userText
+            .split(/\s+/)
+            .map((t) => t.replace(/[^a-zA-Z]/g, ""))
+            .filter((t) => t.length >= 3)
+        )
+      );
+
+      console.log("exact4All", exact4All);
+      // const first4 = exact4Words.length > 0 ? exact4Words[0] : null;
+      const uniqueOrdered = exact4All.filter(
+        (w, i, arr) => arr.indexOf(w) === i
+      );
+      console.log("uniqueOrdered", uniqueOrdered);
+
+      let phrase = "";
+      phrase = uniqueOrdered.join(" ").trim();
+      console.log("phrase:", phrase);
+
+      // let captionRegex: RegExp | null = null;
+      const captionRegex = new RegExp(uniqueOrdered.join("|"), "i");
+
+      try {
+        if (captionRegex) {
+          const captionMatch = await Post.aggregate([
+            { $match: { shopId } },
+            { $unwind: "$images" },
+            { $match: { "images.caption": { $regex: captionRegex } } },
+            { $sort: { createdAt: -1 } },
+            {
+              $project: {
+                postId: 1,
+                message: 1,
+                createdAt: 1,
+                imageUrl: "$images.url",
+                imageCaption: "$images.caption",
+                imagePhotoId: "$images.photoId",
+                postLink: 1,
+              },
+            },
+            { $limit: 10 }, // return up to 4 best recent items
+          ]).exec();
+          console.log("captionMatch", captionMatch);
+
+          if (captionMatch && captionMatch.length > 0) {
+            await pickBestCaptionSimple(
+              captionMatch,
+              uniqueOrdered,
+              shopId,
+              senderId,
+              pageAccessToken
+            );
+          }
+        }
+
+        // quary with hash
+        let incomingPhash: string | null = null;
+        try {
+          incomingPhash = await computeHashFromBuffer(buf);
+        } catch (e) {
+          console.warn(
+            "computePHashFromBuffer failed:",
+            (e as any)?.message || e
+          );
+          incomingPhash = null;
+        }
+
+        if (incomingPhash) {
+          // NOTE: for large data you should query a dedicated images collection. For starters we scan posts.
+          const posts = await Post.find({ shopId }).lean().exec();
+          let bestPhash: { post: any; image: any; dist: number } | null = null;
+          for (const post of posts) {
+            for (const img of Array.isArray(post?.images) ? post.images : []) {
+              if (!img?.phash) continue;
+              const dist = hammingDistanceGeneric(incomingPhash, img.phash);
+              if (!bestPhash || dist < bestPhash.dist)
+                bestPhash = { post, image: img, dist };
+            }
+          }
+
+          if (bestPhash && bestPhash.dist <= PHASH_HAMMING_THRESHOLD) {
+            // strong visual match -> reply with that image's caption (prefered) + image
+            const caption =
+              bestPhash.image.caption ||
+              bestPhash.post.message ||
+              "(No caption)";
+            await sendMessage(senderId, shopId, caption.toString());
+            // send image (optional)
+            try {
+              await sendImageAttachment(
+                senderId,
+                bestPhash.image.url,
+                pageAccessToken
+              );
+            } catch (err) {
+              console.warn(
+                "sendImageAttachment error:",
+                (err as any)?.message || err
+              );
+            }
+            return;
+          }
+        }
+
+        // If none, try post-level text search ($text or regex)
+        let postMatch: any[] = [];
+        try {
+          if (phrase && phrase.length > 2) {
+            // $text search uses plain phrase (ensure you have text index on message or caption fields)
+            postMatch = await Post.find(
+              { shopId, $text: { $search: phrase } },
+              { score: { $meta: "textScore" } } as any
+            )
+              .sort({ score: { $meta: "textScore" }, createdAt: -1 })
+              .limit(4)
+              .lean()
+              .exec();
+          } else {
+            // build OR regex from first few words
+            const orWords = uniqueOrdered
+              .slice(0, 6)
+              .map(escapeRegex)
+              .filter(Boolean);
+            if (orWords.length) {
+              const msgRegex = new RegExp(
+                "\\b(?:" + orWords.join("|") + ")\\b",
+                "i"
+              );
+              postMatch = await Post.find({
+                shopId,
+                message: { $regex: msgRegex },
+              })
+                .sort({ createdAt: -1 })
+                .limit(4)
+                .lean()
+                .exec();
+            } else {
+              postMatch = [];
+            }
+          }
+        } catch (e) {
+          console.warn(
+            "post-level text search failed:",
+            (e as any)?.message || e
+          );
+          postMatch = [];
+        }
+
+        if (postMatch && postMatch.length > 0) {
+          // reply with first post's first image (if exists) and message
+          const p = postMatch[0];
+          const firstImg = p.images && p.images.length ? p.images[0].url : null;
+          if (firstImg) {
+            await sendImageAttachment(senderId, firstImg, pageAccessToken);
+            await sendMessage(
+              senderId,
+              shopId,
+              (p.images?.[0]?.caption || p.message || "").toString()
+            );
+            return;
+          } else {
+            // just send post message if no image
+            await sendMessage(
+              senderId,
+              shopId,
+              (p.message || "পোস্ট পাওয়া গেল").toString()
+            );
+            return;
+          }
+        }
+
+        // If still nothing, fallback to AI conversational reply
+        let aiReply = "";
+        try {
+          if (method === "gemini") {
+            aiReply = await GeminiService.getResponseDM(
+              senderId,
+              shopId,
+              userMsg,
+              ActionType.DM
+            );
+          } else if (method === "chatgpt") {
+            aiReply = await ChatgptService.getResponseDM(
+              senderId,
+              shopId,
+              userMsg,
+              ActionType.DM
+            );
+          } else if (method === "deepseek") {
+            aiReply = await DeepSeekService.getResponseDM(
+              senderId,
+              shopId,
+              userMsg,
+              ActionType.DM
+            );
+          } else if (method === "groq") {
+            aiReply = await GroqService.getResponseDM(
+              senderId,
+              shopId,
+              userMsg,
+              ActionType.DM
+            );
+          }
+        } catch (aiErr: any) {
+          console.warn("AI fallback failed:", (aiErr as any)?.message || aiErr);
+        }
+
+        if (aiReply) {
+          await sendMessage(senderId, shopId, aiReply);
+        } else {
+          await sendMessage(
+            senderId,
+            shopId,
+            `দুঃখিত — "${userMsg}"-এর সাথে মিল পাওয়া যায়নি। আপনি কোন পণ্য খুজতেছেন বিস্তারিত বলুন।`
+          );
+        }
+      } catch (err: any) {
+        console.error("Text search error:", err?.message || err);
+      }
+
+      if (!phrase) return null;
+      console.log("userText dm", phrase);
+      const userEmb = phrase ? await createTextEmbedding(phrase) : null;
+      console.log("userEmbb dm", userEmb);
       if (!userEmb || !Array.isArray(userEmb) || userEmb.length === 0) {
         await sendMessage(
           senderId,
           shopId,
-          "আপনার ছবির টেক্সট থেকে আমরা কোন সেমান্টিক রিপ্রেজেন্টেশন পাইনি — অনুগ্রহ করে ছবির সাথে কিছু লেখা পাঠান বা 'Talk to human' বেছে নিন।"
+          "আপনার ছবির টেক্সট থেকে আমরা কোন পণ্যের সাথে মিল েপাইনি । আমাদের প্রতিনিধি আাপনার সাথে যোগাযোগ করবে।"
         );
         return;
       }
+      // console.log("userEmb", userEmb);
 
-      // 2) fetch posts for the page
+      // 2) load posts for page
       const posts = await Post.find({ shopId }).lean().exec();
       if (!posts || posts.length === 0) {
         await sendMessage(
           senderId,
           shopId,
-          "দুঃখিত, এখনই কোন পণ্যের তথ্য পাওয়া যাচ্ছে না।"
+          "দুঃখিত, এই পণ্যের কোন  তথ্য পাওয়া যাচ্ছে না। আমাদের প্রতিনিধি আাপনার সাথে যোগাযোগ করবে।"
         );
         return;
       }
 
-      // 3) search best match: prefer per-image embedding, fallback to per-image caption embedding (on-the-fly),
-      //    then fallback to post.aggregatedEmbedding
+      // 3) match: prefer per-image embedding, then per-image caption embedding, then post aggregated
       let best: {
         post: any;
         image?: any | null;
         score: number;
-        matchedBy: "imageEmbedding" | "imageCaptionEmbedding" | "postEmbedding";
+        matchedBy: "imageCaptionEmbedding" | "imageEmbedding" | "postEmbedding";
       } | null = null;
 
-      // cache for caption embeddings to avoid duplicate createTextEmbedding calls
       const captionEmbCache = new Map<string, number[] | null>();
 
       for (const post of posts) {
         const images = Array.isArray(post.images) ? post.images : [];
 
-        // 3a): try image-level embeddings first (fast path)
+        // image-level embeddings first
         for (const img of images) {
-          // if image stored explicit embedding
           if (
             img?.embedding &&
             Array.isArray(img.embedding) &&
             img.embedding.length
           ) {
             const score = cosineSimilarity(userEmb, img.embedding);
-            if (!best || score > best.score) {
+            if (!best || score > best.score)
               best = { post, image: img, score, matchedBy: "imageEmbedding" };
-            }
           }
         }
 
-        // 3b) if not matched by stored image embeddings, try per-image caption embeddings (on-demand)
+        // caption embedding on-demand
         for (const img of images) {
           if (
             img?.embedding &&
             Array.isArray(img.embedding) &&
             img.embedding.length
-          ) {
-            // we already handled stored embeddings above
+          )
             continue;
-          }
-
           const caption = (img?.caption || "").toString().trim();
           if (!caption) continue;
-
-          // get or compute caption embedding
           if (!captionEmbCache.has(caption)) {
             try {
               const emb = await createTextEmbedding(caption);
-              const normalized = Array.isArray(emb) && emb.length ? emb : null;
-              captionEmbCache.set(caption, normalized);
-            } catch (e) {
-              console.warn(
-                "caption embedding failed:",
-                (e as any)?.message || e
+              captionEmbCache.set(
+                caption,
+                Array.isArray(emb) && emb.length ? emb : null
               );
+            } catch (e) {
               captionEmbCache.set(caption, null);
             }
           }
-
           const captionEmb = captionEmbCache.get(caption) || null;
+          console.log("captionEmb", captionEmb);
           if (!captionEmb) continue;
-
           const score = cosineSimilarity(userEmb, captionEmb);
-          if (!best || score > best.score) {
+          if (!best || score > best.score)
             best = {
               post,
               image: img,
               score,
               matchedBy: "imageCaptionEmbedding",
             };
-          }
         }
 
-        // 3c) fallback: compare with post-level aggregatedEmbedding if exists
+        // post aggregated fallback
         if (
           (!best || best.matchedBy === "postEmbedding") &&
           post?.aggregatedEmbedding &&
@@ -175,36 +403,47 @@ export const handleDM = async (
           post.aggregatedEmbedding.length
         ) {
           const score = cosineSimilarity(userEmb, post.aggregatedEmbedding);
-          if (!best || score > best.score) {
+          if (!best || score > best.score)
             best = { post, image: null, score, matchedBy: "postEmbedding" };
-          }
         }
       } // end posts loop
 
       console.log("best match:", best);
 
       if (best && best.score >= SIMILARITY_THRESHOLD) {
-        const matchedPost = best.post;
-        // prefer image-level caption if we've matched an image
         const imageCaption = best.image?.caption ?? null;
-        const replyText =
-          imageCaption && imageCaption.toString().trim()
-            ? `আমি মিল পেয়েছি (image caption):\n\n${imageCaption}\n\nPost ID: ${
-                matchedPost.postId
-              }\nSimilarity: ${best.score.toFixed(3)}`
-            : `আমি মিল পেয়েছি (post message):\n\n${
-                matchedPost.message || "(No caption)"
-              }\n\nPost ID: ${
-                matchedPost.postId
-              }\nSimilarity: ${best.score.toFixed(3)}`;
-
-        await sendMessage(senderId, shopId, replyText);
+        const matchedImageUrl =
+          best.image?.url ?? best.post?.images?.[0]?.url ?? null;
+        if (imageCaption && imageCaption.toString().trim()) {
+          await sendMessage(senderId, shopId, imageCaption.toString().trim());
+        } else if (best.post?.message) {
+          await sendMessage(senderId, shopId, best.post.message);
+        } else {
+          await sendMessage(
+            senderId,
+            shopId,
+            "ম্যাচ পাওয়া গিয়েছে কিন্তু কোন ক্যাপশন পাওয়া যায়নি।"
+          );
+        }
+        if (matchedImageUrl) {
+          try {
+            await sendImageAttachment(
+              senderId,
+              matchedImageUrl,
+              pageAccessToken
+            );
+          } catch (err) {
+            /* non-fatal */
+          }
+        }
+        return;
       } else {
         await sendMessage(
           senderId,
           shopId,
           "দুঃখিত, কোন মিল পাওয়া যায়নি। 'Show similar' বা 'Talk to human' বেছে নিন।"
         );
+        return;
       }
     } catch (err: any) {
       console.error("Image compare error:", err?.message || err);
@@ -216,49 +455,232 @@ export const handleDM = async (
     } finally {
       await sendTyping(senderId, false);
     }
+    return;
+  } // end attachments branch
 
+  const q = normalize(userMsg);
+  console.log("message", q);
+  if (!q) {
+    // delegate to AI service for generic small talk or instruction
+    try {
+      let reply = "";
+      if (method === "gemini") {
+        reply = await GeminiService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      } else if (method === "chatgpt") {
+        reply = await ChatgptService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      } else if (method === "deepseek") {
+        reply = await DeepSeekService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      } else if (method === "groq") {
+        reply = await GroqService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      }
+      await sendMessage(senderId, shopId, reply || "দয়া করে আবার বলুন।");
+    } catch (err: any) {
+      console.error("AI reply error:", err?.message || err);
+      await sendMessage(
+        senderId,
+        shopId,
+        "উত্তর তৈরিতে সমস্যা হয়েছে — পরে চেষ্টা করুন।"
+      );
+    }
     return;
   }
 
-  let reply = "";
+  // Try image-level caption match (fastest): aggregate unwind images and match caption
   try {
-    if (method === "gemini") {
-      reply = await GeminiService.getResponseDM(
-        senderId,
+    // build regex from the query (simple word OR)
+    const words = q.split(/\s+/).map(escapeRegex);
+    console.log("words", words);
+    const captionRegex = new RegExp(words.join("|"), "i");
+    console.log("captionRegex", captionRegex);
+
+    const captionMatch = await Post.aggregate([
+      { $match: { shopId } },
+      { $unwind: "$images" },
+      { $match: { "images.caption": { $regex: captionRegex } } },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          postId: 1,
+          message: 1,
+          createdAt: 1,
+          imageUrl: "$images.url",
+          imageCaption: "$images.caption",
+          imagePhotoId: "$images.photoId",
+          postLink: 1,
+        },
+      },
+      { $limit: 4 }, // return up to 4 best recent items
+    ]).exec();
+    // console.log("captionMatch Usrmsg", captionMatch);
+    if (captionMatch && captionMatch.length > 0) {
+      await pickBestCaptionSimple(
+        captionMatch,
+        words,
         shopId,
-        userMsg,
-        ActionType.DM
-      );
-    } else if (method === "chatgpt") {
-      reply = await ChatgptService.getResponseDM(
         senderId,
-        shopId,
-        userMsg,
-        ActionType.DM
-      );
-    } else if (method === "deepseek") {
-      reply = await DeepSeekService.getResponseDM(
-        senderId,
-        shopId,
-        userMsg,
-        ActionType.DM
-      );
-    } else if (method === "groq") {
-      reply = await GroqService.getResponseDM(
-        senderId,
-        shopId,
-        userMsg,
-        ActionType.DM
+        pageAccessToken
       );
     }
-  } catch (error: any) {
-    console.log("Error generating reply:", error?.message);
-  }
+    console.log("captionMatch", captionMatch);
 
-  try {
-    await sendMessage(senderId, shopId, reply);
-  } catch (error: any) {
-    console.log("Error sending reply:", error?.message);
+    // If none, try post-level text search ($text or regex)
+    let postMatch: any[] = [];
+    try {
+      // $text search (requires text index)
+      postMatch = await Post.find({ shopId, $text: { $search: q } }, {
+        score: { $meta: "textScore" },
+      } as any)
+        .sort({ score: { $meta: "textScore" }, createdAt: -1 })
+        .limit(4)
+        .lean()
+        .exec();
+      console.log("postMatch", postMatch);
+    } catch (e) {
+      // fallback to regex on message
+      const msgRegex = new RegExp(words.join("|"), "i");
+      postMatch = await Post.find({ shopId, message: { $regex: msgRegex } })
+        .sort({ createdAt: -1 })
+        .limit(4)
+        .lean()
+        .exec();
+      console.log("msgRegex", msgRegex);
+    }
+
+    if (postMatch && postMatch.length > 0) {
+      // reply with first post's first image (if exists) and message
+      const p = postMatch[0];
+      const firstImg = p.images && p.images.length ? p.images[0].url : null;
+      if (firstImg) {
+        await sendImageAttachment(senderId, firstImg, pageAccessToken);
+        await sendMessage(
+          senderId,
+          shopId,
+          (p.images?.[0]?.caption || p.message || "").toString()
+        );
+        return;
+      } else {
+        // just send post message if no image
+        await sendMessage(
+          senderId,
+          shopId,
+          (p.message || "পোস্ট পাওয়া গেল").toString()
+        );
+        return;
+      }
+    }
+
+    // If still nothing, fallback to AI conversational reply
+    let aiReply = "";
+    try {
+      if (method === "gemini") {
+        aiReply = await GeminiService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      } else if (method === "chatgpt") {
+        aiReply = await ChatgptService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      } else if (method === "deepseek") {
+        aiReply = await DeepSeekService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      } else if (method === "groq") {
+        aiReply = await GroqService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      }
+    } catch (aiErr: any) {
+      console.warn("AI fallback failed:", (aiErr as any)?.message || aiErr);
+    }
+
+    if (aiReply) {
+      await sendMessage(senderId, shopId, aiReply);
+    } else {
+      await sendMessage(
+        senderId,
+        shopId,
+        `দুঃখিত — "${userMsg}"-এর সাথে মিল পাওয়া যায়নি। আপনি কোন পণ্য খুজতেছেন বিস্তারিত বলুন। `
+      );
+    }
+  } catch (err: any) {
+    console.error("Text search error:", err?.message || err);
+    // fallback to AI service attempt
+    try {
+      let reply = "";
+      if (method === "gemini") {
+        reply = await GeminiService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      } else if (method === "chatgpt") {
+        reply = await ChatgptService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      } else if (method === "deepseek") {
+        reply = await DeepSeekService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      } else if (method === "groq") {
+        reply = await GroqService.getResponseDM(
+          senderId,
+          shopId,
+          userMsg,
+          ActionType.DM
+        );
+      }
+      await sendMessage(
+        senderId,
+        shopId,
+        reply || "কিছু সমস্যা হয়েছে — পরে চেষ্টা করুন।"
+      );
+    } catch (err2: any) {
+      console.error("AI fallback final error:", err2?.message || err2);
+      await sendMessage(
+        senderId,
+        shopId,
+        "কিছু সমস্যা হয়েছে — পরে চেষ্টা করুন বা 'Talk to human' বেছে নিন।"
+      );
+    }
   }
 };
 
@@ -349,6 +771,7 @@ export const handleAddFeed = async (value: any, pageId: string) => {
     type ImageResult = {
       url: string;
       photoId?: string | null;
+      phash: string | null;
       caption?: string | null;
       embedding?: number[] | null;
     };
@@ -392,9 +815,11 @@ export const handleAddFeed = async (value: any, pageId: string) => {
             // if (cd?.photoId) photoId = String(cd.photoId);
 
             let emb: number[] | null = null;
+            let phash = "";
             try {
               // download image into buffer (pass pageToken if needed)
               const buf = await downloadImageBuffer(url, pageAccessToken);
+              phash = await computeHashFromBuffer(buf);
               // console.log("buf", buf);
 
               // optional OCR (non-fatal)
@@ -425,12 +850,19 @@ export const handleAddFeed = async (value: any, pageId: string) => {
             return {
               url,
               // photoId: photoId ?? null,
+              phash,
               caption: caption ?? null,
               embedding: emb ?? undefined,
             };
           } catch (err: any) {
             console.warn("Failed processing image:", url, err?.message || err);
-            return { url, photoId: null, caption: null, embedding: null };
+            return {
+              url,
+              photoId: null,
+              phash: null,
+              caption: null,
+              embedding: null,
+            };
           }
         }
       );
@@ -460,6 +892,7 @@ export const handleAddFeed = async (value: any, pageId: string) => {
       updatedAt: new Date(),
       images: imagesProcessed.map((it) => ({
         // photoId: it.photoId,
+        phash: it.phash,
         url: it.url,
         caption: it.caption,
         // don't store raw embeddings per-image to DB here unless you want them:

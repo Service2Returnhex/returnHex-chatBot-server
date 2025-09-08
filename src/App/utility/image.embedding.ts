@@ -1,9 +1,32 @@
-// services/imageEmbedding.ts
 import axios from "axios";
+import { Jimp } from "jimp";
 import OpenAI from "openai";
 import Tesseract from "tesseract.js";
 
+const GRAPH_MSG_URL = "https://graph.facebook.com/v23.0/me/messages";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export const UI_BLACKLIST = new Set([
+  "yesterday",
+  "like",
+  "comment",
+  "share",
+  "boost",
+  "post",
+  "ago",
+  "hour",
+  "hours",
+  "min",
+  "minutes",
+  "mins",
+  "view",
+  "views",
+  "tour",
+  "travel",
+  "thour",
+  "HOUR",
+  "AGO",
+  "all",
+]);
 
 // download image as buffer (no disk)
 export async function downloadImageBuffer(url: string, access_token: string) {
@@ -22,6 +45,59 @@ export async function downloadImageBuffer(url: string, access_token: string) {
     throw new Error("URL did not return an image; content-type: " + ct);
   return Buffer.from(res.data);
 }
+
+export function cleanText(text: string): string {
+  if (!text) return "";
+  let s = text.toString().toLowerCase();
+  // remove URLs, emojis, lots of punctuation
+  s = s.replace(/https?:\/\/\S+/g, " ");
+  s = s.replace(/[^a-z0-9\s]/g, " ");
+  // remove numbers (optionally keep price separately)
+  s = s.replace(/\b\d+\b/g, " ");
+  // collapse spaces
+  s = s.replace(/\s+/g, " ").trim();
+  // remove UI words
+  const toks = s.split(" ").filter((t) => t && !UI_BLACKLIST.has(t));
+  return toks.join(" ");
+}
+
+export function cleanTokens(s: string): string[] {
+  if (!s) return [];
+  return s
+    .toLowerCase()
+    .replace(/\n/g, " ")
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t && t.length >= 1);
+}
+
+export const longestConsecutiveMatchRatio = async (
+  pattern: string[],
+  text: string[]
+) => {
+  if (!pattern.length || !text.length) return 0;
+  let best = 0;
+  for (let i = 0; i < text.length; i++) {
+    let l = 0;
+    for (let j = 0; j < pattern.length && i + j < text.length; j++) {
+      if (text[i + j] === pattern[j]) l++;
+      else break;
+    }
+    if (l > best) best = l;
+  }
+  return best / pattern.length; // 0..1
+};
+
+// helper to compute jaccard overlap
+export const jaccard = async (a: string[], b: string[]) => {
+  const A = new Set(a);
+  const B = new Set(b);
+  const inter = Array.from(A).filter((x) => B.has(x)).length;
+  const union = new Set([...A, ...B]).size || 1;
+  return inter / union;
+};
 
 // OCR with Tesseract (in-memory)
 export async function extractTextFromImageBuffer(buffer: Buffer) {
@@ -49,6 +125,7 @@ export async function createTextEmbedding(text: string) {
     input: text,
   });
   const emb = resp.data[0].embedding as number[];
+  // console.log("emb", emb);
   return emb;
 }
 
@@ -157,4 +234,84 @@ export async function extractImageCaptions(postData: any) {
   }
 
   return results;
+}
+
+export async function computeHashFromBuffer(buffer: Buffer): Promise<string> {
+  const img = await Jimp.read(buffer);
+  img.resize({ w: 256, h: 256 }).greyscale();
+  const hash = img.hash();
+  // console.log("JimpModule keys:", Object.keys(JimpModule));
+  // console.log(
+  //   "JimpModule.default keys:",
+  //   Object.keys((JimpModule as any).default || {})
+  // ); // ex: "a1b2c3..."
+  console.log("hash", hash);
+  return hash as string;
+}
+
+export function hammingDistanceGeneric(a: string, b: string) {
+  if (!a || !b) return Infinity;
+  // normalize to lowercase
+  a = a.toLowerCase();
+  b = b.toLowerCase();
+
+  // pad to same length
+  if (a.length !== b.length) {
+    const maxLen = Math.max(a.length, b.length);
+    a = a.padStart(maxLen, "0");
+    b = b.padStart(maxLen, "0");
+  }
+
+  // We'll parse each char as base36 (0-9a-z) which covers Jimp.hash outputs.
+  // Each char -> value in [0..35] -> represent in 6 bits (6 bits can carry up to 64 values).
+  const bitsPerChar = 6;
+  let dist = 0;
+  for (let i = 0; i < a.length; i++) {
+    const ca = a[i];
+    const cb = b[i];
+    const va = parseInt(ca, 36); // returns NaN if impossible
+    const vb = parseInt(cb, 36);
+    // fallback: if parseInt fails, use charCode
+    const vala = Number.isNaN(va) ? ca.charCodeAt(0) : va;
+    const valb = Number.isNaN(vb) ? cb.charCodeAt(0) : vb;
+
+    // XOR and count bits
+    let x = vala ^ valb;
+    // count set bits in x
+    while (x) {
+      dist += x & 1;
+      x = x >>> 1;
+    }
+  }
+  return dist;
+}
+
+export async function sendImageAttachment(
+  recipientId: string,
+  imageUrl: string,
+  pageAccessToken: string
+) {
+  try {
+    const body = {
+      recipient: { id: recipientId },
+      message: {
+        attachment: {
+          type: "image",
+          payload: { url: imageUrl, is_reusable: false },
+        },
+      },
+    };
+    await axios.post(GRAPH_MSG_URL, body, {
+      params: { access_token: pageAccessToken },
+      timeout: 10000,
+    });
+  } catch (err) {
+    console.warn("sendImageAttachment failed:", (err as any)?.message || err);
+    throw err;
+  }
+}
+
+export async function sendTyping(senderId: string, on = true) {
+  // implement sender_action typing_on/off call
+  console.log("[sendTyping]", senderId, on ? "on" : "off");
 }

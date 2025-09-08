@@ -5,6 +5,7 @@ export interface IImageItem {
   // photoId?: number;
   caption?: string;
   embedding?: number[]; // embedding for this image
+  phash?: string;
 }
 
 export const ImageItemSchema = new Schema<IImageItem>({
@@ -12,4 +13,5 @@ export const ImageItemSchema = new Schema<IImageItem>({
   // photoId: { type: Number },
   caption: { type: String, default: "" },
   embedding: { type: [Number], default: [] },
+  phash: { type: String, default: "" },
 });
