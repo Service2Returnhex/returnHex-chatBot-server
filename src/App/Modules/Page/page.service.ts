@@ -122,7 +122,7 @@ const getShopById = async (id: string) => {
 
 const createShop = async (payload: IPageInfo) => {
   const existing = await PageInfo.findOne({ shopId: payload.shopId });
-  if(existing) {
+  if (existing) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.CONFLICT);
     throw new ApiError(httpStatus.CONFLICT, "Shop Already Exists!");
   }
@@ -171,7 +171,7 @@ const deleteShop = async (id: string) => {
   return result;
 };
 
-const setDmPromt = async (id: string,  dmSystemPromt: string ) => {
+const setDmPromt = async (id: string, dmSystemPromt: string) => {
   const isExists = await PageInfo.findOne({ shopId: id });
   if (!isExists) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_FOUND);
@@ -179,11 +179,10 @@ const setDmPromt = async (id: string,  dmSystemPromt: string ) => {
   }
   const result = await PageInfo.updateOne(
     { shopId: id },
-    { dmSystemPromt},
+    { dmSystemPromt },
     { new: true, runValidators: true }
   );
 
-  
   if (!result.modifiedCount) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_UPDATED);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Shop Not updated");
@@ -201,7 +200,7 @@ const setCmntPromt = async (id: string, cmntSystemPromt: string) => {
   }
   const result = await PageInfo.updateOne(
     { shopId: id },
-    { cmntSystemPromt},
+    { cmntSystemPromt },
     { new: true, runValidators: true }
   );
   if (!result.modifiedCount) {
@@ -211,6 +210,11 @@ const setCmntPromt = async (id: string, cmntSystemPromt: string) => {
   Logger(LogService.DB, LogPrefix.SHOP, LogMessage.UPDATED);
 
   return result;
+};
+
+const getWhatsappPhoneNumberId = async (shopId: string) => {
+  const shop = await PageInfo.findById(shopId).lean();
+  return shop?.whatsapp?.phoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID;
 };
 
 export const PageService = {
@@ -227,5 +231,7 @@ export const PageService = {
   updateShop,
   deleteShop,
   setDmPromt,
-  setCmntPromt
+  setCmntPromt,
+
+  getWhatsappPhoneNumberId,
 };

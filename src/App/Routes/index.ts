@@ -7,6 +7,7 @@ import { DeepSeekRouter } from "../Modules/DeepSeek/deepseek.route";
 import { GroqRouter } from "../Modules/Groq/grok.route";
 import { authRoute } from "../Modules/auth/auth.route";
 import { userRouter } from "../Modules/users/user.route";
+import { WhatsAppWebhookRouter } from "../Modules/WhatsApp/whatsapp.route";
 
 const router = Router();
 
@@ -42,6 +43,10 @@ const moduleRoutes = [
     {
         path: '/page',
         route: PageRouter
+    },
+    {
+        path: '/whatsapp',
+        route: WhatsAppWebhookRouter
     }
 ]
 

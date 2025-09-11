@@ -1,15 +1,14 @@
 import bcrypt from "bcrypt";
 import httpStatus from "http-status";
-import { JwtPayload } from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { config } from "../../config/config";
 import { createEmailHtml } from "../../html/resetUI";
-import { IAuth } from "./auth.interface";
-import { createToken, verifyToken } from "./auth.utils";
-import { User } from "../users/user.model";
 import ApiError from "../../utility/AppError";
 import sendEmail from "../../utility/sendEmail";
+import { User } from "../users/user.model";
+import { IAuth } from "./auth.interface";
 import { RefreshToken } from "./auth.refreshToken.model";
-import jwt from 'jsonwebtoken'
+import { createToken, verifyToken } from "./auth.utils";
 
 export const loginUser = async (paylaod: IAuth) => {
   const user = await User.findOne({ email: paylaod.email });
@@ -26,7 +25,7 @@ export const loginUser = async (paylaod: IAuth) => {
 
   if (!isPasswordMatched)
     throw new ApiError(httpStatus.UNAUTHORIZED, "Passowrd did not matched!");
-  
+
   const jwtPayload = {
     userId: user._id.toString(),
     email: user.email,
@@ -48,8 +47,8 @@ export const loginUser = async (paylaod: IAuth) => {
   await RefreshToken.create({
     token: refreshToken,
     user: user._id,
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-  })
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  });
 
   return {
     accessToken,
@@ -100,7 +99,7 @@ const refreshToken = async (oldToken: string) => {
       "Token not Found. Unauthorized User!"
     );
 
-   const decoded = verifyToken(
+  const decoded = verifyToken(
     oldToken,
     config.jwt_refresh_secret as string
   ) as JwtPayload;
@@ -110,8 +109,9 @@ const refreshToken = async (oldToken: string) => {
       "Couldn't verify the token. Unauthorized User!"
     );
 
-  const existingToken = await RefreshToken.findOne({token: oldToken});
-  if(!existingToken) throw new ApiError(httpStatus.UNAUTHORIZED, "Token expired or invalid!");
+  const existingToken = await RefreshToken.findOne({ token: oldToken });
+  if (!existingToken)
+    throw new ApiError(httpStatus.UNAUTHORIZED, "Token expired or invalid!");
 
   const { userId } = decoded;
   const user = await User.findById(userId);
@@ -131,10 +131,12 @@ const refreshToken = async (oldToken: string) => {
     config.jwt_access_secret as string,
     config.jwt_access_expires_in as string
   );
-  const newRefreshToken = createToken(jwtPayload, 
-    config.jwt_refresh_secret as string, 
-    config.jwt_refresh_expires_in as string)
-  
+  const newRefreshToken = createToken(
+    jwtPayload,
+    config.jwt_refresh_secret as string,
+    config.jwt_refresh_expires_in as string
+  );
+
   await RefreshToken.create({
     token: newRefreshToken,
     user: userId,
@@ -199,8 +201,10 @@ const resetPassword = async (
 };
 
 const logoutUser = async (token: string) => {
-  
-  const decoded = jwt.verify(token, config.jwt_refresh_secret as string) as JwtPayload;
+  const decoded = jwt.verify(
+    token,
+    config.jwt_refresh_secret as string
+  ) as JwtPayload;
   if (!decoded) throw new ApiError(httpStatus.UNAUTHORIZED, "Invalid Token");
 
   const user = await User.findById(decoded.userId);
@@ -209,10 +213,9 @@ const logoutUser = async (token: string) => {
   if (user.isDeleted)
     throw new ApiError(httpStatus.UNAUTHORIZED, "User is deleted");
   if (user.status == "blocked")
-    throw new ApiError(httpStatus.UNAUTHORIZED, "User is blocked"); 
+    throw new ApiError(httpStatus.UNAUTHORIZED, "User is blocked");
   await RefreshToken.deleteMany({ user: decoded.userId });
   return { message: "User logged out successfully" };
-  
 };
 
 export const AuthServices = {
@@ -221,5 +224,5 @@ export const AuthServices = {
   refreshToken,
   forgetPassword,
   resetPassword,
-  logoutUser
+  logoutUser,
 };
