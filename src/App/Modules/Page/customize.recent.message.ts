@@ -48,7 +48,7 @@ export const summarizeRecentDmMessage = async (
 
   let recentUserDMPromt = "";
   let cnt = 1;
-  if (messages.length >= 10) {
+  if (messages.length >= 5) {
     for (let i = messages.length - 1; i >= messages.length - 10; i--) {
       recentUserDMPromt += `${cnt} - role: ${messages[i].role}, content: ${messages[i].content},`;
       cnt++;

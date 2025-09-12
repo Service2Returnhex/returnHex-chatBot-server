@@ -83,17 +83,18 @@ export async function pickBestCaptionSimple(
 
     console.log(
       "Best caption candidate score:",
-      best?.score
-      //   "chosen postId:",
-      //   chosen?.postId
+      best?.score,
+        "chosen postId:",
+        chosen?.postId
     );
 
     if (chosen && chosen.imageUrl) {
+      console.log("img url",chosen.imageUrl);
       try {
         await sendImageAttachment(senderId, chosen.imageUrl, pageAccessToken);
       } catch (err) {
         console.warn(
-          "sendImageAttachment failed:",
+          "sendImageAttachment failed img:",
           (err as any)?.message || err
         );
       }
@@ -126,4 +127,5 @@ export async function pickBestCaptionSimple(
     //   }
     // }
   }
+  return
 }

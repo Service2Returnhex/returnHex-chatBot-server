@@ -1,11 +1,12 @@
 import { AxiosError } from "axios";
 import { Request, Response } from "express";
 import { replyToComment, sendMessage } from "../../api/facebook.api";
-import { pickBestCaptionSimple } from "../../utility/caption.match";
+import { AIMethod, getAiReplySimple } from "../../utility/aiSimple";
 import { fetchPostAttachments } from "../../utility/image.caption";
 import {
   averageEmbeddings,
   cleanText,
+  cleanTokens,
   computeHashFromBuffer,
   cosineSimilarity,
   createTextEmbedding,
@@ -14,8 +15,11 @@ import {
   extractImageUrlsFromFeed,
   extractTextFromImageBuffer,
   hammingDistanceGeneric,
+  jaccard,
+  longestConsecutiveMatchRatio,
   sendImageAttachment,
   sendTyping,
+  UI_BLACKLIST,
 } from "../../utility/image.embedding";
 import { ChatgptService } from "../Chatgpt/chatgpt.service";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
@@ -134,15 +138,141 @@ export const handleDM = async (
           ]).exec();
           console.log("captionMatch", captionMatch);
 
-          if (captionMatch && captionMatch.length > 0) {
-            await pickBestCaptionSimple(
-              captionMatch,
-              uniqueOrdered,
-              shopId,
-              senderId,
-              pageAccessToken
-            );
-          }
+         if (captionMatch && captionMatch.length > 0) {
+             const cleanedPhraseTokens = uniqueOrdered;
+         
+             let best: { item: any; score: number } | null = null;
+             let chosen;
+         
+             for (const item of captionMatch) { 
+               const captionRaw: string = (
+                 item.imageCaption ||
+                 item.message ||
+                 ""
+               ).toString();
+               const capTokens = cleanTokens(captionRaw).filter(
+                 (t) => t && !UI_BLACKLIST.has(t)
+               );
+               //  const toks = s.split(" ").filter((t) => t && !UI_BLACKLIST.has(t));
+         
+               let score = 0;
+         
+               // 1) exact ordered phrase match -> big boost
+               if (cleanedPhraseTokens.length > 0) {
+                 const orderedPhraseRegex = new RegExp(
+                   "\\b" + escapeRegex(cleanedPhraseTokens.join("\\s+")) + "\\b",
+                   "i"
+                 );
+                 if (orderedPhraseRegex.test(captionRaw)) {
+                   score += 2.0;
+                 }
+               }
+         
+               // 2) token overlap (jaccard)
+               const jac = await jaccard(cleanedPhraseTokens, capTokens); // 0..1
+               score += jac;
+         
+               const lratio = await longestConsecutiveMatchRatio(
+                 cleanedPhraseTokens,
+                 capTokens
+               );
+               console.log("score", score);
+               console.log("lratio", lratio);
+               score += lratio * 0.5;
+         
+               const MIN_SCORE = 0.09;
+               if (best === null || score > best.score) {
+                 // only accept if the new score passes threshold
+                 if (score > MIN_SCORE) {
+                   best = { item, score };
+                   chosen = item;
+                 }
+               }
+             }
+         
+             console.log(
+               "Best caption candidate score:",
+               best?.score,
+                 "chosen postId:",
+                 chosen?.postId
+             );
+         
+             if (chosen && chosen.imageUrl) {
+               console.log("img url",chosen.imageUrl);
+               try {
+                 await sendImageAttachment(senderId, chosen.imageUrl, pageAccessToken);
+               } catch (err) {
+                 console.warn(
+                   "sendImageAttachment failed why:",
+                   (err as any)?.message || err
+                 );
+               }
+              //  await sendMessage(
+              //    senderId,
+              //    shopId,
+              //    (chosen.imageCaption || chosen.message || "").toString()
+              //  );
+const userPrompt = `
+A customer has submitted an image and requests information.
+Use the data below:
+Matched Product: ${(chosen.imageCaption || chosen.message || "").toString() || "(no caption)"}
+
+Task:
+1) First, confirm whether the customer is asking about the product identified by the matched caption: "${(chosen.imageCaption || chosen.message || "").toString()}".
+2) State the product name/title based on the matched caption.
+3) If a price is available in the provided data, include it.
+4) Ask the customer a simple, direct question: "Would you like to purchase this item?"
+5) If any required information (price, size, availability) is missing, offer a short alternative: "Would you like more details our team contact with you?"
+6) Keep the response concise, professional, and friendly — no more than 3–4 short sentences.
+`;
+const systemInstruction="You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
+
+        
+  
+    //  let aiReply = "";
+     const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
+     const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+       const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
+  
+     try {
+    if (aiReply && aiReply.trim().length > 0) {
+      await sendMessage(senderId, shopId, aiReply);
+    } else {
+      // fallback human-friendly message
+      await sendMessage(
+        senderId,
+        shopId,
+        "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
+      );
+    }
+  } catch (err: any) {
+    console.warn("sendMessage failed:", err?.message || err);
+  }
+
+               return;
+             }
+             
+             //  else {
+             //   // fallback to first element if something weird
+             //   const m = captionMatch[0];
+             //   if (m && m.imageUrl) {
+             //     try {
+             //       await sendImageAttachment(senderId, m.imageUrl, pageAccessToken);
+             //     } catch (err) {
+             //       console.warn(
+             //         "sendImageAttachment failed:",
+             //         (err as any)?.message || err
+             //       );
+             //     }
+             //     await sendMessage(
+             //       senderId,
+             //       shopId,
+             //       (m.imageCaption || m.message || "").toString()
+             //     );
+             //     return;
+             //   }
+             // }
+           }
         }
 
         // quary with hash
@@ -176,7 +306,7 @@ export const handleDM = async (
               bestPhash.image.caption ||
               bestPhash.post.message ||
               "(No caption)";
-            await sendMessage(senderId, shopId, caption.toString());
+            // await sendMessage(senderId, shopId, caption.toString());
             // send image (optional)
             try {
               await sendImageAttachment(
@@ -184,6 +314,44 @@ export const handleDM = async (
                 bestPhash.image.url,
                 pageAccessToken
               );
+
+              const userPrompt = `
+A customer has ask for product information.
+Use the data below:
+Matched Product: ${(caption  || "").toString() || "(no caption)"}
+
+Task:
+1) First, confirm whether the customer is asking about the product identified by the matched caption: "${(caption || "").toString()}".
+2) State the product name/title based on the matched caption.
+3) If a price is available in the provided data, include it.
+4) Ask the customer a simple, direct question: "Would you like to purchase this item?"
+5) If any required information (price, size, availability) is missing, offer a short alternative: "Would you like more details our team contact with you?"
+6) Keep the response concise, professional, and friendly — no more than 3–4 short sentences.
+`;
+const systemInstruction="You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
+
+        
+console.log("caption",caption);
+  
+    //  let aiReply = "";
+     const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
+     const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+       const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
+  console.log("aireply",aiReply);
+     try {
+    if (aiReply && aiReply.trim().length > 0) {
+      await sendMessage(senderId, shopId, aiReply);
+    } else {
+      // fallback human-friendly message
+      await sendMessage(
+        senderId,
+        shopId,
+        "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
+      );
+    }
+  } catch (err: any) {
+    console.warn("sendMessage failed:", err?.message || err);
+  }
             } catch (err) {
               console.warn(
                 "sendImageAttachment error:",
@@ -262,40 +430,9 @@ export const handleDM = async (
         }
 
         // If still nothing, fallback to AI conversational reply
-        let aiReply = "";
-        try {
-          if (method === "gemini") {
-            aiReply = await GeminiService.getResponseDM(
-              senderId,
-              shopId,
-              userMsg,
-              ActionType.DM
-            );
-          } else if (method === "chatgpt") {
-            aiReply = await ChatgptService.getResponseDM(
-              senderId,
-              shopId,
-              userMsg,
-              ActionType.DM
-            );
-          } else if (method === "deepseek") {
-            aiReply = await DeepSeekService.getResponseDM(
-              senderId,
-              shopId,
-              userMsg,
-              ActionType.DM
-            );
-          } else if (method === "groq") {
-            aiReply = await GroqService.getResponseDM(
-              senderId,
-              shopId,
-              userMsg,
-              ActionType.DM
-            );
-          }
-        } catch (aiErr: any) {
-          console.warn("AI fallback failed:", (aiErr as any)?.message || aiErr);
-        }
+        // let aiReply = "";
+        const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+       const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
 
         if (aiReply) {
           await sendMessage(senderId, shopId, aiReply);
@@ -460,50 +597,49 @@ export const handleDM = async (
 
   const q = normalize(userMsg);
   console.log("message", q);
-  if (!q) {
-    // delegate to AI service for generic small talk or instruction
-    try {
-      let reply = "";
-      if (method === "gemini") {
-        reply = await GeminiService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      } else if (method === "chatgpt") {
-        reply = await ChatgptService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      } else if (method === "deepseek") {
-        reply = await DeepSeekService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      } else if (method === "groq") {
-        reply = await GroqService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      }
-      await sendMessage(senderId, shopId, reply || "দয়া করে আবার বলুন।");
-    } catch (err: any) {
-      console.error("AI reply error:", err?.message || err);
-      await sendMessage(
-        senderId,
-        shopId,
-        "উত্তর তৈরিতে সমস্যা হয়েছে — পরে চেষ্টা করুন।"
-      );
-    }
-    return;
-  }
+  // if (!q) {
+  //   try {
+  //     let reply = "";
+  //     if (method === "gemini") {
+  //       reply = await GeminiService.getResponseDM(
+  //         senderId,
+  //         shopId,
+  //         userMsg,
+  //         ActionType.DM
+  //       );
+  //     } else if (method === "chatgpt") {
+  //       reply = await ChatgptService.getResponseDM(
+  //         senderId,
+  //         shopId,
+  //         userMsg,
+  //         ActionType.DM
+  //       );
+  //     } else if (method === "deepseek") {
+  //       reply = await DeepSeekService.getResponseDM(
+  //         senderId,
+  //         shopId,
+  //         userMsg,
+  //         ActionType.DM
+  //       );
+  //     } else if (method === "groq") {
+  //       reply = await GroqService.getResponseDM(
+  //         senderId,
+  //         shopId,
+  //         userMsg,
+  //         ActionType.DM
+  //       );
+  //     }
+  //     await sendMessage(senderId, shopId, reply || "দয়া করে আবার বলুন।");
+  //   } catch (err: any) {
+  //     console.error("AI reply error:", err?.message || err);
+  //     await sendMessage(
+  //       senderId,
+  //       shopId,
+  //       "উত্তর তৈরিতে সমস্যা হয়েছে — পরে চেষ্টা করুন।"
+  //     );
+  //   }
+  //   return;
+  // }
 
   // Try image-level caption match (fastest): aggregate unwind images and match caption
   try {
@@ -533,14 +669,121 @@ export const handleDM = async (
     ]).exec();
     // console.log("captionMatch Usrmsg", captionMatch);
     if (captionMatch && captionMatch.length > 0) {
-      await pickBestCaptionSimple(
-        captionMatch,
-        words,
-        shopId,
+        const cleanedPhraseTokens = words;
+    
+        let best: { item: any; score: number } | null = null;
+        let chosen;
+    
+        for (const item of captionMatch) {
+          const captionRaw: string = (
+            item.imageCaption ||
+            item.message ||
+            ""
+          ).toString();
+          const capTokens = cleanTokens(captionRaw).filter(
+            (t) => t && !UI_BLACKLIST.has(t)
+          );
+          //  const toks = s.split(" ").filter((t) => t && !UI_BLACKLIST.has(t));
+    
+          let score:number = 0;
+    
+          // 1) exact ordered phrase match -> big boost
+          if (cleanedPhraseTokens.length > 0) {
+            const orderedPhraseRegex = new RegExp(
+              "\\b" + escapeRegex(cleanedPhraseTokens.join("\\s+")) + "\\b",
+              "i"
+            );
+            if (orderedPhraseRegex.test(captionRaw)) {
+              score += 2.0;
+            }
+          }
+    
+          // 2) token overlap (jaccard)
+          const jac = await jaccard(cleanedPhraseTokens, capTokens); // 0..1
+          score += jac;
+    
+          const lratio = await longestConsecutiveMatchRatio(
+            cleanedPhraseTokens,
+            capTokens
+          );
+          console.log("score", score);
+          console.log("lratio", lratio);
+          score += lratio * 0.5;
+    
+          const MIN_SCORE = 0.09;
+          if (best === null || score > best.score) {
+            // only accept if the new score passes threshold
+            if (score > MIN_SCORE) {
+              best = { item, score };
+              chosen = item;
+            }
+          }
+        }
+    
+        console.log(
+          "Best caption candidate score:",
+          best?.score,
+            "chosen postId:",
+            chosen?.postId
+        );
+    
+        if (chosen && chosen.imageUrl && best?.score) {
+          console.log("img url",chosen.imageUrl);
+          try {
+            await sendImageAttachment(senderId, chosen.imageUrl, pageAccessToken);
+          } catch (err) {
+            console.warn(
+              "sendImageAttachment failed:",
+              (err as any)?.message || err
+            );
+          }
+// await sendMessage(
+//             senderId,
+//             shopId,
+//             (chosen.imageCaption || chosen.message || "").toString()
+//           );
+
+
+const userPrompt = `
+A customer has ask for product information.
+Use the data below:
+Matched Product: ${(chosen.imageCaption || chosen.message || "").toString() || "(no caption)"}
+
+Task:
+1) First, confirm whether the customer is asking about the product identified by the matched caption: "${(chosen.imageCaption || chosen.message || "").toString()}".
+2) State the product name/title based on the matched caption.
+3) If a price is available in the provided data, include it.
+4) Ask the customer a simple, direct question: "Would you like to purchase this item?"
+5) If any required information (price, size, availability) is missing, offer a short alternative: "Would you like more details our team contact with you?"
+6) Keep the response concise, professional, and friendly — no more than 3–4 short sentences.
+`;
+const systemInstruction="You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
+
+        
+  
+    //  let aiReply = "";
+     const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
+     const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+       const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
+  
+     try {
+    if (aiReply && aiReply.trim().length > 0) {
+      await sendMessage(senderId, shopId, aiReply);
+    } else {
+      // fallback human-friendly message
+      await sendMessage(
         senderId,
-        pageAccessToken
+        shopId,
+        "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
       );
     }
+  } catch (err: any) {
+    console.warn("sendMessage failed:", err?.message || err);
+  }
+          
+          return;
+        }
+      }
     console.log("captionMatch", captionMatch);
 
     // If none, try post-level text search ($text or regex)
@@ -590,40 +833,9 @@ export const handleDM = async (
     }
 
     // If still nothing, fallback to AI conversational reply
-    let aiReply = "";
-    try {
-      if (method === "gemini") {
-        aiReply = await GeminiService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      } else if (method === "chatgpt") {
-        aiReply = await ChatgptService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      } else if (method === "deepseek") {
-        aiReply = await DeepSeekService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      } else if (method === "groq") {
-        aiReply = await GroqService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      }
-    } catch (aiErr: any) {
-      console.warn("AI fallback failed:", (aiErr as any)?.message || aiErr);
-    }
+    const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+       const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
+
 
     if (aiReply) {
       await sendMessage(senderId, shopId, aiReply);
@@ -638,41 +850,9 @@ export const handleDM = async (
     console.error("Text search error:", err?.message || err);
     // fallback to AI service attempt
     try {
-      let reply = "";
-      if (method === "gemini") {
-        reply = await GeminiService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      } else if (method === "chatgpt") {
-        reply = await ChatgptService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      } else if (method === "deepseek") {
-        reply = await DeepSeekService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      } else if (method === "groq") {
-        reply = await GroqService.getResponseDM(
-          senderId,
-          shopId,
-          userMsg,
-          ActionType.DM
-        );
-      }
-      await sendMessage(
-        senderId,
-        shopId,
-        reply || "কিছু সমস্যা হয়েছে — পরে চেষ্টা করুন।"
-      );
+       const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+       const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
+await sendMessage(senderId, shopId, aiReply);
     } catch (err2: any) {
       console.error("AI fallback final error:", err2?.message || err2);
       await sendMessage(
