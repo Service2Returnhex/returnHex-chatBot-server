@@ -6,6 +6,8 @@ import {
   LogPrefix,
   LogService,
 } from "../../utility/Logger";
+import { ChatHistory } from "../Chatgpt/chat-history.model";
+import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { IPageInfo, PageInfo } from "./pageInfo.model";
 import { IPost, Post } from "./post.mode";
 
@@ -213,6 +215,31 @@ const setCmntPromt = async (id: string, cmntSystemPromt: string) => {
   return result;
 };
 
+const getDmMessageCount=async(shopId:string ):Promise<number>=>{
+    if (!shopId) return 0;
+
+      const result = await ChatHistory.aggregate([
+    { $match: { shopId } },                          // filter by shop
+    { $unwind: "$messages" },                        // flatten messages array
+    { $match: { "messages.role": "assistant" } },    // only assistant messages
+    { $count: "assistantCount" }                     // returns [{ assistantCount: N }] or []
+  ]);
+
+  return (result.length && result[0].assistantCount) ? result[0].assistantCount : 0;
+}
+
+const getCmtMessageCount=async(shopId:string):Promise<number>=>{
+if (!shopId)return 0;
+const result=await CommentHistory.aggregate([
+  {$match:{shopId}},
+  {$unwind:"$messages"},
+  { $match: { "messages.role": "assistant" } },
+  {$count:"assistantCount"}
+]);
+return (result.length && result[0].assistantCount)?result[0].assistantCount:0;
+
+}
+
 export const PageService = {
   getProducts,
   getTraindProducts,
@@ -227,5 +254,8 @@ export const PageService = {
   updateShop,
   deleteShop,
   setDmPromt,
-  setCmntPromt
+  setCmntPromt,
+
+  getDmMessageCount,
+  getCmtMessageCount
 };

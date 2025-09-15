@@ -178,6 +178,33 @@ const setCmntPromt: RequestHandler = catchAsync(
   }
 );
 
+const getDmMessageCount: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const shopId = (req.params.shopId as string) || (req.query.shopId as string);
+
+    if (!shopId) {
+      res.status(400).json({ success: false, message: "shopId is required" });
+      return;
+    }
+
+    const count = await PageService.getDmMessageCount(shopId);
+    res.json({ success: true, shopId, count });
+  }
+)
+
+const getCmtMessageCount:RequestHandler=catchAsync(
+  async (req:Request,res:Response)=>{
+    const shopId=(req.params.shopId as string) || (req.query.shopId as string);
+    if (!shopId){
+        res.status(400).json({ success: false, message: "shopId is required" });
+      return;
+    }
+
+     const count = await PageService.getCmtMessageCount(shopId);
+    res.json({ success: true, shopId, count });
+  }
+)
+
 export const PageController = {
   getProducts,
   getTrainedProducts,
@@ -192,5 +219,8 @@ export const PageController = {
   updateShop,
   deleteShop,
   setDmPromt,
-  setCmntPromt
+  setCmntPromt,
+
+  getDmMessageCount,
+  getCmtMessageCount
 };

@@ -18,4 +18,7 @@ router.delete("/shop/:id", PageController.deleteShop);
 router.patch("/shop/set-dm-promt/:id", PageController.setDmPromt);
 router.patch("/shop/set-cmnt-promt/:id", PageController.setCmntPromt);
 
+router.get("/shop/:shopId/msg-count", PageController.getDmMessageCount);
+router.get("/shop/:shopId/cmt-count", PageController.getCmtMessageCount);
+
 export const PageRouter = router;
