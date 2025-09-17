@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import { catchAsync } from "../../utility/cathcAsync";
 import sendResponse from "../../utility/sendResponse";
 import { PageService } from "./page.service";
+import { getMessageCountUsageByShop } from "./pageCountMsg";
 
 //Product controllers
 const getProducts: RequestHandler = catchAsync(
@@ -205,6 +206,59 @@ const getCmtMessageCount:RequestHandler=catchAsync(
   }
 )
 
+const getUsageByShop: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const shopId = (req.params.shopId as string) || (req.query.shopId as string);
+    
+    if (!shopId) {
+      res.status(400).json({ success: false, message: "shopId is required" });
+      return
+    }
+    
+      const range = (req.query.range as "daily" | "weekly" | "month-week") || "daily";
+  const days = Number(req.query.days ?? 7);
+  const weeks = Number(req.query.weeks ?? 6);
+  const totalTokensAvailable = Number(req.query.totalTokensAvailable ?? 1000);
+
+    const result = await getMessageCountUsageByShop(shopId, range, {
+    days,
+    weeks,
+    totalTokensAvailable
+  });
+
+  // if (range === "daily") {
+  //   return res.json({ success: true, points: result.points });
+  // }
+
+    res.json({ success: true, data: result });
+    return
+  }
+);
+
+const getMsgCounts = catchAsync(
+  async (req: Request, res: Response) => {
+  const shopId = (req.params.shopId as string) || (req.query.shopId as string);
+  if (!shopId) {
+    res.status(400).json({ success: false, message: "shopId required" }); 
+  return;
+  }
+
+  // run both in parallel
+  const [msgCount, cmtCount] = await Promise.all([
+    PageService.getDmMessageCount(shopId),
+    PageService.getCmtMessageCount(shopId),
+  ]);
+
+  const total = (msgCount ?? 0) + (cmtCount ?? 0);
+  const totalTokensAvailable = Number(req.query.totalTokensAvailable ?? 1000)-total;
+
+   res.json({
+    success: true,
+    data: { msgCount, cmtCount, total ,totalTokensAvailable}
+  });
+  return
+});
+
 export const PageController = {
   getProducts,
   getTrainedProducts,
@@ -222,5 +276,7 @@ export const PageController = {
   setCmntPromt,
 
   getDmMessageCount,
-  getCmtMessageCount
+  getCmtMessageCount,
+  getUsageByShop,
+  getMsgCounts
 };

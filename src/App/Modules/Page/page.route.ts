@@ -20,5 +20,6 @@ router.patch("/shop/set-cmnt-promt/:id", PageController.setCmntPromt);
 
 router.get("/shop/:shopId/msg-count", PageController.getDmMessageCount);
 router.get("/shop/:shopId/cmt-count", PageController.getCmtMessageCount);
-
+router.get("/shop/:shopId/token-count", PageController.getUsageByShop);
+router.get("/shop/:shopId/msg-counts", PageController.getMsgCounts);
 export const PageRouter = router;
