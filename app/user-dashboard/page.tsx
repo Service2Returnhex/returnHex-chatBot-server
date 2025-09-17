@@ -2,12 +2,11 @@
 
 import UserDahboard from "@/components/UserDahboard";
 import PagesList from "@/components/userDashboard/PageList";
-import TokenCard from "@/components/userDashboard/TokenCard";
-import TokenChart from "@/components/userDashboard/TokenChart";
 import axios, { AxiosError } from "axios";
 import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PageInfo, TokenUsageResponse } from "../types/user";
+import TokenUsagePage from "./token-usage/page";
 
 const MOCK = {
   tokenUsage: {
@@ -149,15 +148,7 @@ export default function UserDashboardPage() {
           </div>
         </div>
         <div className="flex flex-col gap-10 p-4">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 justify-between w-full">
-            <div className="lg:col-span-2">
-              <TokenCard
-                available={available}
-                used={used}
-                monthlyLimit={usage ? usage.totalTokensAvailable : undefined}
-              />
-            </div>
-            <div className="lg:col-span-3 w-full">
+           <div className="lg:col-span-3 w-full">
               <div className="flex items-center justify-between mb-3 ">
                 <h3 className="text-sm text-gray-300">Active Pages</h3>
                 <button
@@ -169,49 +160,15 @@ export default function UserDashboardPage() {
               </div>
 
               <PagesList
-                pages={pages}
+                // pages={pages}
                 //   onDelete={handleDeletePage}
                 //   onOpen={handleOpenPage}
               />
             </div>
-          </div>
+        
+          <TokenUsagePage/>
+          
 
-          <div className="">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium">Token Usage</h2>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setRange("daily")}
-                  className={`px-3 py-1 rounded-md ${
-                    range === "daily"
-                      ? "bg-indigo-600 text-white cursor-pointer"
-                      : "bg-white/5 cursor-pointer"
-                  }`}
-                >
-                  Daily
-                </button>
-                <button
-                  onClick={() => setRange("weekly")}
-                  className={`px-3 py-1 rounded-md ${
-                    range === "weekly"
-                      ? "bg-indigo-600 text-white cursor-pointer"
-                      : "bg-white/5 cursor-pointer"
-                  }`}
-                >
-                  Weekly
-                </button>
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="p-6 bg-white/3 backdrop-blur rounded-2xl">
-                Loading...
-              </div>
-            ) : (
-              <TokenChart points={points} />
-            )}
-          </div>
 
           <div className="w-full">
             <UserDahboard />
