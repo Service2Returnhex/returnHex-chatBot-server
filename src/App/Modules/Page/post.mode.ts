@@ -6,6 +6,7 @@ export interface IPost {
 
   postId: string;
   message: string;
+  summarizedMsg: string;
   full_picture: string;
   shopId: string;
   isTrained?: boolean;
@@ -25,6 +26,7 @@ const PostSchema = new Schema<IPost>(
       unique: true,
     },
     message: { type: String, required: true, default: "" },
+    summarizedMsg: { type: String, default: ""},
     full_picture: { type: String, default: ""},
     shopId: { type: String, required: true },
     isTrained: { type: Boolean, required: true, default: false},

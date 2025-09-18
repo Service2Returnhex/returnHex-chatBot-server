@@ -5,6 +5,7 @@ import { PageInfo } from "../Page/pageInfo.model";
 import { Post } from "../Page/post.mode";
 import { ChatHistory } from "./chat-history.model";
 import { CommentHistory } from "./comment-histroy.model";
+import { messageSummarizer } from "../../utility/summarizer";
 
 const getResponseDM = async (
   senderId: string,
@@ -20,14 +21,28 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPromt = await makePromtDM(shop, products, userHistoryDoc.messages);
+  const getPromt = await makePromtDM(shop, products);
 
   userHistoryDoc.messages.push({ role: "user", content: prompt });
-  console.log("getDmPrompt", getPromt);
+
+  if(userHistoryDoc.messages.length > 6) {
+    const oldMessages = userHistoryDoc.messages.slice(
+      0,
+      userHistoryDoc.messages.length - 4
+    );
+
+    const recentMessages = userHistoryDoc.messages.slice(-4);
+
+    const summary = await messageSummarizer(oldMessages, userHistoryDoc?.summary, 70);
+
+    userHistoryDoc.summary = summary as string
+    userHistoryDoc.messages = recentMessages
+  }
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
-    { role: "user", content: prompt },
+    { role: "system", content: "History summary: " + userHistoryDoc.summary },
+    ...userHistoryDoc.messages.map(m => ({ role: m.role, content: m.content }))
   ];
 
   const openai = new OpenAI({

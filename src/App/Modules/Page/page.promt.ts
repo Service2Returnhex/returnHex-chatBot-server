@@ -1,17 +1,10 @@
-import { IChatMessages } from "../Chatgpt/chat-history.model";
 import { IComments } from "../Chatgpt/comment-histroy.model";
-import {
-  localDmSummarizer,
-  summarizeRecentDmMessage,
-} from "./customize.recent.message";
-import { IPageInfo } from "./pageInfo.model";
+import { IPageInfo, PageInfo } from "./pageInfo.model";
 import { IPost } from "./post.mode";
 
 export const makePromtDM = async (
   page: IPageInfo,
   posts: IPost[],
-  userPromts: IChatMessages[],
-  options?: { summaryFromLLM?: boolean }
 ): Promise<string> => {
   let postList = "";
 
@@ -19,57 +12,37 @@ export const makePromtDM = async (
     postList = posts
       .map(
         (p, i) => `
-${i + 1}. ${p.message}`
+${i + 1}. ${!p.summarizedMsg ? p.message : p.summarizedMsg}`
       )
       .join(",");
   }
 
-  // let recentUserDMPromt = "";
-  // let cnt = 1;
-  // if (userPromts.length >= 10) {
-  //   for (let i = userPromts.length - 1; i >= userPromts.length - 10; i--) {
-  //     recentUserDMPromt += `${cnt} - role: ${userPromts[i].role}, content: ${userPromts[i].content},`;
-  //     cnt++;
-  //   }
-  // } else {
-  //   userPromts.forEach((promts, idx) => {
-  //     recentUserDMPromt += `${cnt} - role: ${promts.role}, content: ${promts.content},`;
-  //     cnt++;
-  //   });
-  // }
-  // const formatted = summarizeRecentMessage(recentUserDMPromt);
-
-  // console.log("recent Dm Prompt", recentUserDMPromt);
-  const useLLM = options?.summaryFromLLM ?? true;
-  const recentSummary = useLLM
-    ? await summarizeRecentDmMessage(userPromts || [])
-    : localDmSummarizer(userPromts || []);
-
+  const shopInfo = page.summary.length ? page.summary : `PageName: ${page.pageName}, Category: ${
+    page.pageCategory ?? "N/A"
+  }, Address: ${page?.address ?? "N/A"}
+  Phone: ${page?.phone ? page.phone : "N/A"}, Email: ${
+    page?.email ? page.email : "N/A"
+  }, MoreInfo: ${page?.moreInfo ?? "N/A"}
+  `;
+  
   const systemPrompt = `
-You are an AI assistant for the Facebook page that manages users by answering DM questions about page info and posts.
-Page information:
-- PageName: ${page.pageName}
-- Category: ${page.pageCategory ?? "N/A"}
-- Address: ${page?.address ?? "N/A"}
-- Phone: ${page?.phone ? "[REDACTED_PHONE]" : "N/A"}
-- Email: ${page?.email ? "[REDACTED_EMAIL]" : "N/A"}
-- MoreInfo: ${page?.moreInfo ?? "N/A"}
+  Page information: ${shopInfo}
 
-Recent posts:
+Recent posts(can be products, service etc category):
 ${
-  postList.length
+  postList.length > 0
     ? postList
-    : "No posts available. Answer smartly about the page."
+    : "Say No posts(can be products, service etc category) available. if the list is empty"
 }
 
-Customized recent messages summary (short):
-${recentSummary}
+more system instructions:
+${page?.dmSystemPromt ?? "not provided"}
 
-Additional system instructions:
-${page?.dmSystemPromt ?? ""}
-
-Respond as a helpful, concise assistant. If user asks about items in the summary, use the context above. 
+answer as short as possible but in related context(no extra, additonal and irrelevant things). 
+You can use maximum 50 token
 `.trim();
+
+  console.log(systemPrompt)
 
   return systemPrompt;
 };

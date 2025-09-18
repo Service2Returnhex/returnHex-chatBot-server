@@ -8,6 +8,7 @@ export interface IChatMessages {
 export interface IChatHistory{
     userId: string;
     messages: IChatMessages[];
+    summary: string,
     createdAt: Date;
     updatedAt: Date;
 }
@@ -20,6 +21,7 @@ const ChatMessageSchema = new Schema<IChatMessages>({
 const ChatHistorySchema = new Schema<IChatHistory>({
     userId: { type: String, required: true },
     messages: [ChatMessageSchema],
+    summary: { type: String, default: ""},
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 })

@@ -1,5 +1,6 @@
 import mongoose, { Schema} from "mongoose";
 
+
 export interface IPageInfo {
   pageName: string;
   address: string;
@@ -8,6 +9,7 @@ export interface IPageInfo {
   pageCategory: string;
   shopId: string; 
   moreInfo?: string;
+  summary: string;
   dmSystemPromt?: string;
   cmntSystemPromt?: string;
   isVerified?: boolean;
@@ -15,6 +17,8 @@ export interface IPageInfo {
   accessToken: string; 
   verifyToken: string;
 }
+
+
 
 const PageInfoSchema = new Schema<IPageInfo>({
   pageName: { type: String, required: true },
@@ -24,6 +28,7 @@ const PageInfoSchema = new Schema<IPageInfo>({
   pageCategory: { type: String, required: true },
   shopId: { type: String, required: true, unique: true },
   moreInfo: { type: String, default: ''},
+  summary: { type: String, default: ''},
   dmSystemPromt: {type: String, default: ''},
   cmntSystemPromt: {type: String, default: ''},
   isVerified: {type: Boolean, default: false},
