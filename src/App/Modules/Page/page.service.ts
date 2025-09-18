@@ -48,7 +48,7 @@ const createProduct = async (payload: IPost) => {
   if (countWords(payload.message) > 30) {
     shorterInfo = await AIResponse(
       payload.message,
-      "make the info as shorter as possible(summarize) but don't left anything necessary in 45 tokens",
+      "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
       50
     );
     payload.summarizedMsg = shorterInfo as string;
@@ -81,7 +81,7 @@ const updateProduct = async (
   if (countWords(payload.message as string) > 30) {
     shorterInfo = await AIResponse(
       payload.message as string,
-      "make the info as shorter as possible(summarize) but don't left anything necessary in 45 tokens",
+      "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
       50
     );
     payload.summarizedMsg = shorterInfo as string;
@@ -160,8 +160,8 @@ const createShop = async (payload: IPageInfo) => {
   if (countWords(shopInfo) > 30) {
     shorterInfo = await AIResponse(
       shopInfo,
-      "make the info as shorter as possible(summarize) but don't left anything necessary in 70 tokens",
-      70
+      "make the info as shorter as possible(summarize) but don't left anything necessary in 100 tokens",
+      100
     );
     payload.summary = shorterInfo as string;
   }
@@ -197,8 +197,8 @@ const updateShop = async (id: string, payload: Partial<IPageInfo>) => {
   if (countWords(shopInfo) > 30) {
     shorterInfo = await AIResponse(
       shopInfo,
-      "make the info as shorter as possible(summarize) but don't left anything necessary in 45 tokens",
-      50
+      "make the info as shorter as possible(summarize) but don't left anything necessary in 100 tokens",
+      100
     );
     payload.summary = shorterInfo as string;
   }

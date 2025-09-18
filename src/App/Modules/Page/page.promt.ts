@@ -1,3 +1,4 @@
+import { botConfig } from "../../config/botConfig";
 import { IComments } from "../Chatgpt/comment-histroy.model";
 import { IPageInfo, PageInfo } from "./pageInfo.model";
 import { IPost } from "./post.mode";
@@ -12,7 +13,7 @@ export const makePromtDM = async (
     postList = posts
       .map(
         (p, i) => `
-${i + 1}. ${!p.summarizedMsg ? p.message : p.summarizedMsg}`
+  ${i + 1}. ${!p.summarizedMsg ? p.message : p.summarizedMsg}`
       )
       .join(",");
   }
@@ -39,7 +40,7 @@ more system instructions:
 ${page?.dmSystemPromt ?? "not provided"}
 
 answer as short as possible but in related context(no extra, additonal and irrelevant things). 
-You can use maximum 50 token
+You can use maximum ${botConfig.mainAIMaxToken} token
 `.trim();
 
   console.log(systemPrompt)

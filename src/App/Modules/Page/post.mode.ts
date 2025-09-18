@@ -6,7 +6,7 @@ export interface IPost {
 
   postId: string;
   message: string;
-  summarizedMsg: string;
+  summarizedMsg?: string;
   full_picture: string;
   shopId: string;
   isTrained?: boolean;
