@@ -7,6 +7,8 @@ export interface IPost {
 
   postId: string;
   message: string;
+  summarizedMsg?: string;
+  full_picture: string;
   shopId: string;
   isTrained?: boolean;
   // full_picture: string;
@@ -28,6 +30,7 @@ const PostSchema = new Schema<IPost>({
     unique: true,
   },
   message: { type: String, required: true, default: "" },
+  summarizedMsg: { type: String, default: ""},
   // full_picture: { type: String, default: "" },
   // imageHash: String,
   // embedding: { type: [Number], default: [] },

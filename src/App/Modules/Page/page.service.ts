@@ -8,6 +8,8 @@ import {
 } from "../../utility/Logger";
 import { IPageInfo, PageInfo } from "./pageInfo.model";
 import { IPost, Post } from "./post.mode";
+import { AIResponse } from "../../utility/summarizer";
+import { countWords } from "../../utility/wordCounter";
 
 //Product services
 const getProducts = async (pageId: string) => {
@@ -43,6 +45,15 @@ const createProduct = async (payload: IPost) => {
   });
   // console.log("create product", payload);
   if (findProduct) return "Product Already Created";
+  let shorterInfo: string | undefined = "";
+  if (countWords(payload.message) > 30) {
+    shorterInfo = await AIResponse(
+      payload.message,
+      "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
+      50
+    );
+    payload.summarizedMsg = shorterInfo as string;
+  }
   const result = await Post.create({ ...payload, isTrained: true });
   if (!result) {
     Logger(LogService.DB, LogPrefix.PRODUCT, LogMessage.NOT_CREATED);
@@ -66,6 +77,16 @@ const updateProduct = async (
   if (!existing) {
     Logger(LogService.DB, LogPrefix.PRODUCT, LogMessage.NOT_FOUND);
     throw new ApiError(httpStatus.NOT_FOUND, "Product Not Found!");
+  }
+
+  let shorterInfo: string | undefined = "";
+  if (countWords(payload.message as string) > 30) {
+    shorterInfo = await AIResponse(
+      payload.message as string,
+      "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
+      50
+    );
+    payload.summarizedMsg = shorterInfo as string;
   }
 
   const result = await Post.updateOne({ shopId: pageId, postId: id }, payload, {
@@ -130,6 +151,24 @@ const createShop = async (payload: IPageInfo) => {
     throw new ApiError(httpStatus.CONFLICT, "Shop Already Exists!");
   }
 
+  const shopInfo = `PageName: ${payload.pageName}, Category: ${
+    payload.pageCategory ?? "N/A"
+  }, Address: ${payload?.address ?? "N/A"}
+    Phone: ${payload?.phone ? payload.phone : "N/A"}, Email: ${
+    payload?.email ? payload.email : "N/A"
+  }, MoreInfo: ${payload?.moreInfo ?? "N/A"}
+    `;
+  //todo: logic update when user change the info
+  let shorterInfo: string | undefined = "";
+  if (countWords(shopInfo) > 30) {
+    shorterInfo = await AIResponse(
+      shopInfo,
+      "make the info as shorter as possible(summarize) but don't left anything necessary in 100 tokens",
+      100
+    );
+    payload.summary = shorterInfo as string;
+  }
+
   const result = await PageInfo.create(payload);
   if (!result) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_CREATED);
@@ -146,6 +185,27 @@ const updateShop = async (id: string, payload: Partial<IPageInfo>) => {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_FOUND);
     throw new ApiError(httpStatus.NOT_FOUND, "Shop Not Found");
   }
+
+  const shopInfo = `PageName: ${
+    payload.pageName ? payload.pageName : isExists.pageName
+  }, Category: ${
+    payload.pageCategory ? payload.pageCategory : isExists.pageCategory
+  }, Address: ${payload.address ? payload.address : isExists.address}
+    Phone: ${payload.phone ? payload.phone : isExists.phone}, Email: ${
+    payload.email ? payload.email : isExists.email
+  }, MoreInfo: ${payload.moreInfo ? payload.moreInfo : isExists.moreInfo}
+    `;
+
+  let shorterInfo: string | undefined = "";
+  if (countWords(shopInfo) > 30) {
+    shorterInfo = await AIResponse(
+      shopInfo,
+      "make the info as shorter as possible(summarize) but don't left anything necessary in 100 tokens",
+      100
+    );
+    payload.summary = shorterInfo as string;
+  }
+
   const result = await PageInfo.updateOne({ shopId: id }, payload, {
     new: true,
     runValidators: true,

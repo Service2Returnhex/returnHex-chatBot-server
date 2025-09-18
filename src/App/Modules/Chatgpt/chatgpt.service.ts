@@ -5,6 +5,8 @@ import { PageInfo } from "../Page/pageInfo.model";
 import { Post } from "../Page/post.mode";
 import { ChatHistory } from "./chat-history.model";
 import { CommentHistory } from "./comment-histroy.model";
+import { messageSummarizer } from "../../utility/summarizer";
+import { botConfig } from "../../config/botConfig";
 
 const getResponseDM = async (
   senderId: string,
@@ -20,14 +22,35 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPromt = await makePromtDM(shop, products, userHistoryDoc.messages);
+  const getPromt = await makePromtDM(shop, products);
 
   userHistoryDoc.messages.push({ role: "user", content: prompt });
-  console.log("getDmPrompt", getPromt);
+
+  if (userHistoryDoc.messages.length > botConfig.converstionThreshold) {
+    const oldMessages = userHistoryDoc.messages.slice(
+      0,
+      userHistoryDoc.messages.length - botConfig.keepMessages
+    );
+
+    const recentMessages = userHistoryDoc.messages.slice(-botConfig.keepMessages);
+
+    const summary = await messageSummarizer(
+      oldMessages,
+      userHistoryDoc?.summary,
+      botConfig.messageSummarizerMaxToken
+    );
+
+    userHistoryDoc.summary = summary as string;
+    userHistoryDoc.messages = recentMessages;
+  }
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
-    { role: "user", content: prompt },
+    { role: "system", content: "History summary: " + userHistoryDoc.summary },
+    ...userHistoryDoc.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
   ];
 
   const openai = new OpenAI({
@@ -35,11 +58,10 @@ const getResponseDM = async (
   });
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-mini",
+    model: botConfig.mainAIModel,
     messages,
   });
-
-  const reply = completion.choices[0].message.content || "Something Went Wrong";
+  const reply = completion.choices[0].message.content || "Something went wrong";
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
   await userHistoryDoc.save();
