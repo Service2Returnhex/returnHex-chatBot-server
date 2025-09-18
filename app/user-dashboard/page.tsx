@@ -2,11 +2,11 @@
 
 import UserDahboard from "@/components/UserDahboard";
 import PagesList from "@/components/userDashboard/PageList";
+import TokenUsagePage from "@/components/userDashboard/TokenUsage";
 import axios, { AxiosError } from "axios";
 import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PageInfo, TokenUsageResponse } from "../types/user";
-import TokenUsagePage from "./token-usage/page";
 
 const MOCK = {
   tokenUsage: {
@@ -167,8 +167,6 @@ export default function UserDashboardPage() {
             </div>
         
           <TokenUsagePage/>
-          
-
 
           <div className="w-full">
             <UserDahboard />
