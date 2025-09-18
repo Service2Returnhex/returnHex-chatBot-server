@@ -15,12 +15,12 @@ export const botConfig: TBotConfig = {
     mainAIModel: "gpt-5-mini",
     mainAIMaxToken: 50,
 
-    NormaAIResponseModel: 'gpt-3.5-turbo', //post and more info summarization
+    NormaAIResponseModel: 'gpt-4o', //post and more info summarization
 
-    messageSummarizerModel: 'gpt-3.5-turbo',
-    messageSummarizerMaxToken: 150,
+    messageSummarizerModel: 'gpt-4o',
+    messageSummarizerMaxToken: 200,
 
-    converstionThreshold: 10,
-    keepMessages: 5
+    converstionThreshold: 15,
+    keepMessages: 7
 
 }
