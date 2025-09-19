@@ -101,7 +101,6 @@ export const getCommnetResponse = async (
     shop,
     products,
     specificProduct,
-    userCommnetHistoryDoc.messages
   );
 
   userCommnetHistoryDoc.messages.push({
@@ -110,16 +109,39 @@ export const getCommnetResponse = async (
     content: message,
   });
 
+  if (userCommnetHistoryDoc.messages.length > botConfig.commentThreshold) {
+    const oldComments = userCommnetHistoryDoc.messages.slice(
+      0,
+      userCommnetHistoryDoc.messages.length - botConfig.keepComments
+    );
+
+    const recentComments = userCommnetHistoryDoc.messages.slice(-botConfig.keepComments);
+
+    const summary = await messageSummarizer(
+      oldComments,
+      userCommnetHistoryDoc?.summary,
+      botConfig.messageSummarizerMaxToken
+    );
+
+    userCommnetHistoryDoc.summary = summary as string;
+    userCommnetHistoryDoc.messages = recentComments;
+  }
+
+
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
-    { role: "user", content: message },
+    { role: "system", content: "History summary: " + userCommnetHistoryDoc.summary },
+    ...userCommnetHistoryDoc.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
   ];
 
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-mini",
+    model:  botConfig.mainAIModel,
     messages,
   });
 

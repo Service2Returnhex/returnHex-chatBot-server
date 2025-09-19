@@ -11,6 +11,7 @@ export interface ICommentHistory {
     postId: string;
     userName: string;
     messages: IComments[];
+    summary: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -28,6 +29,7 @@ const CommentHistorySchema = new Schema<ICommentHistory>({
     userName: { type: String, required: true },
     postId: { type: String, required: true },
     messages: [CommnetSchema],
+    summary: { type: String, default: "" },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });

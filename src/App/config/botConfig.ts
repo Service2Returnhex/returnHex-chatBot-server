@@ -7,8 +7,14 @@ type TBotConfig = {
 
     NormaAIResponseModel: string;
     
-    converstionThreshold: number,
-    keepMessages: number
+    converstionThreshold: number;
+    keepMessages: number;
+
+    commentThreshold: number,
+    keepComments: number,
+
+
+    postVisibility: number
 }
 
 export const botConfig: TBotConfig = {
@@ -21,6 +27,11 @@ export const botConfig: TBotConfig = {
     messageSummarizerMaxToken: 200,
 
     converstionThreshold: 15,
-    keepMessages: 7
+    keepMessages: 7,
+
+    commentThreshold: 6,
+    keepComments: 3,
+
+    postVisibility: 5,
 
 }
