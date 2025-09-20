@@ -16,7 +16,7 @@ const getResponseDM = async (
 ) => {
   let userHistoryDoc = await ChatHistory.findOne({ userId: senderId });
   if (!userHistoryDoc)
-    userHistoryDoc = new ChatHistory({ userId: senderId, messages: [] });
+    userHistoryDoc = new ChatHistory({ userId: senderId, shopId:shopId, messages: [] });
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
 
@@ -24,7 +24,7 @@ const getResponseDM = async (
 
   const getPromt = await makePromtDM(shop, products);
 
-  userHistoryDoc.messages.push({ role: "user", content: prompt });
+  // userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   if (userHistoryDoc.messages.length > botConfig.converstionThreshold) {
     const oldMessages = userHistoryDoc.messages.slice(
@@ -43,6 +43,8 @@ const getResponseDM = async (
     userHistoryDoc.summary = summary as string;
     userHistoryDoc.messages = recentMessages;
   }
+  userHistoryDoc.messages.push({ role: "user", content: prompt ,createdAt: new Date(), updatedAt: new Date()});
+  console.log("getDmPrompt", getPromt);
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
@@ -63,7 +65,7 @@ const getResponseDM = async (
   });
   const reply = completion.choices[0].message.content || "Something went wrong";
 
-  userHistoryDoc.messages.push({ role: "assistant", content: reply });
+  userHistoryDoc.messages.push({ role: "assistant", content: reply ,createdAt: new Date(), updatedAt: new Date()});
   await userHistoryDoc.save();
   return reply;
 };
@@ -80,6 +82,7 @@ export const getCommnetResponse = async (
   let userCommnetHistoryDoc = await CommentHistory.findOne({
     userId: commenterId,
     postId,
+ 
   });
 
   if (!userCommnetHistoryDoc)
@@ -87,6 +90,7 @@ export const getCommnetResponse = async (
       userId: commenterId,
       commentId,
       postId,
+      shopId,
       userName,
       messages: [],
     });
@@ -108,6 +112,8 @@ export const getCommnetResponse = async (
     commentId,
     role: "user",
     content: message,
+    createAt: new Date(),
+     updatedAt: new Date()
   });
 
   const messages: ChatCompletionMessageParam[] = [
@@ -130,6 +136,7 @@ export const getCommnetResponse = async (
     commentId,
     role: "assistant",
     content: reply,
+    createAt: new Date(), updatedAt: new Date()
   });
 
   await userCommnetHistoryDoc.save();
