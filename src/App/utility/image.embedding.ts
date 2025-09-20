@@ -4,7 +4,11 @@ import OpenAI from "openai";
 import Tesseract from "tesseract.js";
 
 const GRAPH_MSG_URL = "https://graph.facebook.com/v23.0/me/messages";
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Create OpenAI client lazily to ensure env variables are loaded
+const getOpenAIClient = () => {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+};
 export const UI_BLACKLIST = new Set([
   "yesterday",
   "like",
@@ -120,6 +124,7 @@ export async function extractTextFromImageBuffer(buffer: Buffer) {
 // Create OpenAI text embedding from text
 export async function createTextEmbedding(text: string) {
   if (!text || text.trim().length === 0) return null;
+  const openai = getOpenAIClient();
   const resp = await openai.embeddings.create({
     model: "text-embedding-3-large", // robust text embedding model
     input: text,
@@ -317,8 +322,8 @@ export function isAskingForImage(rawMsg: string | undefined | null): boolean {
 
   // সহজ কিওয়ার্ডগুলো — বাংলা ও ইংরেজি মিশানো
   const keywords = [
-    "ছবি", "ইমেজ", "দেখ", "দেখাও", "দেখতে চাই", "দেখান","দেও","দাও", "দেন",
-    "show image","dau","cobi", "show", "show photo", "picture", "photo", "open image", "open photo","den","patau"
+    "ছবি", "ইমেজ", "দেখ", "দেখাও", "দেখতে চাই", "দেখান", "দেও", "দাও", "দেন",
+    "show image", "dau", "cobi", "show", "show photo", "picture", "photo", "open image", "open photo", "den", "patau"
   ];
 
   for (const k of keywords) {
