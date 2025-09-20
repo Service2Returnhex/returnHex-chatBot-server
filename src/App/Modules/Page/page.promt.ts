@@ -32,19 +32,33 @@ export const makePromtDM = async (
   const systemPrompt = `
   Page information: ${shopInfo}
 
-Recent posts(can be products, service etc page category):
-${
-  postList.length > 0
-    ? postList
-    : "Say No posts(can be products, service etc page category) available. if the list is empty"
-}
+  Recent posts(can be products, service etc page category):
+  ${
+    postList.length > 0
+      ? postList
+      : "Say No posts(can be products, service etc page category) available. if the list is empty"
+  }
 
-more system instructions:
-${page?.dmSystemPromt ?? "not provided"}
 
-answer as short as possible but in related context(no extra, additonal and irrelevant things). 
-You can use maximum ${botConfig.mainAIMaxToken} token
-`.trim();
+  more system instructions:
+  ${page?.dmSystemPromt ?? "not provided"}
+
+  If the user wants to confirm(only 'confirm order' word) an order for a product/service, reply with a structured JSON in this format only:
+  {
+    "action": "confirmOrder",
+    "name" : "Asked Customer Name",
+    "productName": "Asked Product Name",
+    "quantity": "Asked Quantity",
+    "address" : "Asked Address",
+    "contact" : "Asked Contact",
+    "paymentMethod": "Asked PaymentMethod" 
+  }
+  if any property does not matche with above, ask to provite then confirm
+  
+  Otherwise, continue normal chat.
+  answer as short as possible but in related context(no extra, additonal and irrelevant things). 
+  You can use maximum ${botConfig.mainAIMaxToken} token
+  `.trim();
 
   console.log(systemPrompt)
 

@@ -13,7 +13,7 @@ export const messageSummarizer = async (oldMessages: IChatMessages[],
     const response = await openai.chat.completions.create({
         model: botConfig.messageSummarizerModel,
         messages: [
-            { role: "system", content: `Summarize by keyword the following chat in ${maxToken} token:` },
+            { role: "system", content: `make the following chat in ${maxToken} token:` },
             { role: "user", content: text + `old Summary: ${oldSummary}`}
         ],
         max_tokens: maxToken

@@ -7,6 +7,7 @@ import { ChatHistory } from "./chat-history.model";
 import { CommentHistory } from "./comment-histroy.model";
 import { messageSummarizer } from "../../utility/summarizer";
 import { botConfig } from "../../config/botConfig";
+import { Order } from "../Page/order.model";
 
 const getResponseDM = async (
   senderId: string,
@@ -61,7 +62,29 @@ const getResponseDM = async (
     model: botConfig.mainAIModel,
     messages,
   });
-  const reply = completion.choices[0].message.content || "Something went wrong";
+  let reply = completion.choices[0].message.content || "Something went wrong";
+  console.log(reply);
+  try {
+    const parsed = JSON.parse(reply);
+    if(parsed?.action === "confirmOrder") {
+      const order = new Order({
+        userId: senderId,
+        shopId,
+        customerName: parsed?.name || "N/A",
+        productName: parsed?.productName || "N/A",
+        quantity: parsed?.quantity || "N/A",
+        address: parsed?.address || "N/A",
+        contact: parsed?.contact || "N/A",
+        paymentMethod: parsed?.paymentMethod || "N/A",
+        status: "pending",
+      })
+      await order.save();
+
+      reply = `✅ Your order for "${parsed.productName}" has been confirmed!`;
+    }
+  } catch (error: any) {
+    console.log(error.message);
+  }
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
   await userHistoryDoc.save();

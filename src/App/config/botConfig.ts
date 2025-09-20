@@ -24,10 +24,10 @@ export const botConfig: TBotConfig = {
     NormaAIResponseModel: 'gpt-4o', //post and more info summarization
 
     messageSummarizerModel: 'gpt-4o',
-    messageSummarizerMaxToken: 200,
+    messageSummarizerMaxToken: 500,
 
-    converstionThreshold: 15,
-    keepMessages: 7,
+    converstionThreshold: 30,
+    keepMessages: 20,
 
     commentThreshold: 6,
     keepComments: 3,
