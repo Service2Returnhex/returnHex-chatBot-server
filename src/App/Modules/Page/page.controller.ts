@@ -177,6 +177,100 @@ const setCmntPromt: RequestHandler = catchAsync(
     });
   }
 );
+const trainProductHandler :RequestHandler = catchAsync(async (req: Request, res: Response) => {
+  // postId will come from route param (similar to setCmntPromt)
+  console.log("req params",req.params);
+  console.log("req body",req.body);
+const postId = String(req.params.postId || req.params.id || "");
+  // shopId should be passed in body or query
+  const shopId = String(req.body?.shopId || req.query.shopId || "");
+
+if (!shopId) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: "Missing shopId in request body or query",
+      data: null,
+    });
+  }
+
+  if (!postId) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: "Missing postId (route param)",
+      data: null,
+    });
+  }
+console.log("Calling PageService.trainProduct with", { shopId, postId });
+const fullPostPayload = req.body as any;
+ try {
+    const trained = await PageService.trainProduct(shopId, postId,fullPostPayload);
+    console.log("trained result", trained);
+    return sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Post trained successfully",
+      data: trained,
+    });
+  } catch (err: any) {
+    console.error("PageService.trainProduct threw:", err);
+    // return error to client
+    return sendResponse(res, {
+      statusCode: err?.statusCode || httpStatus.INTERNAL_SERVER_ERROR,
+      success: false,
+      message: err?.message || "Training failed",
+      data: null,
+    });
+  }
+});
+// console.log("trainProductHandler",trainProductHandler);
+
+//  const trainProductHandler = async (req: Request, res: Response) => {
+//   try {
+//     const postId = req.params.postId;
+//     const shopId = req.body.shopId || req.query.shopId;
+//     if (!shopId || !postId) return res.status(400).json({ success: false, message: "Missing shopId or postId" });
+
+//     // find the existing post (must exist)
+//     const existing = await Post.findOne({ shopId, postId }).lean();
+//     if (!existing) return res.status(404).json({ success: false, message: "Post not found" });
+
+//     // Prefer images from DB (if user previously trained they might exist), else use existing.full_picture
+//     const incomingImages = Array.isArray(existing.images) && existing.images.length ? existing.images : [];
+
+//     // sanitize & enrich: compute phash & embedding for any images missing them
+//     const enrichedImages = await sanitizeAndEnrichImages(incomingImages, existing.full_picture || undefined, {
+//       accessToken: undefined, // if your downloadImageBuffer needs token, provide it
+//       concurrency: 4,
+//       computeEmbedding: true,
+//       computePhash: true,
+//     });
+
+//     // compute aggregated embedding (average)
+//     const embeddingsList = enrichedImages.map((i: any) => i.embedding).filter((e: any) => Array.isArray(e) && e.length > 0);
+//     const aggregatedEmbedding = embeddingsList.length ? averageEmbeddings(embeddingsList) : [];
+
+//     // update the Post document
+//     const updateObj: any = {
+//       images: enrichedImages,
+//       aggregatedEmbedding,
+//       isTrained: true,
+//       updatedAt: new Date(),
+//     };
+
+//     const updateRes = await Post.updateOne({ shopId, postId }, { $set: updateObj }, { runValidators: true });
+//     if (!updateRes.matchedCount) {
+//       return res.status(500).json({ success: false, message: "Failed to update post after training" });
+//     }
+
+//     const updatedDoc = await Post.findOne({ shopId, postId }).lean();
+//     return res.json({ success: true, message: "Trained successfully", data: updatedDoc });
+//   } catch (err: any) {
+//     console.error("trainProductHandler error:", err);
+//     return res.status(500).json({ success: false, message: "Training failed", error: err?.message });
+//   }
+// };
 
 export const PageController = {
   getProducts,
@@ -192,5 +286,7 @@ export const PageController = {
   updateShop,
   deleteShop,
   setDmPromt,
-  setCmntPromt
+  setCmntPromt,
+
+  trainProductHandler
 };

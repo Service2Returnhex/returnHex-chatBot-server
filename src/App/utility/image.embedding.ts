@@ -311,6 +311,28 @@ export async function sendImageAttachment(
   }
 }
 
+export function isAskingForImage(rawMsg: string | undefined | null): boolean {
+  if (!rawMsg) return false;
+  const s = rawMsg.toString().toLowerCase().trim();
+
+  // সহজ কিওয়ার্ডগুলো — বাংলা ও ইংরেজি মিশানো
+  const keywords = [
+    "ছবি", "ইমেজ", "দেখ", "দেখাও", "দেখতে চাই", "দেখান","দেও","দাও", "দেন",
+    "show image","dau","cobi", "show", "show photo", "picture", "photo", "open image", "open photo","den","patau"
+  ];
+
+  for (const k of keywords) {
+    if (s.includes(k)) return true;
+  }
+
+  // আরও একটু জেনেরিক regex (বাংলা/ইংরেজি ছোট চেক)
+  if (/\b(দেখ(তে)?\s*(চাই|পার|অন)|দেখাও|show|show me|please show)\b/i.test(s)) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function sendTyping(senderId: string, on = true) {
   // implement sender_action typing_on/off call
   console.log("[sendTyping]", senderId, on ? "on" : "off");

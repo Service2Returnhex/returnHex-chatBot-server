@@ -1,4 +1,4 @@
-import mongoose, { Schema} from "mongoose";
+import mongoose from "mongoose";
 
 
 export interface IPageInfo {
@@ -20,7 +20,7 @@ export interface IPageInfo {
 
 
 
-const PageInfoSchema = new Schema<IPageInfo>({
+const PageInfoSchema = new mongoose.Schema<IPageInfo>({
   pageName: { type: String, required: true },
   address: { type: String, required: true },
   phone: { type: String, required: true },

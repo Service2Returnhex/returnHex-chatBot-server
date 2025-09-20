@@ -1,15 +1,18 @@
 import httpStatus from "http-status";
+import mongoose from "mongoose";
 import ApiError from "../../utility/AppError";
+import { averageEmbeddings } from "../../utility/image.embedding";
 import {
   Logger,
   LogMessage,
   LogPrefix,
   LogService,
 } from "../../utility/Logger";
-import { IPageInfo, PageInfo } from "./pageInfo.model";
-import { IPost, Post } from "./post.mode";
+import { sanitizeAndEnrichImages } from "../../utility/sanitizeAndEnrichImages";
 import { AIResponse } from "../../utility/summarizer";
 import { countWords } from "../../utility/wordCounter";
+import { IPageInfo, PageInfo } from "./pageInfo.model";
+import { IPost, Post } from "./post.mode";
 
 //Product services
 const getProducts = async (pageId: string) => {
@@ -22,6 +25,7 @@ const getProducts = async (pageId: string) => {
 
 const getTraindProducts = async (pageId: string) => {
   const result = await Post.find({ shopId: pageId, isTrained: true });
+  // console.log("train result",result);
   if (!result.length)
     Logger(LogService.DB, LogPrefix.PRODUCTS, LogMessage.NOT_FOUND);
   Logger(LogService.DB, LogPrefix.PRODUCTS, LogMessage.RETRIEVED);
@@ -38,32 +42,129 @@ const getProductById = async (pageId: string, id: string) => {
   return result;
 };
 
-const createProduct = async (payload: IPost) => {
-  const findProduct = await Post.findOne({
+
+
+function sanitizeImages(maybe: any, fallbackFullPicture?: string) {
+  if (!Array.isArray(maybe)) maybe = [];
+  const images = (maybe as any[])
+    .map((img: any) => ({
+      url: img?.url ? String(img.url).trim() : "",
+      caption: img?.caption ? String(img.caption) : "",
+      embedding: Array.isArray(img?.embedding) ? img.embedding : [],
+      phash: img?.phash ? String(img.phash) : "",
+    }))
+    .filter(i => i.url && i.url.length > 0);
+
+  if (images.length === 0 && fallbackFullPicture) {
+    images.push({
+      url: String(fallbackFullPicture).trim(),
+      caption: "",
+      embedding: [],
+      phash: ""
+    });
+  }
+
+  return images;
+}
+
+const trainProduct = async (shopId: string, postId: string, payload?: any) => {
+  // ensure DB connected
+  if (mongoose.connection.readyState !== 1) {
+    throw new ApiError(httpStatus.SERVICE_UNAVAILABLE, "MongoDB not connected");
+  }
+  if (!shopId || !postId) throw new ApiError(httpStatus.BAD_REQUEST, "Missing shopId or postId");
+
+  console.log("TRAIN_PRODUCT incoming payload:", JSON.stringify(payload || {}, null, 2));
+  // 1. prepare sanitized images (url+caption)
+  const images = sanitizeImages(payload?.images || [], payload?.full_picture);
+
+  // 2. If images already have embedding & phash, we can skip compute. Otherwise call enricher.
+  const needsEnrichment = images.some(img => !Array.isArray(img.embedding) || img.embedding.length === 0 || !img.phash);
+
+  // get page access token if needed for private cdn
+  const page = await PageInfo.findOne({ shopId }).lean().exec();
+  const pageToken = page?.accessToken || undefined;
+
+  let enrichedImages = images;
+  if (needsEnrichment) {
+    try {
+      enrichedImages = await sanitizeAndEnrichImages(images, payload?.full_picture, {
+        accessToken: pageToken,
+        concurrency: 4,
+        computeEmbedding: true,
+        computePhash: true,
+      });
+    } catch (e) {
+      console.warn("Image enrichment failed (will continue without embeddings):", e);
+      // leave enrichedImages as best-effort (may be original sanitized images)
+    }
+  }
+
+  // 3. aggregated embedding
+  const embeddingsList = enrichedImages.map((i: any) => i.embedding).filter((e: any) => Array.isArray(e) && e.length > 0);
+  const aggregatedEmbedding = embeddingsList.length ? averageEmbeddings(embeddingsList) : [];
+
+  // 4. upsert (create if not exist)
+  const createObj: any = {
+    shopId,
+    postId,
+    message: payload?.message || "",
+    summarizedMsg: payload?.summarizedMsg || "",
+    full_picture: payload?.full_picture || (enrichedImages[0]?.url || ""),
+    images: enrichedImages,
+    aggregatedEmbedding,
+    isTrained: true,
+    createdAt: payload?.createdAt ? new Date(payload.createdAt) : new Date(),
+    updatedAt: new Date(),
+  };
+
+  // Use findOneAndUpdate with upsert so it's atomic-ish
+  const updated = await Post.findOneAndUpdate(
+    { shopId, postId },
+    { $set: createObj },
+    { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true, lean: true }
+  );
+
+  return updated;
+};
+
+const createProduct = async (payload: any) => {
+  console.log("CREATE_PRODUCT incoming payload:", JSON.stringify(payload, null, 2));
+  if (!payload?.shopId || !payload?.postId) throw new ApiError(httpStatus.BAD_REQUEST, "Missing shopId or postId");
+  const findProduct = await Post.findOne({ shopId: payload.shopId, postId: payload.postId }).lean();
+  if (findProduct) return "Product Already Created";
+
+  const images = sanitizeImages(payload.images, payload.full_picture);
+  // const aggregatedEmbedding=sanitizeEmbedding(payload?.aggregatedEmbedding)
+  const aggregatedEmbedding = Array.isArray(payload.aggregatedEmbedding) ? payload.aggregatedEmbedding.map(Number).filter(n => !Number.isNaN(n)) : [];
+  const message = payload.message ? String(payload.message) : "";
+  let summarizedMsg = payload.summarizedMsg ? String(payload.summarizedMsg) : "";
+
+  if (!summarizedMsg || summarizedMsg.trim().length === 0) {
+    if ((message || "").split(/\s+/).filter(Boolean).length > 30) {
+      try {
+        const short = await AIResponse(message || "", "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens", 50);
+        summarizedMsg = String(short || "").trim();
+      } catch (e) {
+        summarizedMsg = message.slice(0, 300);
+      }
+    } else summarizedMsg = message.slice(0, 300);
+  }
+
+  const createObj: any = {
     shopId: payload.shopId,
     postId: payload.postId,
-  });
-  // console.log("create product", payload);
-  if (findProduct) return "Product Already Created";
-  let shorterInfo: string | undefined = "";
-  if (countWords(payload.message) > 30) {
-    shorterInfo = await AIResponse(
-      payload.message,
-      "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
-      50
-    );
-    payload.summarizedMsg = shorterInfo as string;
-  }
-  const result = await Post.create({ ...payload, isTrained: true });
-  if (!result) {
-    Logger(LogService.DB, LogPrefix.PRODUCT, LogMessage.NOT_CREATED);
-    throw new ApiError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      "Product Not Created!"
-    );
-  }
-  Logger(LogService.DB, LogPrefix.PRODUCT, LogMessage.CREATED);
+    message,
+    summarizedMsg,
+    full_picture: payload.full_picture || (images[0] && images[0].url) || "",
+    images,
+    aggregatedEmbedding,
+    isTrained: true,
+    createdAt: payload.createdAt ? new Date(payload.createdAt) : new Date(),
+  };
 
+  const result = await Post.create(createObj);
+  if (!result) { /* handle error */ }
   return result;
 };
 
@@ -290,4 +391,6 @@ export const PageService = {
   deleteShop,
   setDmPromt,
   setCmntPromt,
+
+  trainProduct
 };

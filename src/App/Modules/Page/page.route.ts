@@ -17,5 +17,6 @@ router.delete("/shop/:id", PageController.deleteShop);
 
 router.patch("/shop/set-dm-promt/:id", PageController.setDmPromt);
 router.patch("/shop/set-cmnt-promt/:id", PageController.setCmntPromt);
+router.post("/product/:postId/train", PageController.trainProductHandler);
 
 export const PageRouter = router;
