@@ -158,9 +158,11 @@ export default function ConfigureBot() {
         };
         console.log(fethcedData, formData);
         console.log(shallowEqual(fethcedData, formData));
-        shallowEqual(fethcedData, formData)
-          ? toast.success("App Started")
-          : toast.error("Failed to start the app.");
+        if (shallowEqual(fethcedData, formData)) {
+          toast.success("App Started");
+        } else {
+          toast.error("Failed to start the app.");
+        }
       } else {
         toast.error("Failed to start the app.");
       }
@@ -331,7 +333,7 @@ export default function ConfigureBot() {
                       className="bg-green-600 text-white px-4 py-2 rounded hover:scale-105
     transition-transform duration-300 hover:shadow-2xl hover:shadow-green-600  cursor-pointer"
                     >
-                      Start App
+                      {/* {isStarted ? "Stop App" : "Start App"} */}
                     </button>
                   </div>
                 </div>

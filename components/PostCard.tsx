@@ -9,6 +9,7 @@ type NTProps = {
 };
 export function PostCardNotTrained(prop: NTProps) {
   const { post, handleTrainPosts, trainLoading } = prop;
+  // console.log("post",post);
   return (
     <>
       <div
