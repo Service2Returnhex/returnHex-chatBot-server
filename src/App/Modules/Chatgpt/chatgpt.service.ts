@@ -23,7 +23,7 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPromt = await makePromtDM(shop, products);
+  const getPromt = await makePromtDM(shop, products, senderId);
 
   userHistoryDoc.messages.push({ role: "user", content: prompt });
 
@@ -65,26 +65,68 @@ const getResponseDM = async (
   let reply = completion.choices[0].message.content || "Something went wrong";
   console.log(reply);
   try {
-    const parsed = JSON.parse(reply);
-    if(parsed?.action === "confirmOrder") {
-      const order = new Order({
-        userId: senderId,
-        shopId,
-        customerName: parsed?.name || "N/A",
-        productName: parsed?.productName || "N/A",
-        quantity: parsed?.quantity || "N/A",
-        address: parsed?.address || "N/A",
-        contact: parsed?.contact || "N/A",
-        paymentMethod: parsed?.paymentMethod || "N/A",
-        status: "pending",
-      })
-      await order.save();
+  const parsed = JSON.parse(reply);
 
-      reply = `✅ Your order for "${parsed.productName}" has been confirmed!`;
-    }
-  } catch (error: any) {
-    console.log(error.message);
+  if (parsed?.action === "confirmOrder") {
+    const order = new Order({
+      userId: senderId,
+      shopId,
+      customerName: parsed?.name || "N/A",
+      productName: parsed?.productName || "N/A",
+      quantity: parsed?.quantity || "N/A",
+      address: parsed?.address || "N/A",
+      contact: parsed?.contact || "N/A",
+      paymentMethod: parsed?.paymentMethod || "N/A",
+      status: "pending",
+    });
+    await order.save();
+    reply = `✅ Your order for "${parsed.productName}" has been confirmed!`;
   }
+
+  else if (parsed?.action === "updateOrder") {
+    const updated = await Order.findOneAndUpdate(
+      { _id: parsed.orderId, userId: senderId, shopId },
+      { $set: parsed.updates, updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (updated) {
+      reply = `🔄 Your order (${parsed.orderId}) has been updated successfully.`;
+    } else {
+      reply = `⚠️ Order not found or could not be updated.`;
+    }
+  }
+
+  else if (parsed?.action === "getOrderStatus") {
+  const order = await Order.findOne({ 
+    _id: parsed.orderId, 
+    userId: senderId, 
+    shopId 
+  });
+
+  if (order) {
+    reply = `📦 Order (${parsed.orderId}) status: "${order.status}".`;
+  } else {
+    reply = `⚠️ Order not found. Please check your Order ID.`;
+  }
+}
+
+  else if (parsed?.action === "cancelOrder") {
+    const canceled = await Order.findOneAndUpdate(
+      { _id: parsed.orderId, userId: senderId, shopId },
+      { $set: { status: "cancelled", updatedAt: new Date() } },
+      { new: true }
+    );
+
+    if (canceled) {
+      reply = `❌ Your order (${parsed.orderId}) has been cancelled.`;
+    } else {
+      reply = `⚠️ Order not found or could not be cancelled.`;
+    }
+  }
+} catch (error: any) {
+  console.log(error.message);
+}
 
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
   await userHistoryDoc.save();

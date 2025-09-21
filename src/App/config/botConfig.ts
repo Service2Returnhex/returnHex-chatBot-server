@@ -33,5 +33,4 @@ export const botConfig: TBotConfig = {
     keepComments: 3,
 
     postVisibility: 5,
-
 }
