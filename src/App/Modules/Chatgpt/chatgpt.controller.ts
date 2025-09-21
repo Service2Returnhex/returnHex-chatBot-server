@@ -1,14 +1,14 @@
-import { Request, Response, RequestHandler } from "express";
+import { Request, RequestHandler, Response } from "express";
+import httpStatus from "http-status";
 import { catchAsync } from "../../utility/cathcAsync";
 import sendResponse from "../../utility/sendResponse";
-import httpStatus from "http-status";
 import { ChatgptService } from "./chatgpt.service";
 
 const getResponse: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
 
-    const result = await ChatgptService.getResponseDM('dummy-user', "dummy-shopid",req.body.message);
-    
+    const result = await ChatgptService.getResponseDM('dummy-user', "dummy-shopid", req.body.message);
+    console.log("result",result);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,

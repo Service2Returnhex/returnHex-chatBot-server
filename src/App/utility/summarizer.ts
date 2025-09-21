@@ -1,6 +1,7 @@
+import OpenAI from "openai";
 import { botConfig } from "../config/botConfig";
 import { IChatMessages } from "../Modules/Chatgpt/chat-history.model";
-import OpenAI from "openai";
+
 
 export type TtokenUsage = {
   inputToken: number;

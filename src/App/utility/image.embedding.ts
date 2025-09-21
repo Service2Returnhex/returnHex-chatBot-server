@@ -4,7 +4,13 @@ import OpenAI from "openai";
 import Tesseract from "tesseract.js";
 
 const GRAPH_MSG_URL = "https://graph.facebook.com/v23.0/me/messages";
+
+// Create OpenAI client lazily to ensure env variables are loaded
+// const getOpenAIClient = () => {
+//   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// };
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// console.log("image embedding env",openai);
 export const UI_BLACKLIST = new Set([
   "yesterday",
   "like",
@@ -120,6 +126,7 @@ export async function extractTextFromImageBuffer(buffer: Buffer) {
 // Create OpenAI text embedding from text
 export async function createTextEmbedding(text: string) {
   if (!text || text.trim().length === 0) return null;
+  // const openai = getOpenAIClient();
   const resp = await openai.embeddings.create({
     model: "text-embedding-3-large", // robust text embedding model
     input: text,
@@ -309,6 +316,28 @@ export async function sendImageAttachment(
     console.warn("sendImageAttachment failed:", (err as any)?.message || err);
     throw err;
   }
+}
+
+export function isAskingForImage(rawMsg: string | undefined | null): boolean {
+  if (!rawMsg) return false;
+  const s = rawMsg.toString().toLowerCase().trim();
+
+  // সহজ কিওয়ার্ডগুলো — বাংলা ও ইংরেজি মিশানো
+  const keywords = [
+    "ছবি", "ইমেজ", "দেখ", "দেখাও", "দেখতে চাই", "দেখান", "দেও", "দাও", "দেন",
+    "show image", "dau", "cobi", "show", "show photo", "picture", "photo", "open image", "open photo", "den", "patau"
+  ];
+
+  for (const k of keywords) {
+    if (s.includes(k)) return true;
+  }
+
+  // আরও একটু জেনেরিক regex (বাংলা/ইংরেজি ছোট চেক)
+  if (/\b(দেখ(তে)?\s*(চাই|পার|অন)|দেখাও|show|show me|please show)\b/i.test(s)) {
+    return true;
+  }
+
+  return false;
 }
 
 export async function sendTyping(senderId: string, on = true) {

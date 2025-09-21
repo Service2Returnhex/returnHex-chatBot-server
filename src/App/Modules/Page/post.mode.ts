@@ -31,7 +31,7 @@ const PostSchema = new Schema<IPost>({
   },
   message: { type: String, required: true, default: "" },
   summarizedMsg: { type: String, default: ""},
-  // full_picture: { type: String, default: "" },
+  full_picture: { type: String, default: "" },
   // imageHash: String,
   // embedding: { type: [Number], default: [] },
   images: { type: [ImageItemSchema], default: [] },
