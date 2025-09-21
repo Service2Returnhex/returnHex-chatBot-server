@@ -5,7 +5,7 @@ import { PageInfo } from "../Page/pageInfo.model";
 import { Post } from "../Page/post.mode";
 import { ChatHistory } from "./chat-history.model";
 import { CommentHistory } from "./comment-histroy.model";
-import { messageSummarizer } from "../../utility/summarizer";
+import { AIResponseTokenUsages, messageSummarizer, messageSummarizerTokenUsages, TtokenUsage } from "../../utility/summarizer";
 import { botConfig } from "../../config/botConfig";
 
 const getResponseDM = async (
@@ -14,6 +14,7 @@ const getResponseDM = async (
   prompt: string,
   action?: string
 ) => {
+
   let userHistoryDoc = await ChatHistory.findOne({ userId: senderId });
   if (!userHistoryDoc)
     userHistoryDoc = new ChatHistory({ userId: senderId, messages: [] });
@@ -62,7 +63,23 @@ const getResponseDM = async (
     messages,
   });
   const reply = completion.choices[0].message.content || "Something went wrong";
+  let mainAiTokenUsages: TtokenUsage = {
+    inputToken: 0,
+    outputToken: 0,
+    totalToken: 0,
+  };
 
+  mainAiTokenUsages.inputToken = completion.usage?.prompt_tokens  || 0
+  mainAiTokenUsages.outputToken = completion.usage?.completion_tokens|| 0
+  mainAiTokenUsages.totalToken = completion.usage?.total_tokens  || 0
+
+  const totalAITokenDetails: TtokenUsage = {
+    inputToken: messageSummarizerTokenUsages.inputToken + AIResponseTokenUsages.inputToken + mainAiTokenUsages.inputToken,
+    outputToken: messageSummarizerTokenUsages.outputToken + AIResponseTokenUsages.outputToken + mainAiTokenUsages.outputToken,
+    totalToken: messageSummarizerTokenUsages.totalToken + AIResponseTokenUsages.totalToken + mainAiTokenUsages.totalToken,
+  }
+
+  console.log("Total Ai Token Details: ", totalAITokenDetails);
   userHistoryDoc.messages.push({ role: "assistant", content: reply });
   await userHistoryDoc.save();
   return reply;
@@ -125,12 +142,29 @@ export const getCommnetResponse = async (
 
   let reply = completion.choices[0].message.content || "Something Went Wrong";
   reply = `@[${commenterId}] ${reply}`;
+  let mainAiTokenUsages: TtokenUsage = {
+    inputToken: 0,
+    outputToken: 0,
+    totalToken: 0,
+  };
 
+  mainAiTokenUsages.inputToken = completion.usage?.prompt_tokens  || 0
+  mainAiTokenUsages.outputToken = completion.usage?.completion_tokens|| 0
+  mainAiTokenUsages.totalToken = completion.usage?.total_tokens  || 0
+
+  const totalAITokenDetails: TtokenUsage = {
+    inputToken: messageSummarizerTokenUsages.inputToken + AIResponseTokenUsages.inputToken + mainAiTokenUsages.inputToken,
+    outputToken: messageSummarizerTokenUsages.outputToken + AIResponseTokenUsages.outputToken + mainAiTokenUsages.outputToken,
+    totalToken: messageSummarizerTokenUsages.totalToken + AIResponseTokenUsages.totalToken + mainAiTokenUsages.totalToken,
+  }
+
+  console.log(totalAITokenDetails);
   userCommnetHistoryDoc.messages.push({
     commentId,
     role: "assistant",
     content: reply,
   });
+
 
   await userCommnetHistoryDoc.save();
   return reply;
