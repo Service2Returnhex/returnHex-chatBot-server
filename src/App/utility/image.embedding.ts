@@ -6,9 +6,11 @@ import Tesseract from "tesseract.js";
 const GRAPH_MSG_URL = "https://graph.facebook.com/v23.0/me/messages";
 
 // Create OpenAI client lazily to ensure env variables are loaded
-const getOpenAIClient = () => {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-};
+// const getOpenAIClient = () => {
+//   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// };
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// console.log("image embedding env",openai);
 export const UI_BLACKLIST = new Set([
   "yesterday",
   "like",
@@ -124,7 +126,7 @@ export async function extractTextFromImageBuffer(buffer: Buffer) {
 // Create OpenAI text embedding from text
 export async function createTextEmbedding(text: string) {
   if (!text || text.trim().length === 0) return null;
-  const openai = getOpenAIClient();
+  // const openai = getOpenAIClient();
   const resp = await openai.embeddings.create({
     model: "text-embedding-3-large", // robust text embedding model
     input: text,

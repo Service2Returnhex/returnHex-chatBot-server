@@ -210,7 +210,7 @@ const systemInstruction="You are a professional customer support assistant. Use 
   
     //  let aiReply = "";
      const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
-     const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+     const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
        const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
   
      try {
@@ -314,7 +314,7 @@ console.log("caption",caption);
   
     //  let aiReply = "";
      const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
-     const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+     const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
        const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
   console.log("aireply",aiReply);
      try {
@@ -410,7 +410,7 @@ console.log("caption",caption);
 
         // If still nothing, fallback to AI conversational reply
         // let aiReply = "";
-        const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+          const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
        const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
 
         if (aiReply) {
@@ -745,7 +745,7 @@ const systemInstruction="You are a professional customer support assistant. Use 
   
     //  let aiReply = "";
      const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
-     const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+       const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
        const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
   
      try {
@@ -872,7 +872,7 @@ if (postMatch && postMatch.length > 0) {
 }
 
     // If still nothing, fallback to AI conversational reply
-    const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+    const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
     const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
 
 
@@ -889,7 +889,7 @@ if (postMatch && postMatch.length > 0) {
     console.error("Text search error:", err?.message || err);
     // fallback to AI service attempt
     try {
-    const fallbackOrder: AIMethod[] = ["gemini", "deepseek", "groq", "chatgpt"].filter(x => x !== method) as AIMethod[];
+      const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
     const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
 await sendMessage(senderId, shopId, aiReply);
     } catch (err2: any) {

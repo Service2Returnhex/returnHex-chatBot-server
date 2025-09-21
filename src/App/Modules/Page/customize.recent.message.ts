@@ -104,6 +104,7 @@ ${recentUserDMPromt}
       { role: "user", content: instruction },
     ],
   });
+  console.log("customize summarization msg",completion.usage);
 
   const reply = completion.choices[0].message.content || "Something Went Wrong";
   // if (!reply) return localSummarizer(messages);
@@ -203,6 +204,7 @@ ${formatted}
       { role: "user", content: instruction },
     ],
   });
+  console.log("customize prompt",completion.usage);
 
   const reply = completion.choices[0].message.content || "Something Went Wrong";
   // if (!reply) return localSummarizer(messages);

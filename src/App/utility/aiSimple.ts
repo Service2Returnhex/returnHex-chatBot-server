@@ -6,7 +6,7 @@ import { DeepSeekService } from "../Modules/DeepSeek/deepseek.service";
 import { GeminiService } from "../Modules/Gemini/gemini.service";
 import { GroqService } from "../Modules/Groq/grok.service";
 
-export type AIMethod = "gemini" | "chatgpt" | "deepseek" | "groq";
+export type AIMethod =   "chatgpt" | "gemini" | "deepseek" | "groq";
 enum ActionType {
   DM = "reply",
   COMMENT = "comment",
@@ -24,8 +24,8 @@ export async function getAiReplySimple(
   fallback: AIMethod[] = []
 ): Promise<string> {
   const call = async (m: AIMethod) => {
-    if (m === "gemini") return GeminiService.getResponseDM(senderId, shopId, userMsg, actionType);
     if (m === "chatgpt") return ChatgptService.getResponseDM(senderId, shopId, userMsg, actionType);
+    if (m === "gemini") return GeminiService.getResponseDM(senderId, shopId, userMsg, actionType);
     if (m === "deepseek") return DeepSeekService.getResponseDM(senderId, shopId, userMsg, actionType);
     if (m === "groq") return GroqService.getResponseDM(senderId, shopId, userMsg, actionType);
     throw new Error("Unknown AI method: " + m);
