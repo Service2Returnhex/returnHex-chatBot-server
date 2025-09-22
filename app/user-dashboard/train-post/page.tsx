@@ -1,20 +1,11 @@
-<<<<<<< HEAD
-import TrainPost from "@/components/TrainPost";
-
-export default function TrainPosts() {
-=======
 "use client";
+import TrainPost from "@/components/TrainPost";
 import { IImageItem, TPost } from "@/types/post.type";
 import { TTrainedPost } from "@/types/trainedPost.type";
 import axios, { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import {
-  PostCardNotTrained,
-  PostCardTrained,
-} from "../../../components/PostCard";
-import { FormField } from "../../../components/ui/FormField";
 
 export default function Home() {
   const router = useRouter();
@@ -243,7 +234,6 @@ const fetchPosts = async () => {
     }
   };
 
->>>>>>> feat/v2
   return (
     <div>
       <TrainPost />

@@ -14,7 +14,7 @@ export default function TokenCard({ available, totalUsed, monthlyLimit,used }: P
 
   return (
     <div className="custom-card-bg">
-      <h3 className="text-sm text-gray-300">Token Balance</h3>
+      <h3 className="text-sm text-gray-300">Message Remain</h3>
 
       <div className="flex items-center justify-between mt-4">
         <div>

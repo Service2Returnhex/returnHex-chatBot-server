@@ -1,5 +1,6 @@
 "use client";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
@@ -24,12 +25,21 @@ export default function ConfigureBot() {
 
   const handleProvideInfo = async () => {
     setIsLoading(true);
+        const token = localStorage.getItem("accessToken");
+
+    let ownerId:any;
+if (token) {
+  const decoded = jwtDecode(token);
+  console.log("User ID:", decoded?.userId ?? "");
+  ownerId=decoded
+}
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop`,
         {
           ...formData,
           shopId: formData.pageId,
+          ownerId
         }
       );
       const generatedURL = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/meta-webhook/${formData.pageId}/webhook`;
@@ -48,6 +58,7 @@ export default function ConfigureBot() {
   useEffect(() => {
     const pageId = localStorage.getItem("pageId");
     const generatedURL = localStorage.getItem("webHookURL");
+
     setWebhookURL(generatedURL || "");
     console.log("pageid", pageId);
 

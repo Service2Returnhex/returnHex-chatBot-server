@@ -24,24 +24,34 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.contact ||
-      !formData.address ||
-      !formData.image ||
-      !formData.role ||
-      !formData.password ||
-      !formData.confirmPassword
-    ) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
+    if (!formData.name) {
+  toast.error("Name is required");
+  return;
+}
+if (!formData.email) {
+  toast.error("Email is required");
+  return;
+}
+if (!formData.contact) {
+  toast.error("Contact number is required");
+  return;
+}
+if (!formData.address) {
+  toast.error("Address is required");
+  return;
+}
+if (!formData.image) {
+  toast.error("Profile image is required");
+  return;
+}
+if (!formData.role) {
+  toast.error("Role is required");
+  return;
+}
+if (!formData.password) {
+  toast.error("Password is required");
+  return;
+}
 
     if (formData.password.length < 6) {
       toast.error("Password must be at least 6 characters long");
@@ -60,7 +70,6 @@ const Signup = () => {
           image: formData.image,
           role: formData.role,
           password: formData.password,
-          confirmPassword: formData.confirmPassword,
         }
       );
       console.log("response", response);
