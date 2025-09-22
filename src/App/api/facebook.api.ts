@@ -10,6 +10,7 @@ export const sendMessage = async (
   try {
     const shop = await PageInfo.findOne({ shopId: pageId });
     if (!shop) throw new ApiError(404, "Shop Not Found!");
+    console.log("Sending Replay....");
     const res = await axios.post(
       `https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`,
       {
@@ -32,6 +33,7 @@ export const replyToComment = async (
   try {
     const shop = await PageInfo.findOne({ shopId: pageId });
     if (!shop) throw new ApiError(404, "Shop Not Found!");
+    console.log("Sending Replay....");
     const response = await axios.post(
       `https://graph.facebook.com/v23.0/${commentId}/comments`,
       {

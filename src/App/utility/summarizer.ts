@@ -31,7 +31,13 @@ export const messageSummarizer = async (
     messages: [
       {
         role: "system",
-        content: `Summarize the following chat in ${maxToken} token:`,
+        content: `You are a summarization assistant. 
+    Your task is to create a structured summary of the conversation. 
+    - Do not omit or lose any important information. 
+    - Preserve all facts, questions, answers, and decisions. 
+    - Maintain chronological order. 
+    - Use concise sentences but keep all details. 
+    - If the summary exceeds ${maxToken} tokens, compress wording but never remove information.`,
       },
       { role: "user", content: text + `old Summary: ${oldSummary}` },
     ],
@@ -66,6 +72,7 @@ export const AIResponse = async (
   AIResponseTokenUsages.inputToken = response.usage?.prompt_tokens  || 0
   AIResponseTokenUsages.outputToken = response.usage?.completion_tokens  || 0
   AIResponseTokenUsages.totalToken = response.usage?.total_tokens  || 0
-  
+
   return response.choices[0].message.content?.trim();
-};
+}
+
