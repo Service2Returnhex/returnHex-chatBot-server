@@ -17,7 +17,7 @@ const Signup = () => {
     image: "",
     role: "",
     password: "",
-    confirmPassword: "",
+    // confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -25,33 +25,33 @@ const Signup = () => {
     e.preventDefault();
 
     if (!formData.name) {
-  toast.error("Name is required");
-  return;
-}
-if (!formData.email) {
-  toast.error("Email is required");
-  return;
-}
-if (!formData.contact) {
-  toast.error("Contact number is required");
-  return;
-}
-if (!formData.address) {
-  toast.error("Address is required");
-  return;
-}
-if (!formData.image) {
-  toast.error("Profile image is required");
-  return;
-}
-if (!formData.role) {
-  toast.error("Role is required");
-  return;
-}
-if (!formData.password) {
-  toast.error("Password is required");
-  return;
-}
+      toast.error("Name is required");
+      return;
+    }
+    if (!formData.email) {
+      toast.error("Email is required");
+      return;
+    }
+    if (!formData.contact) {
+      toast.error("Contact number is required");
+      return;
+    }
+    if (!formData.address) {
+      toast.error("Address is required");
+      return;
+    }
+    if (!formData.image) {
+      toast.error("Profile image is required");
+      return;
+    }
+    if (!formData.role) {
+      toast.error("Role is required");
+      return;
+    }
+    if (!formData.password) {
+      toast.error("Password is required");
+      return;
+    }
 
     if (formData.password.length < 6) {
       toast.error("Password must be at least 6 characters long");
@@ -77,7 +77,7 @@ if (!formData.password) {
       localStorage.setItem("authToken", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
       toast.success("Account created successfully!");
-      router.push("/user-dashboard");
+      router.push("/login");
     } catch (error) {
       console.error("Signup error:", error);
     } finally {

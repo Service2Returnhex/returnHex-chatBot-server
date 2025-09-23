@@ -86,6 +86,7 @@ export default function TrainPost() {
           shopId: pageId,
           postId: post.id,
           message: post.message,
+          aggregatedEmbedding: post.aggregatedEmbedding,
           full_picture: post.full_picture,
           createdAt: post.created_time,
         }
@@ -191,40 +192,40 @@ export default function TrainPost() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
           {!isTrained
             ? posts
-                .filter((post: TPost) => {
-                  if (!trainedPosts?.length) return true;
+              .filter((post: TPost) => {
+                if (!trainedPosts?.length) return true;
 
-                  const matched = trainedPosts.find(
-                    (trainedPost) =>
-                      trainedPost.shopId === pageId &&
-                      trainedPost.postId === post.id
-                  );
-
-                  if (matched) {
-                    return !matched.isTrained;
-                  }
-                  return true;
-                })
-                .map((post: TPost, idx: number) => (
-                  <PostCardNotTrained
-                    key={idx}
-                    post={post}
-                    handleTrainPosts={handleTrainPosts}
-                    trainLoading={trainLoading}
-                    setTrainLoading={setTrainLoading}
-                  />
-                ))
-            : trainedPosts?.map((post: TTrainedPost, idx: number) => {
-                return (
-                  <PostCardTrained
-                    key={idx}
-                    post={post}
-                    handleNoTrain={handleNoTrain}
-                    notTrainLoading={notTrainLoading}
-                    setNotTrainLoading={setNotTrainLoading}
-                  />
+                const matched = trainedPosts.find(
+                  (trainedPost) =>
+                    trainedPost.shopId === pageId &&
+                    trainedPost.postId === post.id
                 );
-              })}
+
+                if (matched) {
+                  return !matched.isTrained;
+                }
+                return true;
+              })
+              .map((post: TPost, idx: number) => (
+                <PostCardNotTrained
+                  key={idx}
+                  post={post}
+                  handleTrainPosts={handleTrainPosts}
+                  trainLoading={trainLoading}
+                  setTrainLoading={setTrainLoading}
+                />
+              ))
+            : trainedPosts?.map((post: TTrainedPost, idx: number) => {
+              return (
+                <PostCardTrained
+                  key={idx}
+                  post={post}
+                  handleNoTrain={handleNoTrain}
+                  notTrainLoading={notTrainLoading}
+                  setNotTrainLoading={setNotTrainLoading}
+                />
+              );
+            })}
         </div>
       </div>
     </div>

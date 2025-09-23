@@ -1,18 +1,28 @@
 import PageCard from "@/components/adminDashboard/PageCard";
 import PagesList from "@/components/adminDashboard/PagesList";
 import TokenChart from "@/components/adminDashboard/TokenCharts";
+import { FiAlertCircle, FiCheckCircle } from "react-icons/fi";
 
-export default function DashboardPage() {
-  // const [tone, setTone] = useState("online");
 
-  // derived numbers
-  const tone = "online";
-  const statusClasses =
-    tone === "online"
-      ? "bg-green-700 text-white"
-      : tone === "warning"
-      ? "bg-amber-600 text-black"
-      : "bg-red-700 text-white";
+type Props = {
+  status?: "online" | "degraded" | "offline";
+};
+export default function DashboardPage({ status = "online" }: Props) {
+
+  const getStatusClasses = () => {
+    switch (status) {
+      case "online":
+        return "bg-emerald-600 text-white";
+      case "degraded":
+        return "bg-yellow-500 text-black";
+      case "offline":
+        return "bg-red-600 text-white";
+      default:
+        return "bg-gray-500 text-white";
+    }
+  };
+
+  const statusClasses = getStatusClasses();
   return (
     <div className="p-6 space-y-6 bg-radial-aurora text-white min-h-screen ">
       {/* Header */}
@@ -52,7 +62,8 @@ export default function DashboardPage() {
               aria-live="polite"
               className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${statusClasses}`}
             >
-              System Online
+              {status === "online" ? <FiCheckCircle className="mr-2" /> : <FiAlertCircle className="mr-2" />}
+              {status === "online" ? "System Online" : status === "degraded" ? "Degraded" : "Offline"}
             </span>
           </div>
 

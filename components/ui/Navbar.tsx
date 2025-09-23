@@ -2,7 +2,7 @@
 // src/components/Navbar.tsx
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 type NavbarProps = {
   title?: string;
@@ -22,6 +22,9 @@ export default function Navbar({
   bgClass = "bg-white/15", // default semi-transparent light overlay; change for dark pages e.g. "bg-gray-900/50"
 }: NavbarProps) {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+
 
   const handleBack = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -32,7 +35,12 @@ export default function Navbar({
       router.back();
     }
   };
-  
+
+  useEffect(() => {
+    // check login from localStorage (or cookie, context, JWT, etc.)
+    const token = localStorage.getItem("accessToken");
+    setIsLoggedIn(!!token);
+  }, []);
 
   return (
     <nav
@@ -108,18 +116,32 @@ export default function Navbar({
           ) : (
             // default quick links (example)
             <div className="hidden sm:flex items-center gap-3">
-              <Link
-                href="/user-dashboard"
-                className="text-sm px-3 py-2 rounded-lg hover:bg-white/6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/login"
-                className="text-sm px-3 py-2 rounded-lg hover:bg-white/6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                Login
-              </Link>
+              {isLoggedIn && (
+                <Link
+                  href="/user-dashboard"
+                  className="text-sm px-3 py-2 rounded-lg hover:bg-white/6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  Dashboard
+                </Link>
+              )}
+              {!isLoggedIn ? (
+                <Link
+                  href="/login"
+                  className="text-sm px-3 py-2 rounded-lg hover:bg-white/6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  Login
+                </Link>
+              ) : (
+                <li
+                  onClick={() => {
+                    localStorage.removeItem("accessToken");
+                    setIsLoggedIn(false);
+                  }}
+                  className="text-sm px-3 py-2 rounded-lg hover:bg-white/6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  Logout
+                </li>
+              )}
             </div>
           )}
         </div>

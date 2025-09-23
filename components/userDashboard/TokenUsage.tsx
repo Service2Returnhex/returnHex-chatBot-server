@@ -36,32 +36,33 @@ type TokenUsageResponse = {
   points: TokenUsagePoint[];
 };
 
-export default function TokenUsagePage() {
-  const shopId=localStorage.getItem("pageId")
+export default function TokenUsagePage(params: any) {
+  const shopId = localStorage.getItem("pageId")
+  console.log("params", params.id);
   // console.log("shop id",shopId);
-   const { tData, tLoading, tError, refetch } = useMsgCounts(shopId);
+  const { tData, tLoading, tError, refetch } = useMsgCounts(params.id);
 
   const totalUsed = tData?.totalUsage ?? 0;
   const totalAvailable = tData?.totalTokensAvailable ?? 0;
 
   // const shopId = shopIdProp ?? "714401141759522";
-const [range, setRange] = useState<"daily" | "weekly" | "month-week">("daily");
-const opts: Options =
-  range === "daily"
-    ? { range: "daily", days: 7 }
-    :range === "weekly"? { range: "weekly", weeks: 7 }:{ range: "month-week", months: 5 };
+  const [range, setRange] = useState<"daily" | "weekly" | "month-week">("daily");
+  const opts: Options =
+    range === "daily"
+      ? { range: "daily", days: 7 }
+      : range === "weekly" ? { range: "weekly", weeks: 7 } : { range: "month-week", months: 5 };
 
-    // range === "daily" ? "Daily messages" : range === "weekly" ? "Weekly messages" : "Month-week messages",
+  // range === "daily" ? "Daily messages" : range === "weekly" ? "Weekly messages" : "Month-week messages",
 
   const [usage, setUsage] = useState<TokenUsageResponse | null>(null);
   // const [loading, setLoading] = useState(false);
 
-const { data, loading, error } = useFetchUsage(shopId, opts);
+  const { data, loading, error } = useFetchUsage(params.id, opts);
 
-   const points = data?.points ?? [];
+  const points = data?.points ?? [];
   const used = data?.totalTokensUsed ?? 0;
   const available = data?.totalTokensAvailable ? data.totalTokensAvailable - used : 0;
-  console.log("available",available);
+  console.log("available", available);
 
   const chartOptions = useMemo(
     () => ({
@@ -86,21 +87,21 @@ const { data, loading, error } = useFetchUsage(shopId, opts);
   );
 
   const chartData = useMemo(() => {
-  const labels = points.map(p => p.date);
-  const dataPoints = points.map(p => p.msg);
-  return {
-    labels,
-    datasets: [{
-      label: range === "daily" ? "Daily messages" : range === "weekly" ? "Weekly messages" : "Month-week messages",
-      data: dataPoints,
-      fill: true,
-      tension: 0.25,
-       backgroundColor: "rgba(99,102,241,0.12)",
-          borderColor: "rgba(99,102,241,1)",
-          pointRadius: 3,
-    }]
-  };
-}, [points, range]);
+    const labels = points.map(p => p.date);
+    const dataPoints = points.map(p => p.msg);
+    return {
+      labels,
+      datasets: [{
+        label: range === "daily" ? "Daily messages" : range === "weekly" ? "Weekly messages" : "Month-week messages",
+        data: dataPoints,
+        fill: true,
+        tension: 0.25,
+        backgroundColor: "rgba(99,102,241,0.12)",
+        borderColor: "rgba(99,102,241,1)",
+        pointRadius: 3,
+      }]
+    };
+  }, [points, range]);
 
   return (
     <div className="p-6">
@@ -110,31 +111,28 @@ const { data, loading, error } = useFetchUsage(shopId, opts);
         <div className="flex items-center gap-2">
           <button
             onClick={() => setRange("daily")}
-            className={`px-3 py-1 rounded-md ${
-              range === "daily"
-                ? "bg-indigo-600 text-white"
-                : "bg-white/5 text-gray-200"
-            }`}
+            className={`px-3 py-1 rounded-md ${range === "daily"
+              ? "bg-indigo-600 text-white"
+              : "bg-white/5 text-gray-200"
+              }`}
           >
             Daily
           </button>
           <button
             onClick={() => setRange("weekly")}
-            className={`px-3 py-1 rounded-md ${
-              range === "weekly"
-                ? "bg-indigo-600 text-white"
-                : "bg-white/5 text-gray-200"
-            }`}
+            className={`px-3 py-1 rounded-md ${range === "weekly"
+              ? "bg-indigo-600 text-white"
+              : "bg-white/5 text-gray-200"
+              }`}
           >
             Weekly
           </button>
           <button
             onClick={() => setRange("month-week")}
-            className={`px-3 py-1 rounded-md ${
-              range === "month-week"
-                ? "bg-indigo-600 text-white"
-                : "bg-white/5 text-gray-200"
-            }`}
+            className={`px-3 py-1 rounded-md ${range === "month-week"
+              ? "bg-indigo-600 text-white"
+              : "bg-white/5 text-gray-200"
+              }`}
           >
             Month-week
           </button>
@@ -144,7 +142,7 @@ const { data, loading, error } = useFetchUsage(shopId, opts);
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-2 w-full">
           <TokenCard
-            available={totalAvailable}
+            available={available}
             totalUsed={totalUsed}
             monthlyLimit={totalAvailable}
             used={used}
@@ -153,7 +151,7 @@ const { data, loading, error } = useFetchUsage(shopId, opts);
 
         <div className="lg:col-span-3">
           <div className="card-bg backdrop-blur-md p-4 rounded-2xl">
-            {loading ? <div>Loading…</div> : error ? <div className="text-red-500">{error}</div> :error ? <div className="text-red-500">{error}</div> :  (
+            {loading ? <div>Loading…</div> : error ? <div className="text-red-500">{error}</div> : error ? <div className="text-red-500">{error}</div> : (
               <div>
                 <div className="mb-4 flex items-center justify-between">
                   <div>
@@ -168,7 +166,7 @@ const { data, loading, error } = useFetchUsage(shopId, opts);
                 </div>
 
                 <div>
-                  <Line data={chartData}  options={chartOptions}/>
+                  <Line data={chartData} options={chartOptions} />
                 </div>
               </div>
             )}

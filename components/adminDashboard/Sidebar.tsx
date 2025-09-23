@@ -8,7 +8,6 @@ import {
   MessageSquare,
   Package,
   Settings,
-  
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -78,11 +77,8 @@ type Props = {
 const normalize = (p?: string) =>
   p ? p.replace(/\/+$/, "").toLowerCase() : "";
 export default function AdminSidebar({
-  userName = "Fahim R.",
-  userEmail = "fahim@example.com",
-  availableTokens = 50000,
-  onSignOut,
-  className = "",
+  userName = "Admin",
+  userEmail,
 }: Props) {
   const pathname = usePathname() ?? "";
   const np = normalize(pathname);
@@ -106,7 +102,7 @@ export default function AdminSidebar({
 
   return (
     <aside
-      className={`w-72 bg-gradient-to-b from-white/3 to-white/2 backdrop-blur-md p-4 rounded-2xl min-h-screen fixed ${className}`}
+      className={`w-72 bg-gradient-to-b from-white/3 to-white/2 backdrop-blur-md p-4 rounded-2xl min-h-screen fixed `}
       aria-label="Admin sidebar"
     >
       {/* User info */}
@@ -136,10 +132,9 @@ export default function AdminSidebar({
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition 
-                ${
-                  active
-                    ? "bg-indigo-600 text-white shadow-md"
-                    : "text-gray-200 hover:bg-white/5"
+                ${active
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-gray-200 hover:bg-white/5"
                 }
               `}
             >

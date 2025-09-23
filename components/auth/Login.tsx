@@ -48,7 +48,11 @@ const Signin = () => {
       const role = response?.data?.data?.userRole;
       if (role) localStorage.setItem("user", JSON.stringify(role));
       toast.success(response?.data?.message ?? "Logged in");
-      router.push("/user-dashboard");
+      if (role == "admin") {
+        router.push("/admin-dashboard");
+      } else {
+        router.push("/user-dashboard");
+      }
     } catch (err) {
       const error = err as AxiosError<{ message: string }>;
       console.error("Signin error:", error);

@@ -24,7 +24,7 @@ export default function TestimonialCarousel() {
       role: "Digital Marketer",
       quote:
         "Integrating the Facebook Webhook was surprisingly smooth. My engagement rates have doubled.",
-      avatarUrl: "/images/testimonials/john.jpg",
+      avatarUrl: "https://i.pinimg.com/1200x/5f/40/6a/5f406ab25e8942cbe0da6485afd26b71.jpg",
       rating: 4,
     },
     {
@@ -33,7 +33,7 @@ export default function TestimonialCarousel() {
       role: "Customer Success Manager",
       quote:
         "We no longer miss a single customer inquiry. The bot’s quick responses keep our clients happy.",
-      avatarUrl: "/images/testimonials/sophia.jpg",
+      avatarUrl: "https://i.pinimg.com/1200x/5f/40/6a/5f406ab25e8942cbe0da6485afd26b71.jpg",
       rating: 5,
     },
     {
@@ -42,7 +42,7 @@ export default function TestimonialCarousel() {
       role: "Small Business Owner",
       quote:
         "I’m not technical, but configuring my bot was easier than setting up my Facebook page.",
-      avatarUrl: "/images/testimonials/liam.jpg",
+      avatarUrl: "https://i.pinimg.com/1200x/5f/40/6a/5f406ab25e8942cbe0da6485afd26b71.jpg",
       rating: 5,
     },
     {
@@ -51,7 +51,7 @@ export default function TestimonialCarousel() {
       role: "Content Creator",
       quote:
         "The training prompt feature helped me automate replies exactly how I want. My followers love it.",
-      avatarUrl: "/images/testimonials/emily.jpg",
+      avatarUrl: "https://i.pinimg.com/1200x/5f/40/6a/5f406ab25e8942cbe0da6485afd26b71.jpg",
       rating: 4,
     },
     {
@@ -60,7 +60,7 @@ export default function TestimonialCarousel() {
       role: "Tech Consultant",
       quote:
         "Real-time analytics and token tracking are a game changer for optimizing bot performance.",
-      avatarUrl: "/images/testimonials/rajesh.jpg",
+      avatarUrl: "https://i.pinimg.com/1200x/5f/40/6a/5f406ab25e8942cbe0da6485afd26b71.jpg",
       rating: 5,
     },
   ];

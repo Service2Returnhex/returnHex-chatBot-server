@@ -7,8 +7,7 @@ import {
   CreditCard,
   Home,
   MessageSquare,
-  Settings,
-  Shield,
+  Shield
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -41,11 +40,11 @@ const nav: NavItem[] = [
     label: "Billing",
     icon: <CreditCard className="w-5 h-5" />,
   },
-  {
-    href: "/user-dashboard/configure-bot",
-    label: "Configuration Bot",
-    icon: <Settings className="w-5 h-5" />,
-  },
+  // {
+  //   href: "/user-dashboard/configure-bot",
+  //   label: "Configuration Bot",
+  //   icon: <Settings className="w-5 h-5" />,
+  // },
   {
     href: "/user-dashboard/update-pageInfo",
     label: "Update PageInfo",
@@ -136,10 +135,9 @@ export default function UserSidebar({
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition 
-                ${
-                  active
-                    ? "bg-indigo-600 text-white shadow-md"
-                    : "text-gray-200 hover:bg-white/5"
+                ${active
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-gray-200 hover:bg-white/5"
                 }
               `}
             >

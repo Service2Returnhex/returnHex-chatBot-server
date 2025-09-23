@@ -1,68 +1,19 @@
 "use client";
 
+import PagesList from "@/components/adminDashboard/PagesList";
 import UserDahboard from "@/components/UserDahboard";
-import PagesList from "@/components/userDashboard/PageList";
 import TokenUsagePage from "@/components/userDashboard/TokenUsage";
+import { JwtPayload } from "@/types/jwtPayload.type";
 import axios, { AxiosError } from "axios";
+import { jwtDecode } from "jwt-decode";
 import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
-import { PageInfo, TokenUsageResponse } from "../types/user";
+import { toast } from "react-toastify";
 
-const MOCK = {
-  tokenUsage: {
-    daily: {
-      totalTokensAvailable: 50000,
-      totalTokensUsed: 4125,
-      range: "daily",
-      points: [
-        { date: "2025-08-03", tokens: 450 },
-        { date: "2025-08-04", tokens: 610 },
-        { date: "2025-08-05", tokens: 700 },
-        { date: "2025-08-06", tokens: 550 },
-        { date: "2025-08-07", tokens: 920 },
-        { date: "2025-08-08", tokens: 645 },
-        { date: "2025-08-09", tokens: 245 },
-      ],
-    },
-    weekly: {
-      totalTokensAvailable: 50000,
-      totalTokensUsed: 7320,
-      range: "weekly",
-      points: [
-        { date: "2025-W27", tokens: 1200 },
-        { date: "2025-W28", tokens: 1800 },
-        { date: "2025-W29", tokens: 4320 },
-      ],
-    },
-  },
-  pages: [
-    {
-      id: "p_01",
-      name: "Fahim Electronics",
-      pageId: "107823456789001",
-      tokensUsed: 1245,
-    },
-    {
-      id: "p_02",
-      name: "Habiganj Travel",
-      pageId: "107823456789002",
-      tokensUsed: 3010,
-    },
-    {
-      id: "p_03",
-      name: "Quran Tutor Bot",
-      pageId: "107823456789003",
-      tokensUsed: 870,
-    },
-  ],
-};
 
 export default function UserDashboardPage() {
-  const [pages, setPages] = useState<PageInfo[]>([]);
-  const [usage, setUsage] = useState<TokenUsageResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [range, setRange] = useState<"daily" | "weekly">("daily");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userName, setUserName] = useState<string>("");
+
 
   const onLogout = async () => {
     try {
@@ -98,21 +49,24 @@ export default function UserDashboardPage() {
 
   useEffect(() => {
     // simulate fetch + small delay
-    setLoading(true);
-    const t = setTimeout(() => {
-      setUsage(MOCK.tokenUsage[range] as TokenUsageResponse);
-      setPages(MOCK.pages as PageInfo[]);
-      setLoading(false);
-    }, 300); // 300ms fake delay
-    return () => clearTimeout(t);
-  }, [range]);
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
 
-  // derived numbers
-  const available = usage
-    ? Math.max(0, usage.totalTokensAvailable - usage.totalTokensUsed)
-    : 0;
-  const used = usage ? usage.totalTokensUsed : 0;
-  const points = usage ? usage.points : [];
+    const decoded = jwtDecode<JwtPayload>(token);
+    const userId = decoded.userId;
+
+    axios
+      .get(`${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/users/${userId}`)
+      .then((res) => {
+        setUserName(res.data.data.name);
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to load user");
+      });
+  }, []);
+
+
 
   return (
     <div className="p-6 space-y-6 bg-radial-aurora text-white min-h-screen ">
@@ -122,10 +76,10 @@ export default function UserDashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* LEFT: Welcome text */}
           <div className="min-w-0 md:flex-1">
-            <h1 className="text-lg sm:text-xl xl:text-3xl md:text-3xl font-bold text-white mb-1 leading-tight truncate">
+            <h1 className="text-lg sm:text-xl xl:text-2 xl  font-bold text-white mb-1 leading-tight truncate">
               Welcome back,{" "}
-              <span className="text-gradient inline-block max-w-[60ch] sm:max-w-[40ch] md:max-w-[30ch] truncate ">
-                Mustafijur <span aria-hidden="true">👋</span>
+              <span className="text-gradient inline-block max-w-[150px] sm:max-w-[210px] md:max-w-[310px] truncate ">
+                {userName} <span aria-hidden="true">👋</span>
               </span>
             </h1>
 
@@ -148,25 +102,21 @@ export default function UserDashboardPage() {
           </div>
         </div>
         <div className="flex flex-col gap-10 p-4">
-           <div className="lg:col-span-3 w-full">
-              <div className="flex items-center justify-between mb-3 ">
-                <h3 className="text-sm text-gray-300">Active Pages</h3>
-                <button
-                  // onClick={fetchData}
-                  className="text-xs text-indigo-400 hover:underline"
-                >
-                  Refresh
-                </button>
-              </div>
-
-              <PagesList
-                // pages={pages}
-                //   onDelete={handleDeletePage}
-                //   onOpen={handleOpenPage}
-              />
+          <div className="lg:col-span-3 w-full">
+            <div className="flex items-center justify-between mb-3 ">
+              <h3 className="text-sm text-gray-300">Active Pages</h3>
+              <button
+                // onClick={fetchData}
+                className="text-xs text-indigo-400 hover:underline"
+              >
+                Refresh
+              </button>
             </div>
-        
-          <TokenUsagePage/>
+
+            <PagesList />
+          </div>
+
+          <TokenUsagePage />
 
           <div className="w-full">
             <UserDahboard />

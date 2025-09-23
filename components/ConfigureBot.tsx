@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { FormField } from "./ui/FormField";
+import { JwtPayload } from "@/types/jwtPayload.type";
 
 export default function ConfigureBot() {
   const [formData, setFormData] = useState({
@@ -23,23 +24,26 @@ export default function ConfigureBot() {
 
   const [isLoading, setIsLoading] = useState(false);
 
+
+
   const handleProvideInfo = async () => {
     setIsLoading(true);
         const token = localStorage.getItem("accessToken");
 
-    let ownerId:any;
-if (token) {
-  const decoded = jwtDecode(token);
-  console.log("User ID:", decoded?.userId ?? "");
-  ownerId=decoded
-}
+   let ownerId: string | null = null;
+    if (token) {
+      const decoded = jwtDecode<JwtPayload>(token);
+      ownerId = decoded.userId ?? decoded._id ?? decoded.id ?? null;
+      console.log("Decoded userId:", ownerId);
+    }
+
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/page/shop`,
         {
           ...formData,
           shopId: formData.pageId,
-          ownerId
+          ownerId:ownerId ?? undefined
         }
       );
       const generatedURL = `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/meta-webhook/${formData.pageId}/webhook`;
