@@ -206,8 +206,6 @@ Task:
 `;
               const systemInstruction = "You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
 
-
-
               //  let aiReply = "";
               const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
               const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
@@ -646,8 +644,8 @@ Task:
   // Try image-level caption match (fastest): aggregate unwind images and match caption
   try {
     // build regex from the query (simple word OR)
-    const words = q.split(/\s+/).map(escapeRegex);
-    console.log("words", words);
+    const words = q.split(/\s+/).map(escapeRegex); //['tine', 'bot']
+    console.log("words-getting", words);
     const captionRegex = new RegExp(words.join("|"), "i");
     console.log("captionRegex", captionRegex);
 
@@ -907,6 +905,7 @@ Task:
         return;
       }
     }
+
 
     // If still nothing, fallback to AI conversational reply
     const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
