@@ -18,20 +18,6 @@ const getProducts: RequestHandler = catchAsync(
     });
   }
 );
-
-const getTrainedProducts: RequestHandler = catchAsync(
-  async (req: Request, res: Response) => {
-    const { pageId } = req.query;
-    const result = await PageService.getProducts(pageId as string);
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "Trained Products retrieved successfully",
-      data: result,
-    });
-  }
-);
-
 const getProductById: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
@@ -46,9 +32,22 @@ const getProductById: RequestHandler = catchAsync(
   }
 );
 
+const getTrainedProducts: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { pageId } = req.query;
+    const result = await PageService.getProducts(pageId as string);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Trained Products retrieved successfully",
+      data: result,
+    });
+  }
+);
+
 const createProduct: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await PageService.createProduct(req.body);
+    const result = await PageService.createAndTrainProduct(req.body);
     sendResponse(res, {
       statusCode: httpStatus.CREATED,
       success: true,
@@ -86,7 +85,6 @@ const deleteProduct: RequestHandler = catchAsync(
   }
 );
 
-//Shop Controllers
 const getShops: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const result = await PageService.getShops();
@@ -98,6 +96,17 @@ const getShops: RequestHandler = catchAsync(
     });
   }
 );
+
+const toggleStatus: RequestHandler = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const result = await PageService.toggleStatus(id);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Page status updated successfully",
+    data: result,
+  });
+});
 
 const getShopById: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
@@ -119,6 +128,29 @@ const createShop: RequestHandler = catchAsync(
       statusCode: httpStatus.CREATED,
       success: true,
       message: "Shop created successfully",
+      data: result,
+    });
+  }
+);
+
+const getPagesByOwner: RequestHandler = catchAsync(
+  async (req, res) => {
+    const ownerId = req.params.ownerId;
+    if (!ownerId) {
+      sendResponse(res, {
+        statusCode: httpStatus.BAD_REQUEST,
+        success: false,
+        message: "ownerId is required",
+        data: null,
+      });
+    }
+
+    const result = await PageService.getShopByOwnerAll(ownerId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Pages fetched successfully",
       data: result,
     });
   }
@@ -178,15 +210,16 @@ const setCmntPromt: RequestHandler = catchAsync(
     });
   }
 );
-const trainProductHandler :RequestHandler = catchAsync(async (req: Request, res: Response) => {
+
+const trainProductHandler: RequestHandler = catchAsync(async (req: Request, res: Response) => {
   // postId will come from route param (similar to setCmntPromt)
-  console.log("req params",req.params);
-  console.log("req body",req.body);
-const postId = String(req.params.postId || req.params.id || "");
+  console.log("req params", req.params);
+  console.log("req body", req.body);
+  const postId = String(req.params.postId || req.params.id || "");
   // shopId should be passed in body or query
   const shopId = String(req.body?.shopId || req.query.shopId || "");
 
-if (!shopId) {
+  if (!shopId) {
     return sendResponse(res, {
       statusCode: httpStatus.BAD_REQUEST,
       success: false,
@@ -203,10 +236,10 @@ if (!shopId) {
       data: null,
     });
   }
-console.log("Calling PageService.trainProduct with", { shopId, postId });
-const fullPostPayload = req.body as any;
- try {
-    const trained = await PageService.trainProduct(shopId, postId,fullPostPayload);
+  // console.log("Calling PageService.trainProduct with", { shopId, postId });
+  const fullPostPayload = req.body as any;
+  try {
+    const trained = await PageService.createAndTrainProduct(req.body);
     console.log("trained result", trained);
     return sendResponse(res, {
       statusCode: httpStatus.OK,
@@ -225,53 +258,6 @@ const fullPostPayload = req.body as any;
     });
   }
 });
-// console.log("trainProductHandler",trainProductHandler);
-
-//  const trainProductHandler = async (req: Request, res: Response) => {
-//   try {
-//     const postId = req.params.postId;
-//     const shopId = req.body.shopId || req.query.shopId;
-//     if (!shopId || !postId) return res.status(400).json({ success: false, message: "Missing shopId or postId" });
-
-//     // find the existing post (must exist)
-//     const existing = await Post.findOne({ shopId, postId }).lean();
-//     if (!existing) return res.status(404).json({ success: false, message: "Post not found" });
-
-//     // Prefer images from DB (if user previously trained they might exist), else use existing.full_picture
-//     const incomingImages = Array.isArray(existing.images) && existing.images.length ? existing.images : [];
-
-//     // sanitize & enrich: compute phash & embedding for any images missing them
-//     const enrichedImages = await sanitizeAndEnrichImages(incomingImages, existing.full_picture || undefined, {
-//       accessToken: undefined, // if your downloadImageBuffer needs token, provide it
-//       concurrency: 4,
-//       computeEmbedding: true,
-//       computePhash: true,
-//     });
-
-//     // compute aggregated embedding (average)
-//     const embeddingsList = enrichedImages.map((i: any) => i.embedding).filter((e: any) => Array.isArray(e) && e.length > 0);
-//     const aggregatedEmbedding = embeddingsList.length ? averageEmbeddings(embeddingsList) : [];
-
-//     // update the Post document
-//     const updateObj: any = {
-//       images: enrichedImages,
-//       aggregatedEmbedding,
-//       isTrained: true,
-//       updatedAt: new Date(),
-//     };
-
-//     const updateRes = await Post.updateOne({ shopId, postId }, { $set: updateObj }, { runValidators: true });
-//     if (!updateRes.matchedCount) {
-//       return res.status(500).json({ success: false, message: "Failed to update post after training" });
-//     }
-
-//     const updatedDoc = await Post.findOne({ shopId, postId }).lean();
-//     return res.json({ success: true, message: "Trained successfully", data: updatedDoc });
-//   } catch (err: any) {
-//     console.error("trainProductHandler error:", err);
-//     return res.status(500).json({ success: false, message: "Training failed", error: err?.message });
-//   }
-// };
 
 const getDmMessageCount: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
@@ -287,15 +273,15 @@ const getDmMessageCount: RequestHandler = catchAsync(
   }
 )
 
-const getCmtMessageCount:RequestHandler=catchAsync(
-  async (req:Request,res:Response)=>{
-    const shopId=(req.params.shopId as string) || (req.query.shopId as string);
-    if (!shopId){
-        res.status(400).json({ success: false, message: "shopId is required" });
+const getCmtMessageCount: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const shopId = (req.params.shopId as string) || (req.query.shopId as string);
+    if (!shopId) {
+      res.status(400).json({ success: false, message: "shopId is required" });
       return;
     }
 
-     const count = await PageService.getCmtMessageCount(shopId);
+    const count = await PageService.getCmtMessageCount(shopId);
     res.json({ success: true, shopId, count });
   }
 )
@@ -303,26 +289,26 @@ const getCmtMessageCount:RequestHandler=catchAsync(
 const getUsageByShop: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const shopId = (req.params.shopId as string) || (req.query.shopId as string);
-    
+
     if (!shopId) {
       res.status(400).json({ success: false, message: "shopId is required" });
       return
     }
-    
-      const range = (req.query.range as "daily" | "weekly" | "month-week") || "daily";
-  const days = Number(req.query.days ?? 7);
-  const weeks = Number(req.query.weeks ?? 6);
-  const totalTokensAvailable = Number(req.query.totalTokensAvailable ?? 1000);
+
+    const range = (req.query.range as "daily" | "weekly" | "month-week") || "daily";
+    const days = Number(req.query.days ?? 7);
+    const weeks = Number(req.query.weeks ?? 6);
+    const totalTokensAvailable = Number(req.query.totalTokensAvailable ?? 1000);
 
     const result = await getMessageCountUsageByShop(shopId, range, {
-    days,
-    weeks,
-    totalTokensAvailable
-  });
+      days,
+      weeks,
+      totalTokensAvailable
+    });
 
-  // if (range === "daily") {
-  //   return res.json({ success: true, points: result.points });
-  // }
+    // if (range === "daily") {
+    //   return res.json({ success: true, points: result.points });
+    // }
 
     res.json({ success: true, data: result });
     return
@@ -331,27 +317,27 @@ const getUsageByShop: RequestHandler = catchAsync(
 
 const getMsgCounts = catchAsync(
   async (req: Request, res: Response) => {
-  const shopId = (req.params.shopId as string) || (req.query.shopId as string);
-  if (!shopId) {
-    res.status(400).json({ success: false, message: "shopId required" }); 
-  return;
-  }
+    const shopId = (req.params.shopId as string) || (req.query.shopId as string);
+    if (!shopId) {
+      res.status(400).json({ success: false, message: "shopId required" });
+      return;
+    }
 
-  // run both in parallel
-  const [msgCount, cmtCount] = await Promise.all([
-    PageService.getDmMessageCount(shopId),
-    PageService.getCmtMessageCount(shopId),
-  ]);
+    // run both in parallel
+    const [msgCount, cmtCount] = await Promise.all([
+      PageService.getDmMessageCount(shopId),
+      PageService.getCmtMessageCount(shopId),
+    ]);
 
-  const total = (msgCount ?? 0) + (cmtCount ?? 0);
-  const totalTokensAvailable = Number(req.query.totalTokensAvailable ?? 1000)-total;
+    const total = (msgCount ?? 0) + (cmtCount ?? 0);
+    const totalTokensAvailable = Number(req.query.totalTokensAvailable ?? 1000) - total;
 
-   res.json({
-    success: true,
-    data: { msgCount, cmtCount, total ,totalTokensAvailable}
+    res.json({
+      success: true,
+      data: { msgCount, cmtCount, total, totalTokensAvailable }
+    });
+    return
   });
-  return
-});
 
 export const PageController = {
   getProducts,
@@ -364,6 +350,8 @@ export const PageController = {
   getShops,
   getShopById,
   createShop,
+  getPagesByOwner,
+  toggleStatus,
   updateShop,
   deleteShop,
   setDmPromt,

@@ -14,7 +14,8 @@ const getResponseDM = async (
   prompt: string,
   action?: string
 ) => {
-    if (!senderId) throw new Error("Missing senderId");
+  console.log("shop senderId", shopId, senderId);
+  if (!senderId) throw new Error("Missing senderId");
   if (!shopId) throw new Error("Missing shopId");
 
   // normalize prompt
@@ -29,6 +30,7 @@ const getResponseDM = async (
 
   // 2) find or create chat history for this (userId, shopId) pair
   let userHistoryDoc = await ChatHistory.findOne({ userId: senderId, shopId }).exec();
+  console.log("userHistoryDoc", userHistoryDoc);
   if (!userHistoryDoc) {
     userHistoryDoc = new ChatHistory({
       userId: senderId,
@@ -46,7 +48,7 @@ const getResponseDM = async (
 
   // userHistoryDoc.messages.push({ role: "user", content: prompt });
 
-    // 4) summarization step if history too long
+  // 4) summarization step if history too long
   try {
     if (Array.isArray(userHistoryDoc.messages) && userHistoryDoc.messages.length > botConfig.converstionThreshold) {
       const total = userHistoryDoc.messages.length;
@@ -63,7 +65,7 @@ const getResponseDM = async (
     // don't fail whole flow — continue without updated summary
   }
 
-   // 5) push user message into history (with timestamps)
+  // 5) push user message into history (with timestamps)
   userHistoryDoc.messages.push({
     role: "user",
     content: prompt,
@@ -72,7 +74,7 @@ const getResponseDM = async (
   });
   console.log("getDmPrompt", getPromt);
 
-   // 6) build messages payload for the model
+  // 6) build messages payload for the model
   const messages = [] as { role: string; content: string }[];
   if (getPromt) messages.push({ role: "system", content: getPromt });
   if (userHistoryDoc.summary && String(userHistoryDoc.summary).trim().length > 0) {
@@ -82,26 +84,26 @@ const getResponseDM = async (
     messages.push({ role: m.role, content: m.content });
   }
 
-    // 7) call AI provider (use lazy client factory recommended)
+  // 7) call AI provider (use lazy client factory recommended)
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  let reply =""
+  let reply = ""
   const completion = await openai.chat.completions.create({
     model: botConfig.mainAIModel,
     messages: messages.map((m) => ({ role: m.role as any, content: m.content })),
   });
-  console.log("dm message",completion.usage);
-   reply = completion.choices[0].message.content || "Something went wrong";
+  console.log("dm message", completion.usage);
+  reply = completion.choices[0].message.content || "Something went wrong";
 
-    if (!reply || !reply.trim()) {
-      console.warn("getResponseDM: AI returned empty reply");
-      reply = "দুঃখিত — আমি ঠিকভাবে বুঝতে পারিনি, আপনি কি একটু ভিন্নভাবে বলবেন?";
-    }
-  
+  if (!reply || !reply.trim()) {
+    console.warn("getResponseDM: AI returned empty reply");
+    reply = "দুঃখিত — আমি ঠিকভাবে বুঝতে পারিনি, আপনি কি একটু ভিন্নভাবে বলবেন?";
+  }
 
-  userHistoryDoc.messages.push({ role: "assistant", content: reply ,createdAt: new Date(), updatedAt: new Date()});
+
+  userHistoryDoc.messages.push({ role: "assistant", content: reply, createdAt: new Date(), updatedAt: new Date() });
   await userHistoryDoc.save();
   return reply;
 };
@@ -118,7 +120,7 @@ export const getCommnetResponse = async (
   let userCommnetHistoryDoc = await CommentHistory.findOne({
     userId: commenterId,
     postId,
- 
+
   });
 
   if (!userCommnetHistoryDoc)
@@ -149,7 +151,7 @@ export const getCommnetResponse = async (
     role: "user",
     content: message,
     createAt: new Date(),
-     updatedAt: new Date()
+    updatedAt: new Date()
   });
 
   const messages: ChatCompletionMessageParam[] = [
@@ -164,7 +166,7 @@ export const getCommnetResponse = async (
     model: "gpt-5-mini",
     messages,
   });
-console.log("cmt message",completion.usage);
+  console.log("cmt message", completion.usage);
   let reply = completion.choices[0].message.content || "Something Went Wrong";
   reply = `@[${commenterId}] ${reply}`;
 

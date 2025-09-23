@@ -1,6 +1,6 @@
 // server/utils/sanitizeAndEnrichImages.ts
 import { computeHashFromBuffer, createTextEmbedding, downloadImageBuffer, extractTextFromImageBuffer } from "./image.embedding";
- // adjust relative path if needed
+// adjust relative path if needed
 
 type ImgIn = { url: string; caption?: string; embedding?: number[]; phash?: string };
 type ImgOut = { url: string; caption: string; embedding: number[]; phash: string };
@@ -52,7 +52,7 @@ export async function sanitizeAndEnrichImages(
 ): Promise<ImgOut[]> {
   const { accessToken, concurrency = 4, computeEmbedding = true, computePhash = true } = options || {};
 
-  console.log("accesstoken",accessToken);
+  console.log("accesstoken", accessToken);
   // Normalize input to array
   let incoming: any[] = [];
   if (Array.isArray(maybe)) incoming = maybe;
@@ -72,9 +72,9 @@ export async function sanitizeAndEnrichImages(
 
   if (sanitized.length === 0) return [];
 
-  
 
- async function processImage(img: any): Promise<ImgOut> {
+
+  async function processImage(img: any): Promise<ImgOut> {
     const out: ImgOut = {
       url: img.url,
       caption: img.caption || "",

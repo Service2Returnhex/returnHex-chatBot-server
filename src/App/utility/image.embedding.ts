@@ -152,14 +152,18 @@ export function cosineSimilarity(a: number[], b: number[]) {
 }
 
 // average (mean) embeddings
-export function averageEmbeddings(list: number[][]) {
-  if (!list || list.length === 0) return [];
-  const dim = list[0].length;
-  const sum = new Array<number>(dim).fill(0);
+export function averageEmbeddings(list: number[][]): number[] {
+  if (!Array.isArray(list) || list.length === 0) return [];
+  const dim = list[0].length || 0;
+  const sum = new Array(dim).fill(0);
+  let count = 0;
   for (const v of list) {
-    for (let i = 0; i < dim; i++) sum[i] += v[i] ?? 0;
+    if (!Array.isArray(v) || v.length !== dim) continue;
+    for (let i = 0; i < dim; i++) sum[i] += Number(v[i] || 0);
+    count++;
   }
-  return sum.map((s) => s / list.length);
+  if (count === 0) return [];
+  return sum.map(s => s / count);
 }
 
 // services/fbHelpers.ts

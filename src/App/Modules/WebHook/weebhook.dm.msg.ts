@@ -114,84 +114,84 @@ export const handleDM = async (
           ]).exec();
           console.log("captionMatch", captionMatch);
 
-         if (captionMatch && captionMatch.length > 0) {
-             const cleanedPhraseTokens = uniqueOrdered;
-         
-             let best: { item: any; score: number } | null = null;
-             let chosen;
-         
-             for (const item of captionMatch) { 
-               const captionRaw: string = (
-                 item.imageCaption ||
-                 item.message ||
-                 ""
-               ).toString();
-               const capTokens = cleanTokens(captionRaw).filter(
-                 (t) => t && !UI_BLACKLIST.has(t)
-               );
-               //  const toks = s.split(" ").filter((t) => t && !UI_BLACKLIST.has(t));
-         
-               let score = 0;
-         
-               // 1) exact ordered phrase match -> big boost
-               if (cleanedPhraseTokens.length > 0) {
-                 const orderedPhraseRegex = new RegExp(
-                   "\\b" + escapeRegex(cleanedPhraseTokens.join("\\s+")) + "\\b",
-                   "i"
-                 );
-                 if (orderedPhraseRegex.test(captionRaw)) {
-                   score += 2.0;
-                 }
-               }
-         
-               // 2) token overlap (jaccard)
-               const jac = await jaccard(cleanedPhraseTokens, capTokens); // 0..1
-               score += jac;
-         
-               const lratio = await longestConsecutiveMatchRatio(
-                 cleanedPhraseTokens,
-                 capTokens
-               );
-               console.log("score", score);
-               console.log("lratio", lratio);
-               score += lratio * 0.5;
-         
-               const MIN_SCORE = 0.09;
-               if (best === null || score > best.score) {
-                 // only accept if the new score passes threshold
-                 if (score > MIN_SCORE) {
-                   best = { item, score };
-                   chosen = item;
-                 }
-               }
-             }
-         
-             console.log(
-               "Best caption candidate score:",
-               best?.score,
-                 "chosen postId:",
-                 chosen?.postId
-             );
-         const wantsImage = isAskingForImage(userMsg); 
-             if (chosen && chosen.imageUrl) {
-               console.log("img url",chosen.imageUrl);
-               
-               try {
-                if (wantsImage) {
-                 await sendImageAttachment(senderId, chosen.imageUrl, pageAccessToken);
+          if (captionMatch && captionMatch.length > 0) {
+            const cleanedPhraseTokens = uniqueOrdered;
+
+            let best: { item: any; score: number } | null = null;
+            let chosen;
+
+            for (const item of captionMatch) {
+              const captionRaw: string = (
+                item.imageCaption ||
+                item.message ||
+                ""
+              ).toString();
+              const capTokens = cleanTokens(captionRaw).filter(
+                (t) => t && !UI_BLACKLIST.has(t)
+              );
+              //  const toks = s.split(" ").filter((t) => t && !UI_BLACKLIST.has(t));
+
+              let score = 0;
+
+              // 1) exact ordered phrase match -> big boost
+              if (cleanedPhraseTokens.length > 0) {
+                const orderedPhraseRegex = new RegExp(
+                  "\\b" + escapeRegex(cleanedPhraseTokens.join("\\s+")) + "\\b",
+                  "i"
+                );
+                if (orderedPhraseRegex.test(captionRaw)) {
+                  score += 2.0;
                 }
-               } catch (err) {
-                 console.warn(
-                   "sendImageAttachment failed why:",
-                   (err as any)?.message || err
-                 );
-               }
+              }
+
+              // 2) token overlap (jaccard)
+              const jac = await jaccard(cleanedPhraseTokens, capTokens); // 0..1
+              score += jac;
+
+              const lratio = await longestConsecutiveMatchRatio(
+                cleanedPhraseTokens,
+                capTokens
+              );
+              console.log("score", score);
+              console.log("lratio", lratio);
+              score += lratio * 0.5;
+
+              const MIN_SCORE = 0.09;
+              if (best === null || score > best.score) {
+                // only accept if the new score passes threshold
+                if (score > MIN_SCORE) {
+                  best = { item, score };
+                  chosen = item;
+                }
+              }
+            }
+
+            console.log(
+              "Best caption candidate score:",
+              best?.score,
+              "chosen postId:",
+              chosen?.postId
+            );
+            const wantsImage = isAskingForImage(userMsg);
+            if (chosen && chosen.imageUrl) {
+              console.log("img url", chosen.imageUrl);
+
+              try {
+                if (wantsImage) {
+                  await sendImageAttachment(senderId, chosen.imageUrl, pageAccessToken);
+                }
+              } catch (err) {
+                console.warn(
+                  "sendImageAttachment failed why:",
+                  (err as any)?.message || err
+                );
+              }
               //  await sendMessage(
               //    senderId,
               //    shopId,
               //    (chosen.imageCaption || chosen.message || "").toString()
               //  );
-const userPrompt = `
+              const userPrompt = `
 A customer has submitted an image and requests information.
 Use the data below:
 Matched Product: ${(chosen.imageCaption || chosen.message || "").toString() || "(no caption)"}
@@ -204,54 +204,57 @@ Task:
 5) If any required information (price, size, availability) is missing, offer a short alternative: "Would you like more details our team contact with you?"
 6) Keep the response concise, professional, and friendly — no more than 3–4 short sentences.
 `;
-const systemInstruction="You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
+              const systemInstruction = "You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
 
-        
-  
-    //  let aiReply = "";
-     const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
-     const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
-       const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
-  
-     try {
-    if (aiReply && aiReply.trim().length > 0) {
-      await sendMessage(senderId, shopId, aiReply);
-    } else {
-      // fallback human-friendly message
-      await sendMessage(
-        senderId,
-        shopId,
-        "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
-      );
-    }
-  } catch (err: any) {
-    console.warn("sendMessage failed:", err?.message || err);
-  }
 
-               return;
-             }
-             
-             //  else {
-             //   // fallback to first element if something weird
-             //   const m = captionMatch[0];
-             //   if (m && m.imageUrl) {
-             //     try {
-             //       await sendImageAttachment(senderId, m.imageUrl, pageAccessToken);
-             //     } catch (err) {
-             //       console.warn(
-             //         "sendImageAttachment failed:",
-             //         (err as any)?.message || err
-             //       );
-             //     }
-             //     await sendMessage(
-             //       senderId,
-             //       shopId,
-             //       (m.imageCaption || m.message || "").toString()
-             //     );
-             //     return;
-             //   }
-             // }
-           }
+
+              //  let aiReply = "";
+              const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
+              const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+              const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
+
+              try {
+                if (aiReply && aiReply.trim().length > 0) {
+                  await sendMessage(senderId, shopId, aiReply);
+                } else {
+                  // fallback human-friendly message
+                  const customMsg = "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
+                  const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+                  const aiReply = await getAiReplySimple(method, senderId, shopId, customMsg, ActionType.DM, fallbackOrder);
+                  await sendMessage(
+                    senderId,
+                    shopId,
+                    aiReply
+                  );
+                }
+              } catch (err: any) {
+                console.warn("sendMessage failed:", err?.message || err);
+              }
+
+              return;
+            }
+
+            //  else {
+            //   // fallback to first element if something weird
+            //   const m = captionMatch[0];
+            //   if (m && m.imageUrl) {
+            //     try {
+            //       await sendImageAttachment(senderId, m.imageUrl, pageAccessToken);
+            //     } catch (err) {
+            //       console.warn(
+            //         "sendImageAttachment failed:",
+            //         (err as any)?.message || err
+            //       );
+            //     }
+            //     await sendMessage(
+            //       senderId,
+            //       shopId,
+            //       (m.imageCaption || m.message || "").toString()
+            //     );
+            //     return;
+            //   }
+            // }
+          }
         }
 
         // quary with hash
@@ -297,7 +300,7 @@ const systemInstruction="You are a professional customer support assistant. Use 
               const userPrompt = `
 A customer has ask for product information.
 Use the data below:
-Matched Product: ${(caption  || "").toString() || "(no caption)"}
+Matched Product: ${(caption || "").toString() || "(no caption)"}
 
 Task:
 1) First, confirm whether the customer is asking about the product identified by the matched caption: "${(caption || "").toString()}".
@@ -307,30 +310,33 @@ Task:
 5) If any required information (price, size, availability) is missing, offer a short alternative: "Would you like more details our team contact with you?"
 6) Keep the response concise, professional, and friendly — no more than 3–4 short sentences.
 `;
-const systemInstruction="You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
+              const systemInstruction = "You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
 
-        
-console.log("caption",caption);
-  
-    //  let aiReply = "";
-     const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
-     const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
-       const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
-  console.log("aireply",aiReply);
-     try {
-    if (aiReply && aiReply.trim().length > 0) {
-      await sendMessage(senderId, shopId, aiReply);
-    } else {
-      // fallback human-friendly message
-      await sendMessage(
-        senderId,
-        shopId,
-        "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
-      );
-    }
-  } catch (err: any) {
-    console.warn("sendMessage failed:", err?.message || err);
-  }
+
+              console.log("caption", caption);
+
+              //  let aiReply = "";
+              const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
+              const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+              const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
+              console.log("aireply", aiReply);
+              try {
+                if (aiReply && aiReply.trim().length > 0) {
+                  await sendMessage(senderId, shopId, aiReply);
+                } else {
+                  // fallback human-friendly message
+                  const customMsg = "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
+                  const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+                  const aiReply = await getAiReplySimple(method, senderId, shopId, customMsg, ActionType.DM, fallbackOrder);
+                  await sendMessage(
+                    senderId,
+                    shopId,
+                    aiReply
+                  );
+                }
+              } catch (err: any) {
+                console.warn("sendMessage failed:", err?.message || err);
+              }
             } catch (err) {
               console.warn(
                 "sendImageAttachment error:",
@@ -410,16 +416,19 @@ console.log("caption",caption);
 
         // If still nothing, fallback to AI conversational reply
         // let aiReply = "";
-          const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
-       const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
+        const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+        const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
 
         if (aiReply) {
           await sendMessage(senderId, shopId, aiReply);
         } else {
+          const customMsg = `দুঃখিত — "${userMsg}"-এর সাথে মিল পাওয়া যায়নি। আপনি কোন পণ্য খুজতেছেন বিস্তারিত বলুন।`
+          const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+          const aiReply = await getAiReplySimple(method, senderId, shopId, customMsg, ActionType.DM, fallbackOrder);
           await sendMessage(
             senderId,
             shopId,
-            `দুঃখিত — "${userMsg}"-এর সাথে মিল পাওয়া যায়নি। আপনি কোন পণ্য খুজতেছেন বিস্তারিত বলুন।`
+            aiReply
           );
         }
       } catch (err: any) {
@@ -431,10 +440,13 @@ console.log("caption",caption);
       const userEmb = phrase ? await createTextEmbedding(phrase) : null;
       console.log("userEmbb dm", userEmb);
       if (!userEmb || !Array.isArray(userEmb) || userEmb.length === 0) {
+        const customMsg = "আপনার ছবির টেক্সট থেকে আমরা কোন পণ্যের সাথে মিল েপাইনি । আমাদের প্রতিনিধি আাপনার সাথে যোগাযোগ করবে।"
+        const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+        const aiReply = await getAiReplySimple(method, senderId, shopId, customMsg, ActionType.DM, fallbackOrder);
         await sendMessage(
           senderId,
           shopId,
-          "আপনার ছবির টেক্সট থেকে আমরা কোন পণ্যের সাথে মিল েপাইনি । আমাদের প্রতিনিধি আাপনার সাথে যোগাযোগ করবে।"
+          aiReply
         );
         return;
       }
@@ -443,12 +455,14 @@ console.log("caption",caption);
       // 2) load posts for page
       const posts = await Post.find({ shopId }).lean().exec();
       if (!posts || posts.length === 0) {
+        const customMsg = "দুঃখিত, এই পণ্যের কোন  তথ্য পাওয়া যাচ্ছে না। আমাদের প্রতিনিধি আাপনার সাথে যোগাযোগ করবে।"
+        const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+        const aiReply = await getAiReplySimple(method, senderId, shopId, customMsg, ActionType.DM, fallbackOrder);
         await sendMessage(
           senderId,
           shopId,
-          "দুঃখিত, এই পণ্যের কোন  তথ্য পাওয়া যাচ্ছে না। আমাদের প্রতিনিধি আাপনার সাথে যোগাযোগ করবে।"
-        );
-        return;
+          aiReply
+        ); return;
       }
 
       // 3) match: prefer per-image embedding, then per-image caption embedding, then post aggregated
@@ -535,10 +549,13 @@ console.log("caption",caption);
         } else if (best.post?.message) {
           await sendMessage(senderId, shopId, best.post.message);
         } else {
+          const customMsg = "ম্যাচ পাওয়া গিয়েছে কিন্তু কোন ক্যাপশন পাওয়া যায়নি।"
+          const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+          const aiReply = await getAiReplySimple(method, senderId, shopId, customMsg, ActionType.DM, fallbackOrder);
           await sendMessage(
             senderId,
             shopId,
-            "ম্যাচ পাওয়া গিয়েছে কিন্তু কোন ক্যাপশন পাওয়া যায়নি।"
+            aiReply
           );
         }
         if (matchedImageUrl) {
@@ -554,19 +571,25 @@ console.log("caption",caption);
         }
         return;
       } else {
+        const customMsg = "দুঃখিত, কোন মিল পাওয়া যায়নি। 'Show similar' বা 'Talk to human' বেছে নিন।"
+        const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+        const aiReply = await getAiReplySimple(method, senderId, shopId, customMsg, ActionType.DM, fallbackOrder);
         await sendMessage(
           senderId,
           shopId,
-          "দুঃখিত, কোন মিল পাওয়া যায়নি। 'Show similar' বা 'Talk to human' বেছে নিন।"
+          aiReply
         );
         return;
       }
     } catch (err: any) {
       console.error("Image compare error:", err?.message || err);
+      const customMsg = "ইমেজ বিশ্লেষণে ত্রুটি হয়েছে — পরে চেষ্টা করুন বা 'Talk to human' নিন।"
+      const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+      const aiReply = await getAiReplySimple(method, senderId, shopId, customMsg, ActionType.DM, fallbackOrder);
       await sendMessage(
         senderId,
         shopId,
-        "ইমেজ বিশ্লেষণে ত্রুটি হয়েছে — পরে চেষ্টা করুন বা 'Talk to human' নিন।"
+        aiReply
       );
     } finally {
       await sendTyping(senderId, false);
@@ -648,85 +671,85 @@ console.log("caption",caption);
     ]).exec();
     // console.log("captionMatch Usrmsg", captionMatch);
     if (captionMatch && captionMatch.length > 0) {
-        const cleanedPhraseTokens = words;
-    
-        let best: { item: any; score: number } | null = null;
-        let chosen;
-    
-        for (const item of captionMatch) {
-          const captionRaw: string = (
-            item.imageCaption ||
-            item.message ||
-            ""
-          ).toString();
-          const capTokens = cleanTokens(captionRaw).filter(
-            (t) => t && !UI_BLACKLIST.has(t)
+      const cleanedPhraseTokens = words;
+
+      let best: { item: any; score: number } | null = null;
+      let chosen;
+
+      for (const item of captionMatch) {
+        const captionRaw: string = (
+          item.imageCaption ||
+          item.message ||
+          ""
+        ).toString();
+        const capTokens = cleanTokens(captionRaw).filter(
+          (t) => t && !UI_BLACKLIST.has(t)
+        );
+        //  const toks = s.split(" ").filter((t) => t && !UI_BLACKLIST.has(t));
+
+        let score: number = 0;
+
+        // 1) exact ordered phrase match -> big boost
+        if (cleanedPhraseTokens.length > 0) {
+          const orderedPhraseRegex = new RegExp(
+            "\\b" + escapeRegex(cleanedPhraseTokens.join("\\s+")) + "\\b",
+            "i"
           );
-          //  const toks = s.split(" ").filter((t) => t && !UI_BLACKLIST.has(t));
-    
-          let score:number = 0;
-    
-          // 1) exact ordered phrase match -> big boost
-          if (cleanedPhraseTokens.length > 0) {
-            const orderedPhraseRegex = new RegExp(
-              "\\b" + escapeRegex(cleanedPhraseTokens.join("\\s+")) + "\\b",
-              "i"
-            );
-            if (orderedPhraseRegex.test(captionRaw)) {
-              score += 2.0;
-            }
-          }
-    
-          // 2) token overlap (jaccard)
-          const jac = await jaccard(cleanedPhraseTokens, capTokens); // 0..1
-          score += jac;
-    
-          const lratio = await longestConsecutiveMatchRatio(
-            cleanedPhraseTokens,
-            capTokens
-          );
-          console.log("score", score);
-          console.log("lratio", lratio);
-          score += lratio * 0.5;
-    
-          const MIN_SCORE = 0.09;
-          if (best === null || score > best.score) {
-            // only accept if the new score passes threshold
-            if (score > MIN_SCORE) {
-              best = { item, score };
-              chosen = item;
-            }
+          if (orderedPhraseRegex.test(captionRaw)) {
+            score += 2.0;
           }
         }
-    
-        console.log(
-          "Best caption candidate score:",
-          best?.score,
-            "chosen postId:",
-            chosen?.postId
+
+        // 2) token overlap (jaccard)
+        const jac = await jaccard(cleanedPhraseTokens, capTokens); // 0..1
+        score += jac;
+
+        const lratio = await longestConsecutiveMatchRatio(
+          cleanedPhraseTokens,
+          capTokens
         );
-    
-        if (chosen && chosen.imageUrl && best?.score) {
-            const wantsImage = isAskingForImage(userMsg); 
-          console.log("img url",chosen.imageUrl);
-          try {
-            if(wantsImage){
-            await sendImageAttachment(senderId, chosen.imageUrl, pageAccessToken);
-            }
-          } catch (err) {
-            console.warn(
-              "sendImageAttachment failed:",
-              (err as any)?.message || err
-            );
+        console.log("score", score);
+        console.log("lratio", lratio);
+        score += lratio * 0.5;
+
+        const MIN_SCORE = 0.09;
+        if (best === null || score > best.score) {
+          // only accept if the new score passes threshold
+          if (score > MIN_SCORE) {
+            best = { item, score };
+            chosen = item;
           }
-// await sendMessage(
-//             senderId,
-//             shopId,
-//             (chosen.imageCaption || chosen.message || "").toString()
-//           );
+        }
+      }
+
+      console.log(
+        "Best caption candidate score:",
+        best?.score,
+        "chosen postId:",
+        chosen?.postId
+      );
+
+      if (chosen && chosen.imageUrl && best?.score) {
+        const wantsImage = isAskingForImage(userMsg);
+        console.log("img url", chosen.imageUrl);
+        try {
+          if (wantsImage) {
+            await sendImageAttachment(senderId, chosen.imageUrl, pageAccessToken);
+          }
+        } catch (err) {
+          console.warn(
+            "sendImageAttachment failed:",
+            (err as any)?.message || err
+          );
+        }
+        // await sendMessage(
+        //             senderId,
+        //             shopId,
+        //             (chosen.imageCaption || chosen.message || "").toString()
+        //           );
 
 
-const userPrompt = `
+        const userPrompt = `
 A customer has ask for product information.
 Use the data below:
 Matched Product: ${(chosen.imageCaption || chosen.message || "").toString() || "(no caption)"}
@@ -739,166 +762,179 @@ Task:
 5) If any required information (price, size, availability) is missing, offer a short alternative: "Would you like more details our team contact with you?"
 6) Keep the response concise, professional, and friendly — no more than 3–4 short sentences.
 `;
-const systemInstruction="You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
+        const systemInstruction = "You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
 
-        
-  
-    //  let aiReply = "";
-     const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
-       const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
-       const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
-  
-     try {
-    if (aiReply && aiReply.trim().length > 0) {
-      await sendMessage(senderId, shopId, aiReply);
-    } else {
-      // fallback human-friendly message
-      await sendMessage(
-        senderId,
-        shopId,
-        "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
-      );
-    }
-  } catch (err: any) {
-    console.warn("sendMessage failed:", err?.message || err);
-  }
-          
-          return;
+
+
+        //  let aiReply = "";
+        const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
+        const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+        const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
+
+        try {
+          if (aiReply && aiReply.trim().length > 0) {
+            await sendMessage(senderId, shopId, aiReply);
+          } else {
+            // fallback human-friendly message
+            const fallbackmsg = "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
+            const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+            const aiReply = await getAiReplySimple(method, senderId, shopId, fallbackmsg, ActionType.DM, fallbackOrder);
+            await sendMessage(
+              senderId,
+              shopId,
+              aiReply
+            );
+          }
+        } catch (err: any) {
+          console.warn("sendMessage failed:", err?.message || err);
         }
+
+        return;
       }
+    }
     console.log("captionMatch", captionMatch);
 
     // If none, try post-level text search ($text or regex)
     let postMatch: any[] = [];
-   try {
-  const normalizedQ = q && q.length ? q.trim() : "";
-  // 1) Try exact phrase regex if phrase is meaningful (>=3 chars and not just 'and' words)
-  if (normalizedQ.length >= 3) {
-    const phraseRegex = new RegExp("\\b" + escapeRegex(normalizedQ) + "\\b", "i");
-    postMatch = await Post.aggregate([
-      { $match: { shopId, $or: [
-         { message: { $regex: phraseRegex } },
-         { "images.caption": { $regex: phraseRegex } }
-      ] } },
-      { $sort: { createdAt: -1 } },
-      { $limit: 8 },
-      { $project: { postId: 1, message: 1, images: 1, createdAt: 1 } }
-    ]).exec();
-
-    if (postMatch && postMatch.length) {
-      console.log("phraseMatch", postMatch.length);
-    }
-  }
-
-  // 2) If no phrase matches, try $text search (requires text index)
-  if ((!postMatch || postMatch.length === 0) && normalizedQ.length > 0) {
     try {
-      postMatch = await Post.find(
-        { shopId, $text: { $search: normalizedQ } },
-        { score: { $meta: "textScore" } } as any
-      )
-      .sort({ score: { $meta: "textScore" }, createdAt: -1 })
-      .limit(6)
-      .lean()
-      .exec();
-      console.log("textSearch", postMatch.length);
+      const normalizedQ = q && q.length ? q.trim() : "";
+      // 1) Try exact phrase regex if phrase is meaningful (>=3 chars and not just 'and' words)
+      if (normalizedQ.length >= 3) {
+        const phraseRegex = new RegExp("\\b" + escapeRegex(normalizedQ) + "\\b", "i");
+        postMatch = await Post.aggregate([
+          {
+            $match: {
+              shopId, $or: [
+                { message: { $regex: phraseRegex } },
+                { "images.caption": { $regex: phraseRegex } }
+              ]
+            }
+          },
+          { $sort: { createdAt: -1 } },
+          { $limit: 8 },
+          { $project: { postId: 1, message: 1, images: 1, createdAt: 1 } }
+        ]).exec();
+
+        if (postMatch && postMatch.length) {
+          console.log("phraseMatch", postMatch.length);
+        }
+      }
+
+      // 2) If no phrase matches, try $text search (requires text index)
+      if ((!postMatch || postMatch.length === 0) && normalizedQ.length > 0) {
+        try {
+          postMatch = await Post.find(
+            { shopId, $text: { $search: normalizedQ } },
+            { score: { $meta: "textScore" } } as any
+          )
+            .sort({ score: { $meta: "textScore" }, createdAt: -1 })
+            .limit(6)
+            .lean()
+            .exec();
+          console.log("textSearch", postMatch.length);
+        } catch (e) {
+          const err = e as AxiosError<{ message: string }>
+          console.warn("text search failed (index?), will fallback to regex", err?.message || err);
+        }
+      }
+
+      // 3) Regex OR fallback (safer: use word boundaries & limit words)
+      if ((!postMatch || postMatch.length === 0) && normalizedQ.length > 0) {
+        const wordsForRegex = words.slice(0, 6).map(escapeRegex).filter(Boolean);
+        if (wordsForRegex.length) {
+          const msgRegex = new RegExp("\\b(?:" + wordsForRegex.join("|") + ")\\b", "i");
+          postMatch = await Post.find({
+            shopId,
+            $or: [
+              { message: { $regex: msgRegex } },
+              { "images.caption": { $regex: msgRegex } }
+            ]
+          })
+            .sort({ createdAt: -1 })
+            .limit(8)
+            .lean()
+            .exec();
+          console.log("regexFallback", postMatch.length);
+        }
+      }
     } catch (e) {
-         const err=e as AxiosError<{ message: string }>
-      console.warn("text search failed (index?), will fallback to regex", err?.message || err);
+      const err = e as AxiosError<{ message: string }>
+      console.error("postMatch block error:", err?.message || e);
     }
-  }
 
-  // 3) Regex OR fallback (safer: use word boundaries & limit words)
-  if ((!postMatch || postMatch.length === 0) && normalizedQ.length > 0) {
-    const wordsForRegex = words.slice(0, 6).map(escapeRegex).filter(Boolean);
-    if (wordsForRegex.length) {
-      const msgRegex = new RegExp("\\b(?:" + wordsForRegex.join("|") + ")\\b", "i");
-      postMatch = await Post.find({
-        shopId,
-        $or: [
-          { message: { $regex: msgRegex } },
-          { "images.caption": { $regex: msgRegex } }
-        ]
-      })
-      .sort({ createdAt: -1 })
-      .limit(8)
-      .lean()
-      .exec();
-      console.log("regexFallback", postMatch.length);
+    // If matches found - pick best with a small confidence heuristic
+    if (postMatch && postMatch.length > 0) {
+      // optional: score them by presence of caption, recentness etc.
+      const scored = postMatch.map(p => {
+        const hasImg = Array.isArray(p.images) && p.images.length > 0;
+        const captionLen = hasImg ? ((p.images[0].caption || "").toString().length) : 0;
+        // simple score: prefer posts with images + longer caption + recent
+        const ageFactor = 1 / (1 + ((Date.now() - new Date(p.createdAt).getTime()) / (1000 * 60 * 60 * 24))); // recent -> ~1
+        let base = (hasImg ? 1.2 : 0.5) + Math.min(1, captionLen / 100);
+        return { post: p, score: base * ageFactor };
+      }).sort((a, b) => b.score - a.score);
+
+      const best = scored[0]?.post;
+      const firstImg = best?.images && best.images.length ? best.images[0].url : null;
+      const captionOrMessage = (best?.images?.[0]?.caption || best?.message || "").toString();
+
+      if (firstImg) {
+        const wantsImage = isAskingForImage(userMsg); // userMsg comes from event.message.text
+        if (wantsImage) {
+          try {
+            await sendImageAttachment(senderId, firstImg, pageAccessToken);
+          } catch (e) {
+            const err = e as AxiosError<{ message: string }>
+            console.warn("sendImageAttachment failed:", err?.message || e);
+          }
+          const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+          const aiReply = await getAiReplySimple(method, senderId, shopId, captionOrMessage, ActionType.DM, fallbackOrder);
+          await sendMessage(senderId, shopId, aiReply || "পোস্ট পাওয়া গেছে।");
+          return;
+        } else {
+          // Send caption/message and ask if they want the image
+          const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+          const aiReply = await getAiReplySimple(method, senderId, shopId, captionOrMessage, ActionType.DM, fallbackOrder);
+          await sendMessage(senderId, shopId, aiReply || "পোস্ট পাওয়া গেছে।");
+          await sendMessage(senderId, shopId, "আপনি কি ছবিটি দেখতে চান? যদি হ্যাঁ বলেন 'দেখাও' লিখুন।");
+          return;
+        }
+      } else {
+        // no image but message found
+        const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+        const aiReply = await getAiReplySimple(method, senderId, shopId, captionOrMessage, ActionType.DM, fallbackOrder);
+        await sendMessage(senderId, shopId, aiReply || "পোস্ট পাওয়া গেছে।");
+        return;
+      }
     }
-  }
-} catch (e) {
-     const err=e as AxiosError<{ message: string }>
-  console.error("postMatch block error:", err?.message || e);
-}
-
-// If matches found - pick best with a small confidence heuristic
-if (postMatch && postMatch.length > 0) {
-  // optional: score them by presence of caption, recentness etc.
-  const scored = postMatch.map(p => {
-    const hasImg = Array.isArray(p.images) && p.images.length > 0;
-    const captionLen = hasImg ? ((p.images[0].caption || "").toString().length) : 0;
-    // simple score: prefer posts with images + longer caption + recent
-    const ageFactor = 1 / (1 + ((Date.now() - new Date(p.createdAt).getTime()) / (1000*60*60*24))); // recent -> ~1
-    let base = (hasImg ? 1.2 : 0.5) + Math.min(1, captionLen / 100);
-    return { post: p, score: base * ageFactor };
-  }).sort((a,b) => b.score - a.score);
-
-  const best = scored[0]?.post;
-  const firstImg = best?.images && best.images.length ? best.images[0].url : null;
-  const captionOrMessage = (best?.images?.[0]?.caption || best?.message || "").toString();
-
-  if (firstImg) {
-    const wantsImage = isAskingForImage(userMsg); // userMsg comes from event.message.text
-    if (wantsImage) {
-      try {
-        await sendImageAttachment(senderId, firstImg, pageAccessToken);
-      } catch(e) { 
-        const err=e as AxiosError<{ message: string }>
-        console.warn("sendImageAttachment failed:", err?.message || e); }
-      await sendMessage(senderId, shopId, captionOrMessage || "পোস্ট পাওয়া গেছে।");
-      return;
-    } else {
-      // Send caption/message and ask if they want the image
-      await sendMessage(senderId, shopId, captionOrMessage || "পোস্ট পাওয়া গেছে।");
-      await sendMessage(senderId, shopId, "আপনি কি ছবিটি দেখতে চান? যদি হ্যাঁ বলেন 'দেখাও' লিখুন।");
-      return;
-    }
-  } else {
-    // no image but message found
-    await sendMessage(senderId, shopId, captionOrMessage || "পোস্ট পাওয়া গেছে।");
-    return;
-  }
-}
 
     // If still nothing, fallback to AI conversational reply
     const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
     const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
 
-
     if (aiReply) {
-    await sendMessage(senderId, shopId, aiReply);
+      await sendMessage(senderId, shopId, aiReply);
     } else {
-    await sendMessage(
+      await sendMessage(
         senderId,
         shopId,
-        `দুঃখিত — "${userMsg}"-এর সাথে মিল পাওয়া যায়নি। আপনি কোন পণ্য খুজতেছেন বিস্তারিত বলুন। `
-    );
+        aiReply
+      );
     }
-} catch (err: any) {
+  } catch (err: any) {
     console.error("Text search error:", err?.message || err);
     // fallback to AI service attempt
     try {
       const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
-    const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
-await sendMessage(senderId, shopId, aiReply);
+      const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
+      await sendMessage(senderId, shopId, aiReply);
     } catch (err2: any) {
-    console.error("AI fallback final error:", err2?.message || err2);
-    await sendMessage(
+      console.error("AI fallback final error:", err2?.message || err2);
+      await sendMessage(
         senderId,
         shopId,
         "কিছু সমস্যা হয়েছে — পরে চেষ্টা করুন বা 'Talk to human' বেছে নিন।"
-    );
+      );
     }
-}
+  }
 };

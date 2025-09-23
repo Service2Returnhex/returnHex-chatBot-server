@@ -69,12 +69,17 @@ function sanitizeImages(maybe: any, fallbackFullPicture?: string) {
   return images;
 }
 
-const trainProduct = async (shopId: string, postId: string, payload?: any) => {
+const createAndTrainProduct = async (payload: any) => {
   // ensure DB connected
   if (mongoose.connection.readyState !== 1) {
     throw new ApiError(httpStatus.SERVICE_UNAVAILABLE, "MongoDB not connected");
   }
-  if (!shopId || !postId) throw new ApiError(httpStatus.BAD_REQUEST, "Missing shopId or postId");
+  if (!payload.shopId || !payload.postId) throw new ApiError(httpStatus.BAD_REQUEST, "Missing shopId or postId");
+  const shopId = payload.shopId;
+  const postId = payload.postId;
+  const findProduct = await Post.findOne({ shopId: payload.shopId, postId: payload.postId }).lean();
+  if (findProduct) return "Product Already Created";
+
 
   console.log("TRAIN_PRODUCT incoming payload:", JSON.stringify(payload || {}, null, 2));
   // 1. prepare sanitized images (url+caption)
@@ -236,6 +241,12 @@ const getShops = async () => {
   return result;
 };
 
+const getShopByOwnerAll = async (ownerId: string) => {
+  const filter = { ownerId };
+  const pages = await PageInfo.find(filter).sort("-createdAt").lean().exec();
+  return pages;
+};
+
 const getShopById = async (id: string) => {
   const result = await PageInfo.findOne({ shopId: id });
   if (!result) {
@@ -247,19 +258,28 @@ const getShopById = async (id: string) => {
   return result;
 };
 
+const toggleStatus = async (id: string) => {
+  const page = await PageInfo.findById(id);
+  if (!page) throw new ApiError(httpStatus.NOT_FOUND, "Page not found");
+
+  page.isStarted = !page.isStarted;
+  await page.save();
+  return page;
+};
+
+
 const createShop = async (payload: IPageInfo) => {
   const existing = await PageInfo.findOne({ shopId: payload.shopId });
+  console.log("payload", payload);
   if (existing) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.CONFLICT);
     throw new ApiError(httpStatus.CONFLICT, "Shop Already Exists!");
   }
 
-  const shopInfo = `PageName: ${payload.pageName}, Category: ${
-    payload.pageCategory ?? "N/A"
-  }, Address: ${payload?.address ?? "N/A"}
-    Phone: ${payload?.phone ? payload.phone : "N/A"}, Email: ${
-    payload?.email ? payload.email : "N/A"
-  }, MoreInfo: ${payload?.moreInfo ?? "N/A"}
+  const shopInfo = `PageName: ${payload.pageName}, Category: ${payload.pageCategory ?? "N/A"
+    }, Address: ${payload?.address ?? "N/A"}
+    Phone: ${payload?.phone ? payload.phone : "N/A"}, Email: ${payload?.email ? payload.email : "N/A"
+    }, MoreInfo: ${payload?.moreInfo ?? "N/A"}
     `;
   //todo: logic update when user change the info
   let shorterInfo: string | undefined = "";
@@ -289,14 +309,11 @@ const updateShop = async (id: string, payload: Partial<IPageInfo>) => {
     throw new ApiError(httpStatus.NOT_FOUND, "Shop Not Found");
   }
 
-  const shopInfo = `PageName: ${
-    payload.pageName ? payload.pageName : isExists.pageName
-  }, Category: ${
-    payload.pageCategory ? payload.pageCategory : isExists.pageCategory
-  }, Address: ${payload.address ? payload.address : isExists.address}
-    Phone: ${payload.phone ? payload.phone : isExists.phone}, Email: ${
-    payload.email ? payload.email : isExists.email
-  }, MoreInfo: ${payload.moreInfo ? payload.moreInfo : isExists.moreInfo}
+  const shopInfo = `PageName: ${payload.pageName ? payload.pageName : isExists.pageName
+    }, Category: ${payload.pageCategory ? payload.pageCategory : isExists.pageCategory
+    }, Address: ${payload.address ? payload.address : isExists.address}
+    Phone: ${payload.phone ? payload.phone : isExists.phone}, Email: ${payload.email ? payload.email : isExists.email
+    }, MoreInfo: ${payload.moreInfo ? payload.moreInfo : isExists.moreInfo}
     `;
 
   let shorterInfo: string | undefined = "";
@@ -378,28 +395,28 @@ const setCmntPromt = async (id: string, cmntSystemPromt: string) => {
   return result;
 };
 
-const getDmMessageCount=async(shopId:string ):Promise<number>=>{
-    if (!shopId) return 0;
+const getDmMessageCount = async (shopId: string): Promise<number> => {
+  if (!shopId) return 0;
 
-      const result = await ChatHistory.aggregate([
-    { $match: { shopId } },                          // filter by shop
-    { $unwind: "$messages" },                        // flatten messages array
-    { $match: { "messages.role": "assistant" } },    // only assistant messages
-    { $count: "assistantCount" }                     // returns [{ assistantCount: N }] or []
+  const result = await ChatHistory.aggregate([
+    { $match: { shopId } },
+    { $unwind: "$messages" },
+    { $match: { "messages.role": "assistant" } },
+    { $count: "assistantCount" }
   ]);
 
   return (result.length && result[0].assistantCount) ? result[0].assistantCount : 0;
 }
 
-const getCmtMessageCount=async(shopId:string):Promise<number>=>{
-if (!shopId)return 0;
-const result=await CommentHistory.aggregate([
-  {$match:{shopId}},
-  {$unwind:"$messages"},
-  { $match: { "messages.role": "assistant" } },
-  {$count:"assistantCount"}
-]);
-return (result.length && result[0].assistantCount)?result[0].assistantCount:0;
+const getCmtMessageCount = async (shopId: string): Promise<number> => {
+  if (!shopId) return 0;
+  const result = await CommentHistory.aggregate([
+    { $match: { shopId } },
+    { $unwind: "$messages" },
+    { $match: { "messages.role": "assistant" } },
+    { $count: "assistantCount" }
+  ]);
+  return (result.length && result[0].assistantCount) ? result[0].assistantCount : 0;
 
 }
 
@@ -408,18 +425,21 @@ export const PageService = {
   getTraindProducts,
   getProductById,
   createProduct,
+  createAndTrainProduct,
   updateProduct,
   deleteProduct,
 
   getShops,
   getShopById,
   createShop,
+  getShopByOwnerAll,
+  toggleStatus,
   updateShop,
   deleteShop,
   setDmPromt,
   setCmntPromt,
 
-  trainProduct,
+
   getDmMessageCount,
   getCmtMessageCount
 };

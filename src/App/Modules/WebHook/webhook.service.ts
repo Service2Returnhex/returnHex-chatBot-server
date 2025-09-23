@@ -6,7 +6,7 @@ import { DeepSeekService } from "../DeepSeek/deepseek.service";
 import { GeminiService } from "../Gemini/gemini.service";
 import { GroqService } from "../Groq/grok.service";
 import { PageService } from "../Page/page.service";
-import { handleAddFeed } from "./weebhook.cmt.msg";
+import { handleAddFeed } from "./weebhook.add.feed";
 import { handleDM } from "./weebhook.dm.msg";
 
 enum ActionType {
