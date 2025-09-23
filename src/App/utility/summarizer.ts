@@ -32,7 +32,7 @@ export const messageSummarizer = async (
       {
         role: "system",
         content: `You are a summarization assistant. 
-    Your task is to create a structured summary of the conversation. 
+    Your task is to create a structured summary of the conversation and old summary. 
     - Do not omit or lose any important information. 
     - Preserve all facts, questions, answers, and decisions. 
     - Maintain chronological order. 

@@ -211,19 +211,19 @@ const systemInstruction="You are a professional customer support assistant. Use 
     //  let aiReply = "";
      const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
      const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
-       const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
+      const aiReply = await getAiReplySimple(method, senderId, shopId, msgForAI, ActionType.DM, fallbackOrder);
   
      try {
-    if (aiReply && aiReply.trim().length > 0) {
-      await sendMessage(senderId, shopId, aiReply);
-    } else {
-      // fallback human-friendly message
-      await sendMessage(
-        senderId,
-        shopId,
-        "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
-      );
-    }
+          if (aiReply && aiReply.trim().length > 0) {
+            await sendMessage(senderId, shopId, aiReply);
+          } else {
+            // fallback human-friendly message
+            await sendMessage(
+              senderId,
+              shopId,
+              "দুঃখিত — পণ্যের সঠিক বিবরণ পাওয়া যায়নি। আপনি চান আমি একজন এজেন্টের সাথে সংযুক্ত করি?"
+            );
+          }
   } catch (err: any) {
     console.warn("sendMessage failed:", err?.message || err);
   }
@@ -623,8 +623,8 @@ console.log("caption",caption);
   // Try image-level caption match (fastest): aggregate unwind images and match caption
   try {
     // build regex from the query (simple word OR)
-    const words = q.split(/\s+/).map(escapeRegex);
-    console.log("words", words);
+    const words = q.split(/\s+/).map(escapeRegex); //['tine', 'bot']
+    console.log("words-getting", words);
     const captionRegex = new RegExp(words.join("|"), "i");
     console.log("captionRegex", captionRegex);
 
@@ -742,7 +742,7 @@ Task:
 const systemInstruction="You are a professional customer support assistant. Use only the provided data; do not invent product details, prices, availability, or delivery information."
 
         
-  
+          console.log("*************Coming without going to AI************")
     //  let aiReply = "";
      const msgForAI = `${systemInstruction}\n\n${userPrompt}`;
        const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
@@ -856,17 +856,28 @@ if (postMatch && postMatch.length > 0) {
       } catch(e) { 
         const err=e as AxiosError<{ message: string }>
         console.warn("sendImageAttachment failed:", err?.message || e); }
+        console.log("not goint to Ai: ")
       await sendMessage(senderId, shopId, captionOrMessage || "পোস্ট পাওয়া গেছে।");
       return;
     } else {
       // Send caption/message and ask if they want the image
+        console.log("not goint to Ai: ")
+
       await sendMessage(senderId, shopId, captionOrMessage || "পোস্ট পাওয়া গেছে।");
       await sendMessage(senderId, shopId, "আপনি কি ছবিটি দেখতে চান? যদি হ্যাঁ বলেন 'দেখাও' লিখুন।");
       return;
     }
   } else {
     // no image but message found
-    await sendMessage(senderId, shopId, captionOrMessage || "পোস্ট পাওয়া গেছে।");
+        console.log("not goint to Ai: ")
+
+        console.log("no image but message found: ")
+
+        const fallbackOrder: AIMethod[] = ["chatgpt"].filter(x => x !== method) as AIMethod[];
+       const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, fallbackOrder);
+
+
+    await sendMessage(senderId, shopId, aiReply || "পোস্ট পাওয়া গেছে।");
     return;
   }
 }

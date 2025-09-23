@@ -6,7 +6,10 @@ import notFound from "./App/Middlewares/notFound";
 import router from "./App/Routes";
 const app = express();
 
-app.use(cors({ origin: "http://localhost:3000", methods: ["GET","POST","OPTIONS"], credentials: true }));
+app.use(cors({ origin: "http://localhost:3000", 
+  methods: ["GET","POST", "DELETE", "OPTIONS"], 
+  credentials: true 
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));

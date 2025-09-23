@@ -14,7 +14,8 @@ export interface IPageInfo {
   cmntSystemPromt?: string;
   isVerified?: boolean;
   isStarted?: boolean;
-  accessToken: string; 
+  accessToken: string;
+   
   verifyToken: string;
 }
 

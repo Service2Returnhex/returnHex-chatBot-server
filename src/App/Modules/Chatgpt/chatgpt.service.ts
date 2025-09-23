@@ -19,9 +19,6 @@ const getResponseDM = async (
   if (!senderId) throw new Error("Missing senderId");
   if (!shopId) throw new Error("Missing shopId");
 
-  // normalize prompt
-  const userPrompt = (prompt || "").toString().trim();
-
   // 1) ensure shop exists
   const shop = await PageInfo.findOne({ shopId }).lean().exec();
   if (!shop) {
@@ -99,7 +96,7 @@ const getResponseDM = async (
     outputToken: 0,
     totalToken: 0,
   };
-  reply = completion.choices[0].message.content || "Something went wrong";
+  reply = completion.choices[0].message.content || "Something went wrong"; //json
   console.log(reply);
   try {
   const parsed = JSON.parse(reply);
@@ -128,7 +125,7 @@ const getResponseDM = async (
     );
 
     if (updated) {
-      reply = `🔄 Your order (${parsed.orderId}) has been updated successfully.`;
+      reply = `🔄 Your order (${parsed.orderId}) - (${parsed.productName}) has been updated successfully.`;
     } else {
       reply = `⚠️ Order not found or could not be updated.`;
     }
@@ -142,7 +139,7 @@ const getResponseDM = async (
   });
 
   if (order) {
-    reply = `📦 Order (${parsed.orderId}) status: "${order.status}".`;
+    reply = `📦 Order (${parsed.orderId}) - (${parsed.productName}) status: "${order.status}".`;
   } else {
     reply = `⚠️ Order not found. Please check your Order ID.`;
   }
@@ -156,7 +153,7 @@ const getResponseDM = async (
     );
 
     if (canceled) {
-      reply = `❌ Your order (${parsed.orderId}) has been cancelled.`;
+      reply = `❌ Your order (${parsed.orderId}) - (${parsed.productName}) has been cancelled.`;
     } else {
       reply = `⚠️ Order not found or could not be cancelled.`;
     }
@@ -174,16 +171,7 @@ const getResponseDM = async (
     outputToken: messageSummarizerTokenUsages.outputToken + AIResponseTokenUsages.outputToken + mainAiTokenUsages.outputToken,
     totalToken: messageSummarizerTokenUsages.totalToken + AIResponseTokenUsages.totalToken + mainAiTokenUsages.totalToken,
   }
-
   console.log("Total Ai Token Details: ", totalAITokenDetails);
-  reply = completion.choices[0].message.content || "Something went wrong";
-
-    if (!reply || !reply.trim()) {
-      console.warn("getResponseDM: AI returned empty reply");
-      reply = "দুঃখিত — আমি ঠিকভাবে বুঝতে পারিনি, আপনি কি একটু ভিন্নভাবে বলবেন?";
-    }
-  
-
   userHistoryDoc.messages.push({ role: "assistant", content: reply ,createdAt: new Date(), updatedAt: new Date()});
   await userHistoryDoc.save();
   return reply;
@@ -289,6 +277,9 @@ console.log("cmt message",completion.usage);
   }
 
   console.log(totalAITokenDetails);
+
+  //db logic -- totalTokenCount += totalAITokenDetails.totalToken
+
   userCommnetHistoryDoc.messages.push({
     commentId,
     role: "assistant",
