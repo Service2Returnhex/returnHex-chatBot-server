@@ -26,7 +26,7 @@ export const makePromtDM = async (
       : "";
   }
   const userOrders = await Order.find({ userId: senderId, shopId: page.shopId })
-    .sort({ createdAt: -1 })  // newest first
+    .sort({ createdAt: -1 })
     .lean();
 
   let orderList = "";
@@ -115,7 +115,7 @@ Answer as short as possible but always in the related context.
 You can use maximum ${botConfig.mainAIMaxToken} tokens.
 `.trim();
 
-  console.log(systemPrompt);
+  // console.log(systemPrompt);
 
   return systemPrompt;
 };

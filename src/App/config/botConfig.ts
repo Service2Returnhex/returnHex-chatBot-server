@@ -21,16 +21,16 @@ export const botConfig: TBotConfig = {
     mainAIModel: "gpt-5-mini",
     mainAIMaxToken: 50,
 
-    NormaAIResponseModel: 'gpt-4o', //post and more info summarization
+    NormaAIResponseModel: 'gpt-4o',
 
     messageSummarizerModel: 'gpt-4o',
-    messageSummarizerMaxToken: 500,
+    messageSummarizerMaxToken: 350,
 
     converstionThreshold: 30,
     keepMessages: 20,
 
-    commentThreshold: 6,
-    keepComments: 3,
+    commentThreshold: 20,
+    keepComments: 5,
 
     postVisibility: 5,
 }

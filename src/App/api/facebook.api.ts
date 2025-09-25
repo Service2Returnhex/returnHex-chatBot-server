@@ -20,7 +20,7 @@ export const sendMessage = async (
     );
     console.log(res.data);
   } catch (error: any) {
-    console.error(error.message);
+    console.error("[Meta-API]-Message Sending Failed: ", error.message);
   }
 };
 
@@ -47,6 +47,6 @@ export const replyToComment = async (
     );
     console.log("✅ Comment reply sent:", response.data);
   } catch (error: any) {
-    console.error(error.message);
+    console.error("[Meta-API]-Replay to comment Failed: ", error.message);
   }
 };
