@@ -136,6 +136,7 @@ const createShop: RequestHandler = catchAsync(
 const getPagesByOwner: RequestHandler = catchAsync(
   async (req, res) => {
     const ownerId = req.params.ownerId;
+    console.log("ownerid back", ownerId);
     if (!ownerId) {
       sendResponse(res, {
         statusCode: httpStatus.BAD_REQUEST,
@@ -339,6 +340,20 @@ const getMsgCounts = catchAsync(
     return
   });
 
+
+const getOrders: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { shopId } = req.params; 
+    const result = await PageService.getOrders(shopId as string);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Order retrieved successfully",
+      data: result,
+    });
+  }
+);
+
 export const PageController = {
   getProducts,
   getTrainedProducts,
@@ -356,6 +371,8 @@ export const PageController = {
   deleteShop,
   setDmPromt,
   setCmntPromt,
+
+  getOrders,
 
   trainProductHandler,
   getDmMessageCount,

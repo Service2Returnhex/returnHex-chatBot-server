@@ -1,4 +1,5 @@
 import express from "express";
+import USER_ROLE from "../../constants/userRole";
 import auth from "../../Middlewares/auth";
 import { PageController } from "./page.controller";
 const router = express.Router();
@@ -10,10 +11,10 @@ router.post("/product", PageController.createProduct);
 router.put("/product/:id", PageController.updateProduct);
 router.delete("/product/:id", PageController.deleteProduct)
 
-router.get("/shop", auth("admin"), PageController.getShops);
+router.get("/shop", auth(USER_ROLE.admin, USER_ROLE.user), PageController.getShops);
 router.get("/shop/:id", PageController.getShopById);
 router.get("/shop/owner/:ownerId", PageController.getPagesByOwner);
-router.patch("/:id/toggle-status", auth("admin", "user"), PageController.toggleStatus);
+router.patch("/:id/toggle-status", auth(USER_ROLE.admin, USER_ROLE.user), PageController.toggleStatus);
 router.post("/shop", PageController.createShop);
 router.patch("/shop/:id", PageController.updateShop);
 router.delete("/shop/:id", PageController.deleteShop);
@@ -26,4 +27,6 @@ router.get("/shop/:shopId/msg-count", PageController.getDmMessageCount);
 router.get("/shop/:shopId/cmt-count", PageController.getCmtMessageCount);
 router.get("/shop/:shopId/token-count", PageController.getUsageByShop);
 router.get("/shop/:shopId/msg-counts", PageController.getMsgCounts);
+
+router.get("/shop/order/:shopId", PageController.getOrders);
 export const PageRouter = router;

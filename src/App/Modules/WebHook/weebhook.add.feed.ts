@@ -14,6 +14,7 @@ enum ActionType {
 
 // create Post
 export const handleAddFeed = async (value: any, pageId: string) => {
+  console.log("value", value);
   try {
     const shop = await PageInfo.findOne({ shopId: pageId });
     if (!shop) {
@@ -48,8 +49,8 @@ export const handleAddFeed = async (value: any, pageId: string) => {
       : postData &&
         postData.attachments &&
         Array.isArray(postData.attachments.data)
-      ? postData.attachments.data
-      : [];
+        ? postData.attachments.data
+        : [];
 
     // 4) safe subattachment access
     const firstSub = attachments[0]?.subattachments?.data?.[0] ?? null;

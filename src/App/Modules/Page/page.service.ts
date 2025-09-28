@@ -1,18 +1,19 @@
+import { AxiosError } from "axios";
 import httpStatus from "http-status";
 import mongoose from "mongoose";
 import ApiError from "../../utility/AppError";
-import { averageEmbeddings } from "../../utility/image.embedding";
+import { averageEmbeddings, computeHashFromBuffer, createTextEmbedding, downloadImageBuffer, extractImageCaptions, extractImageUrlsFromTrainPost, extractTextFromImageBuffer } from "../../utility/image.embedding";
 import {
   Logger,
   LogMessage,
   LogPrefix,
   LogService,
 } from "../../utility/Logger";
-import { sanitizeAndEnrichImages } from "../../utility/sanitizeAndEnrichImages";
 import { AIResponse } from "../../utility/summarizer";
 import { countWords } from "../../utility/wordCounter";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
+import { Order } from "./order.model";
 import { IPageInfo, PageInfo } from "./pageInfo.model";
 import { IPost, Post } from "./post.mode";
 
@@ -80,60 +81,286 @@ const createAndTrainProduct = async (payload: any) => {
   const findProduct = await Post.findOne({ shopId: payload.shopId, postId: payload.postId }).lean();
   if (findProduct) return "Product Already Created";
 
-
   console.log("TRAIN_PRODUCT incoming payload:", JSON.stringify(payload || {}, null, 2));
-  // 1. prepare sanitized images (url+caption)
-  const images = sanitizeImages(payload?.images || [], payload?.full_picture);
+  console.log("trai product image", payload.images);
 
-  // 2. If images already have embedding & phash, we can skip compute. Otherwise call enricher.
-  const needsEnrichment = images.some(img => !Array.isArray(img.embedding) || img.embedding.length === 0 || !img.phash);
-
-  // get page access token if needed for private cdn
   const page = await PageInfo.findOne({ shopId }).lean().exec();
-  const pageToken = page?.accessToken || undefined;
+  const pageAccessToken = page?.accessToken || undefined;
 
-  let enrichedImages = images;
-  if (needsEnrichment) {
-    try {
-      enrichedImages = await sanitizeAndEnrichImages(images, payload?.full_picture, {
-        accessToken: pageToken,
-        concurrency: 4,
-        computeEmbedding: true,
-        computePhash: true,
-      });
-    } catch (e) {
-      console.warn("Image enrichment failed (will continue without embeddings):", e);
-      // leave enrichedImages as best-effort (may be original sanitized images)
+  const postData = payload
+
+  const attachments = Array.isArray(postData)
+    ? postData
+    : postData &&
+      postData.attachments &&
+      Array.isArray(postData.attachments.data)
+      ? postData.attachments.data
+      : [];
+
+  // 4) safe subattachment access
+  const firstSub = attachments[0]?.subattachments?.data?.[0] ?? null;
+
+  // console.log("attachments (length):", attachments.length);
+  // console.log(
+  //   "first attachment (pretty):",
+  //   JSON.stringify(attachments[0] || null, null, 2)
+  // );
+  console.log(
+    "first subattachment (pretty):",
+    JSON.stringify(firstSub, null, 2)
+  );
+  // 2) extract image captions from Graph response (if available)
+
+  const imagesDescription = postData
+    ? await extractImageCaptions(postData)
+    : ([] as { photoId?: string; url?: string; caption?: string }[]);
+
+  console.log("imagesDescription", imagesDescription);
+
+  const urlToCaption = new Map<string, string>();
+  const idToCaption = new Map<string, string>();
+
+  imagesDescription.forEach((it: any) => {
+    if (it.url) urlToCaption.set(it.url, it.caption ?? "");
+    if (it.photoId) idToCaption.set(String(it.photoId), it.caption ?? "");
+  });
+
+  // 3) extract image URLs from webhook `value` (fallback if Graph not available)
+  const imageUrls: string[] = extractImageUrlsFromTrainPost(payload) || [];
+
+  // If no imageUrls found in webhook, try to collect from postData attachments
+  if (imageUrls.length === 0 && imagesDescription?.length > 0) {
+    // take URLs from imagesDescription
+    for (const it of imagesDescription) {
+      if (it.url) imageUrls.push(it.url);
     }
   }
+  // console.log("Found imageUrls:", imageUrls);
+  // If still empty, nothing to process
+  if (imageUrls.length === 0) {
+    console.log("handleAddFeed: no image URLs found for", postId);
+  }
 
-  // 3. aggregated embedding
-  const embeddingsList = enrichedImages.map((i: any) => i.embedding).filter((e: any) => Array.isArray(e) && e.length > 0);
-  const aggregatedEmbedding = embeddingsList.length ? averageEmbeddings(embeddingsList) : [];
-
-  // 4. upsert (create if not exist)
-  const createObj: any = {
-    shopId,
-    postId,
-    message: payload?.message || "",
-    summarizedMsg: payload?.summarizedMsg || "",
-    full_picture: payload?.full_picture || (enrichedImages[0]?.url || ""),
-    images: enrichedImages,
-    aggregatedEmbedding,
-    isTrained: true,
-    createdAt: payload?.createdAt ? new Date(payload.createdAt) : new Date(),
-    updatedAt: new Date(),
+  // 4) process each image: download, OCR (optional), create embedding
+  type ImageResult = {
+    url: string;
+    photoId?: string | null;
+    phash: string | null;
+    caption?: string | null;
+    embedding?: number[] | null;
   };
 
-  // Use findOneAndUpdate with upsert so it's atomic-ish
-  const updated = await Post.findOneAndUpdate(
-    { shopId, postId },
-    { $set: createObj },
-    { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true, lean: true }
-  );
+  // process each image concurrently with limit (to avoid too many parallel requests)
+  const imagesProcessed: ImageResult[] = [];
+  const CONCURRENCY = 6; // safe default
+  // split into chunks for concurrency control
+  for (let i = 0; i < imageUrls.length; i += CONCURRENCY) {
+    const chunk = imageUrls.slice(i, i + CONCURRENCY);
+    const promises: Promise<ImageResult>[] = chunk.map(
+      async (url): Promise<ImageResult> => {
+        try {
+          // find matching caption (exact URL match)
+          let caption: string | null = null;
+          if (urlToCaption.has(url)) {
+            caption = urlToCaption.get(url) || null;
+          } else {
+            // try fuzzy match: some Graph URLs may differ by params — match by pathname or last segment
+            const matched = Array.from(urlToCaption.keys()).find((u) => {
+              try {
+                const a = new URL(u).pathname;
+                const b = new URL(url).pathname;
+                return a === b || a.endsWith(b) || b.endsWith(a);
+              } catch (e) {
+                return u === url;
+              }
+            });
+            if (matched) caption = urlToCaption.get(matched) || null;
+          }
 
-  return updated;
+          // try to discover photoId by scanning imagesDescription entries
+          // let photoId: string | null = null;
+          // const cd = imagesDescription.find(
+          //   (d) =>
+          //     d.url === url ||
+          //     d.url?.includes(url) ||
+          //     (d.photoId && url.includes(d.photoId))
+          // );
+          // console.log("photo id ", cd?.photoId);
+          // if (cd?.photoId) photoId = String(cd.photoId);
+
+          let emb: number[] | null = null;
+          let phash = "";
+          try {
+            // download image into buffer (pass pageToken if needed)
+            const buf = await downloadImageBuffer(url, pageAccessToken ?? "");
+            phash = await computeHashFromBuffer(buf);
+            // console.log("buf", buf);
+
+            // optional OCR (non-fatal)
+            let ocrText = "";
+
+            try {
+              ocrText = (await extractTextFromImageBuffer(buf)) || "";
+              // console.log("ocrText", ocrText);
+            } catch (ocrErr) {
+              const err = ocrErr as AxiosError<{ message: string }>;
+              console.warn("OCR failed for", url, err?.message || ocrErr);
+              ocrText = "";
+            }
+            const textForEmbedding =
+              [ocrText, payload.message].filter(Boolean).join("\n").trim() ||
+              "image";
+            emb = await createTextEmbedding(textForEmbedding);
+            // console.log("emb", emb);
+            // return emb ;
+          } catch (err: any) {
+            console.warn(
+              "Failed processing image url:",
+              url,
+              err?.message || err
+            );
+          }
+
+          return {
+            url,
+            // photoId: photoId ?? null,
+            phash,
+            caption: caption ?? null,
+            embedding: emb ?? undefined,
+          };
+        } catch (err: any) {
+          console.warn("Failed processing image:", url, err?.message || err);
+          return {
+            url,
+            photoId: null,
+            phash: null,
+            caption: null,
+            embedding: null,
+          };
+        }
+      }
+    );
+
+    const results = await Promise.all(promises);
+    imagesProcessed.push(...results);
+    console.log("imagesProcessed", imagesProcessed);
+  }
+
+  // 5) aggregated embedding (mean of non-null embeddings)
+  const embeddingsList = imagesProcessed
+    .map((it) => it.embedding)
+    .filter((e): e is number[] => Array.isArray(e) && e.length > 0);
+
+  const aggregatedEmbedding = embeddingsList.length
+    ? averageEmbeddings(embeddingsList)
+    : [];
+
+  // 6) prepare payload & upsert to DB
+  const payload2: any = {
+    postId,
+    shopId,
+    message: (postData?.message || payload.message || "") as string,
+    createdAt: payload.created_time
+      ? new Date(payload.created_time * 1000)
+      : new Date(),
+    updatedAt: new Date(),
+    images: imagesProcessed.map((it) => ({
+      // photoId: it.photoId,
+      phash: it.phash,
+      url: it.url,
+      caption: it.caption,
+      // don't store raw embeddings per-image to DB here unless you want them:
+      embedding: it.embedding ?? undefined,
+    })),
+  };
+
+  if (aggregatedEmbedding.length)
+    payload.aggregatedEmbedding = aggregatedEmbedding;
+
+  // Persist: use PageService.createProduct (or adapt to your Post model)
+  const result = await PageService.createProduct(payload2);
+
+  if (!result) {
+    console.warn("handleAddFeed: createProduct returned falsy for", postId);
+  } else {
+    console.log(
+      "handleAddFeed: saved post",
+      postId,
+      "images:",
+
+    );
+
+    console.log("payload train post ", payload);
+    console.log("payload train post ", payload.rawPost.attachments);
+  }
+
+  return result;
 };
+// const createAndTrainProduct = async (payload: any) => {
+//   // ensure DB connected
+//   if (mongoose.connection.readyState !== 1) {
+//     throw new ApiError(httpStatus.SERVICE_UNAVAILABLE, "MongoDB not connected");
+//   }
+//   if (!payload.shopId || !payload.postId) throw new ApiError(httpStatus.BAD_REQUEST, "Missing shopId or postId");
+//   const shopId = payload.shopId;
+//   const postId = payload.postId;
+//   const findProduct = await Post.findOne({ shopId: payload.shopId, postId: payload.postId }).lean();
+//   if (findProduct) return "Product Already Created";
+
+//   console.log("TRAIN_PRODUCT incoming payload:", JSON.stringify(payload || {}, null, 2));
+//   console.log("trai product image", payload.images);
+//   // 1. prepare sanitized images (url+caption)
+//   const images = sanitizeImages(payload?.images || [], payload?.full_picture);
+
+//   // 2. If images already have embedding & phash, we can skip compute. Otherwise call enricher.
+//   const needsEnrichment = images.some(img => !Array.isArray(img.embedding) || img.embedding.length === 0 || !img.phash);
+
+//   // get page access token if needed for private cdn
+//   const page = await PageInfo.findOne({ shopId }).lean().exec();
+//   const pageToken = page?.accessToken || undefined;
+
+//   let enrichedImages = images;
+//   if (needsEnrichment) {
+//     try {
+//       enrichedImages = await sanitizeAndEnrichImages(images, payload?.full_picture, {
+//         accessToken: pageToken,
+//         concurrency: 4,
+//         computeEmbedding: true,
+//         computePhash: true,
+//       });
+//     } catch (e) {
+//       console.warn("Image enrichment failed (will continue without embeddings):", e);
+//       // leave enrichedImages as best-effort (may be original sanitized images)
+//     }
+//   }
+
+//   // 3. aggregated embedding
+//   const embeddingsList = enrichedImages.map((i: any) => i.embedding).filter((e: any) => Array.isArray(e) && e.length > 0);
+//   const aggregatedEmbedding = embeddingsList.length ? averageEmbeddings(embeddingsList) : [];
+
+//   // 4. upsert (create if not exist)
+//   const createObj: any = {
+//     shopId,
+//     postId,
+//     message: payload?.message || "",
+//     summarizedMsg: payload?.summarizedMsg || "",
+//     full_picture: payload?.full_picture || (enrichedImages[0]?.url || ""),
+//     images: enrichedImages,
+//     aggregatedEmbedding,
+//     isTrained: true,
+//     createdAt: payload?.createdAt ? new Date(payload.createdAt) : new Date(),
+//     updatedAt: new Date(),
+//   };
+
+//   // Use findOneAndUpdate with upsert so it's atomic-ish
+//   const updated = await Post.findOneAndUpdate(
+//     { shopId, postId },
+//     { $set: createObj },
+//     { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true, lean: true }
+//   );
+
+//   return updated;
+// };
 
 const createProduct = async (payload: any) => {
   console.log("CREATE_PRODUCT incoming payload:", JSON.stringify(payload, null, 2));
@@ -420,6 +647,15 @@ const getCmtMessageCount = async (shopId: string): Promise<number> => {
 
 }
 
+const getOrders = async (pageId: string) => {
+  const result = await Order.find({ shopId: pageId });
+  console.log(result);
+  if (!result.length)
+    Logger(LogService.DB, LogPrefix.PRODUCTS, LogMessage.NOT_FOUND);
+  Logger(LogService.DB, LogPrefix.PRODUCTS, LogMessage.RETRIEVED);
+  return result;
+};
+
 export const PageService = {
   getProducts,
   getTraindProducts,
@@ -439,6 +675,7 @@ export const PageService = {
   setDmPromt,
   setCmntPromt,
 
+  getOrders,
 
   getDmMessageCount,
   getCmtMessageCount

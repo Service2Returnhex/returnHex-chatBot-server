@@ -216,6 +216,55 @@ export function extractImageUrlsFromFeed(value: any): string[] {
   // dedupe & filter empties
   return Array.from(new Set(urls.filter(Boolean)));
 }
+export function extractImageUrlsFromTrainPost(payload: any): string[] {
+  const urls: string[] = [];
+  // console.log("value", value);
+
+  // common single fields
+  if (payload.full_picture) urls.push(payload.full_picture);
+  if (payload.picture) urls.push(payload.picture);
+  if (payload.link && /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(payload.link))
+    urls.push(payload.link);
+
+  if (Array.isArray(payload.photos)) {
+    for (const p of payload.photos) if (typeof p === "string" && p) urls.push(p);
+  }
+  // some feeds may use "photo" singular or "images"
+  if (Array.isArray(payload.image) || Array.isArray(payload.images)) {
+    const arr = (payload.image || payload.images) as any[];
+    for (const p of arr) if (p && typeof p === "string") urls.push(p);
+  }
+  if (payload.photo && typeof payload.photo === "string") urls.push(payload.photo);
+
+  // attachments structure: value.attachments?.data = [{media:{image:{src}}}, {subattachments:{data:[{media:{image:{src}}}]}}]
+  const atts =
+    payload.attachments || payload.attachment || payload.subattachments || null;
+  if (payload.attachments?.data && Array.isArray(payload.attachments.data)) {
+    for (const a of payload.attachments.data) {
+      if (a.media?.image?.src) urls.push(a.media.image.src);
+      if (a.media?.image?.url) urls.push(a.media.image.url);
+      if (a.subattachments?.data) {
+        for (const sa of a.subattachments.data) {
+          if (sa.media?.image?.src) urls.push(sa.media.image.src);
+        }
+      }
+      // sometimes payload.url exists
+      if (a.payload?.url) urls.push(a.payload.url);
+    }
+  }
+  // console.log("atts", value.attachments?.data);
+
+  // some feeds provide 'attachments' as array directly
+  if (Array.isArray(payload.attachments)) {
+    for (const a of payload.attachments) {
+      if (a.payload?.url) urls.push(a.payload.url);
+      if (a.media?.image?.src) urls.push(a.media.image.src);
+    }
+  }
+
+  // dedupe & filter empties
+  return Array.from(new Set(urls.filter(Boolean)));
+}
 
 export async function extractImageCaptions(postData: any) {
   const results = [];
