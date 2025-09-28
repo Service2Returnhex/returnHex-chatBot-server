@@ -6,8 +6,8 @@
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "start": "npm run src/server.ts",
-    "comment": "run the makeProm intial phase"
+    "delete:full": "ts-node-dev --respawn --transpile-only src/deleteFullDB.ts",
+    "delete:docs": "ts-node-dev --respawn --transpile-only src/deleteDBDocuments.ts"
   },
   "keywords": [],
   "author": "",

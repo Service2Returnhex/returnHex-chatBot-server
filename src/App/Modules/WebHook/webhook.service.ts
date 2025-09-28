@@ -191,7 +191,7 @@ const handleIncomingMessages = async (
     const changes = entry.changes || [];
     for (const change of changes) {
       const { field, value } = change;
-      console.log("Feed Change:", JSON.stringify(change, null, 2));
+      // console.log("Feed Change:", JSON.stringify(change, null, 2));
       if (
         field === "feed" &&
         ["post", "photo", "video", "status"].includes(value.item)

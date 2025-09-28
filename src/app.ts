@@ -7,11 +7,7 @@ import router from "./App/Routes";
 const app = express();
 
 app.use(
-  cors({
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    credentials: true,
-  })
+  cors({})
 );
 app.use(express.json());
 app.use(cookieParser());

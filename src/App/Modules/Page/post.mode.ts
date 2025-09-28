@@ -16,6 +16,7 @@ export interface IPost {
   // embedding?: number[];
   images?: IImageItem;
   aggregatedEmbedding?: number[];
+
   createdAt?: Date;
   updatedAt?: Date;
 }

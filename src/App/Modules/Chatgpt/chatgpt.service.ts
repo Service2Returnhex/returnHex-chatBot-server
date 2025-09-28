@@ -19,14 +19,12 @@ const getResponseDM = async (
   if (!senderId) throw new Error("Missing senderId");
   if (!shopId) throw new Error("Missing shopId");
 
-  // 1) ensure shop exists
   const shop = await PageInfo.findOne({ shopId }).lean().exec();
   if (!shop) {
     console.warn("getResponseDM: shop not found for", shopId);
     throw new Error("Shop not found");
   }
 
-  // 2) find or create chat history for this (userId, shopId) pair
   let userHistoryDoc = await ChatHistory.findOne({ userId: senderId, shopId }).exec();
   console.log("userHistoryDoc", userHistoryDoc);
   if (!userHistoryDoc) {
@@ -38,15 +36,10 @@ const getResponseDM = async (
     });
   }
 
-  // 3) load products (if you include product-data in system prompt)
   const products = await Post.find({ shopId }).lean().exec();
-  // const systemPrompt = (await makePromtDM(shop, products)) || "";
+
 
   const getPromt = await makePromtDM(shop, products, senderId);
-
-  // userHistoryDoc.messages.push({ role: "user", content: prompt });
-
-  // 4) summarization step if history too long
   try {
     if (Array.isArray(userHistoryDoc.messages) && userHistoryDoc.messages.length > botConfig.converstionThreshold) {
       const total = userHistoryDoc.messages.length;
@@ -54,25 +47,23 @@ const getResponseDM = async (
       const oldMessages = userHistoryDoc.messages.slice(0, Math.max(0, total - keep));
       const recentMessages = userHistoryDoc.messages.slice(-keep);
 
-      const summary = await messageSummarizer(oldMessages, userHistoryDoc?.summary || "", botConfig.messageSummarizerMaxToken);
+      const summary = await messageSummarizer(shopId, oldMessages, userHistoryDoc?.summary || "", botConfig.messageSummarizerMaxToken);
       userHistoryDoc.summary = typeof summary === "string" ? summary : (summary || "");
       userHistoryDoc.messages = recentMessages;
     }
   } catch (err) {
     console.warn("getResponseDM: summarization failed:", (err as any)?.message || err);
-    // don't fail whole flow — continue without updated summary
   }
 
-  // 5) push user message into history (with timestamps)
   userHistoryDoc.messages.push({
     role: "user",
     content: prompt,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
+
   console.log("getDmPrompt", getPromt);
 
-  // 6) build messages payload for the model
   const messages = [] as { role: string; content: string }[];
   if (getPromt) messages.push({ role: "system", content: getPromt });
   if (userHistoryDoc.summary && String(userHistoryDoc.summary).trim().length > 0) {
@@ -82,12 +73,14 @@ const getResponseDM = async (
     messages.push({ role: m.role, content: m.content });
   }
 
-  // 7) call AI provider (use lazy client factory recommended)
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
   let reply = ""
+
+  console.log("Hello")
+
   const completion = await openai.chat.completions.create({
     model: botConfig.mainAIModel,
     messages: messages.map((m) => ({ role: m.role as any, content: m.content })),
@@ -97,7 +90,7 @@ const getResponseDM = async (
     outputToken: 0,
     totalToken: 0,
   };
-  reply = completion.choices[0].message.content || "Something went wrong"; //json
+  reply = completion.choices[0].message.content || "Something went wrong"; 
   console.log(reply);
   try {
     const parsed = JSON.parse(reply);
@@ -173,7 +166,21 @@ const getResponseDM = async (
     outputToken: messageSummarizerTokenUsages.outputToken + AIResponseTokenUsages.outputToken + mainAiTokenUsages.outputToken,
     totalToken: messageSummarizerTokenUsages.totalToken + AIResponseTokenUsages.totalToken + mainAiTokenUsages.totalToken,
   }
-  console.log("Total Ai Token Details: ", totalAITokenDetails);
+
+  console.log("Total DM Ai Token Details: ", totalAITokenDetails);
+
+  await PageInfo.findOneAndUpdate(
+    {shopId},
+    {
+      $inc: {
+        inputToken: mainAiTokenUsages.inputToken,
+        outputToken: mainAiTokenUsages.outputToken,
+        totalToken: mainAiTokenUsages.totalToken,
+      }
+    },
+    { new: true, upsert: true }
+  )
+
   userHistoryDoc.messages.push({ role: "assistant", content: reply, createdAt: new Date(), updatedAt: new Date() });
   await userHistoryDoc.save();
   return reply;
@@ -233,6 +240,7 @@ export const getCommnetResponse = async (
     const recentComments = userCommnetHistoryDoc.messages.slice(-botConfig.keepComments);
 
     const summary = await messageSummarizer(
+      shopId,
       oldComments,
       userCommnetHistoryDoc?.summary,
       botConfig.messageSummarizerMaxToken
@@ -278,9 +286,20 @@ export const getCommnetResponse = async (
     totalToken: messageSummarizerTokenUsages.totalToken + AIResponseTokenUsages.totalToken + mainAiTokenUsages.totalToken,
   }
 
-  console.log(totalAITokenDetails);
+  console.log("Total Comment Token Usages: ", totalAITokenDetails);
 
-  //db logic -- totalTokenCount += totalAITokenDetails.totalToken
+  await PageInfo.findOneAndUpdate(
+  { shopId },
+  {
+    $inc: {
+      "tokenUsage.inputToken": mainAiTokenUsages.inputToken,
+      "tokenUsage.outputToken": mainAiTokenUsages.outputToken,
+      "tokenUsage.totalToken": mainAiTokenUsages.totalToken,
+    },
+  },
+  { new: true, upsert: true }
+);
+
 
   userCommnetHistoryDoc.messages.push({
     commentId,

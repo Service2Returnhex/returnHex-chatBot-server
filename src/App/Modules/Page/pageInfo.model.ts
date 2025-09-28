@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+export interface ITokenUsage {
+  inputToken: number;
+  outputToken: number;
+  totalToken: number;
+}
 
 export interface IPageInfo {
   pageName: string;
@@ -15,13 +20,21 @@ export interface IPageInfo {
   cmntSystemPromt?: string;
   isVerified?: boolean;
   isStarted?: boolean;
+  tokenUsage: ITokenUsage;
   accessToken: string;
   verifyToken: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-
+const TokenUsageSchema = new mongoose.Schema<ITokenUsage>(
+  {
+    inputToken: { type: Number, required: true, default: 0 },
+    outputToken: { type: Number, required: true, default: 0 },
+    totalToken: { type: Number, required: true, default: 0 },
+  },
+  { timestamps: true }
+);
 
 const PageInfoSchema = new mongoose.Schema<IPageInfo>({
   pageName: { type: String, required: true },
@@ -47,6 +60,7 @@ const PageInfoSchema = new mongoose.Schema<IPageInfo>({
   },
   verifyToken: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
+  tokenUsage: { type: TokenUsageSchema, default: {}},
   updatedAt: { type: Date, default: Date.now },
 });
 
