@@ -9,7 +9,7 @@ import {
   LogService,
 } from "../../utility/Logger";
 import { sanitizeAndEnrichImages } from "../../utility/sanitizeAndEnrichImages";
-import { AIResponse } from "../../utility/summarizer";
+import { AIResponse, TtokenUsage } from "../../utility/summarizer";
 import { countWords } from "../../utility/wordCounter";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
@@ -128,7 +128,10 @@ const createAndTrainProduct = async (payload: IPost) => {
     ? averageEmbeddings(embeddingsList)
     : [];
 
-  let shorterInfo: string = "";
+  let shorterInfo: {
+    response: string | undefined;
+    tokenUsage: TtokenUsage;
+  };
   const captionsWordCount = enrichedImages.reduce((acc, img) => {
     return acc + countWords(img.caption || "");
   }, 0);
@@ -137,13 +140,26 @@ const createAndTrainProduct = async (payload: IPost) => {
   const totalWordCount = captionsWordCount + messageWordCount;
 
   if (totalWordCount > 30) {
-    shorterInfo = await AIResponse(
-      shopId,
-      payload.message as string,
-      "Summarize this message in under 50 tokens, keep all necessary info.",
-      50
-    ) || "";
-    payload.summarizedMsg = shorterInfo;
+    shorterInfo =
+      (await AIResponse(
+        payload.message as string,
+        "Summarize this message in under 50 tokens, keep all necessary info.",
+        50
+      )) || "";
+    payload.summarizedMsg = shorterInfo.response;
+
+    await PageInfo.updateOne(
+      { shopId },
+      {
+        $inc: {
+          "tokenUsage.inputToken": shorterInfo.tokenUsage.inputToken,
+          "tokenUsage.outputToken": shorterInfo.tokenUsage.outputToken,
+          "tokenUsage.totalToken": shorterInfo.tokenUsage.totalToken,
+        },
+      },
+    );
+
+    //token calculation
   }
 
   const createObj: any = {
@@ -164,11 +180,8 @@ const createAndTrainProduct = async (payload: IPost) => {
     { shopId, postId },
     { $set: createObj },
     {
-      upsert: true,
       new: true,
       runValidators: true,
-      setDefaultsOnInsert: true,
-      lean: true,
     }
   );
 
@@ -244,19 +257,31 @@ const updateProduct = async (
     throw new ApiError(httpStatus.NOT_FOUND, "Product Not Found!");
   }
 
-  let shorterInfo: string | undefined = "";
+  let shorterInfo: {
+    response: string | undefined;
+    tokenUsage: TtokenUsage;
+  };
   if (countWords(payload.message as string) > 30) {
     shorterInfo = await AIResponse(
-      pageId,
       payload.message as string,
       "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
       50
     );
-    payload.summarizedMsg = shorterInfo as string;
+    payload.summarizedMsg = shorterInfo.response;
+
+    await PageInfo.updateOne(
+      { shopId: pageId },
+      {
+        $inc: {
+          "tokenUsage.inputToken": shorterInfo.tokenUsage.inputToken,
+          "tokenUsage.outputToken": shorterInfo.tokenUsage.outputToken,
+          "tokenUsage.totalToken": shorterInfo.tokenUsage.totalToken,
+        },
+      },
+    );
   }
 
   const result = await Post.updateOne({ shopId: pageId, postId: id }, payload, {
-    new: true,
     runValidators: true,
   });
   // console.log("update result", result);
@@ -327,29 +352,35 @@ const toggleStatus = async (id: string) => {
 
 const createShop = async (payload: IPageInfo) => {
   const existing = await PageInfo.findOne({ shopId: payload.shopId });
-  console.log("payload", payload);
   if (existing) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.CONFLICT);
     throw new ApiError(httpStatus.CONFLICT, "Shop Already Exists!");
   }
 
-  const shopInfo = `PageName: ${payload.pageName}, Category: ${
-    payload.pageCategory ?? "N/A"
-  }, Address: ${payload?.address ?? "N/A"}
+  const shopInfo = `PageName: ${payload.pageName ? payload.pageName : "N/A"}, Category: ${
+    payload.pageCategory ? payload.pageCategory :  "N/A"
+  }, Address: ${payload?.address ? payload?.address : "N/A"}
     Phone: ${payload?.phone ? payload.phone : "N/A"}, Email: ${
     payload?.email ? payload.email : "N/A"
-  }, MoreInfo: ${payload?.moreInfo ?? "N/A"}
+  }, MoreInfo: ${payload?.moreInfo? payload?.moreInfo : "N/A"}
     `;
 
-  let shorterInfo: string | undefined = "";
+  let shorterInfo: {
+    response: string | undefined;
+    tokenUsage: TtokenUsage;
+  };
   if (countWords(shopInfo) > 30) {
     shorterInfo = await AIResponse(
-      payload.shopId,
       shopInfo,
       "make the info as shorter as possible(summarize) but don't left anything necessary in 100 tokens",
-      100
+      90
     );
-    payload.summary = shorterInfo as string;
+    payload.summary = shorterInfo.response as string;
+    payload.tokenUsage = {
+      inputToken: shorterInfo.tokenUsage.inputToken,
+      outputToken: shorterInfo.tokenUsage.outputToken,
+      totalToken: shorterInfo.tokenUsage.totalToken,
+    }
   }
 
   const result = await PageInfo.create(payload);
@@ -379,19 +410,37 @@ const updateShop = async (id: string, payload: Partial<IPageInfo>) => {
   }, MoreInfo: ${payload.moreInfo ? payload.moreInfo : isExists.moreInfo}
     `;
 
-  let shorterInfo: string | undefined = "";
+  let shorterInfo: {
+    response: string | undefined;
+    tokenUsage: TtokenUsage;
+  } = {
+    response: "",
+    tokenUsage: {
+      inputToken: 0, 
+      outputToken: 0,
+      totalToken: 0,
+    },
+  };
+  
   if (countWords(shopInfo) > 30) {
     shorterInfo = await AIResponse(
-      payload.shopId as string,
       shopInfo,
       "make the info as shorter as possible(summarize) but don't left anything necessary in 100 tokens",
       100
     );
-    payload.summary = shorterInfo as string;
+    payload.summary = shorterInfo.response as string;
   }
 
-  const result = await PageInfo.updateOne({ shopId: id }, payload, {
-    new: true,
+  const result = await PageInfo.updateOne({ shopId: id }, 
+    {
+      $set: payload,
+      $inc: {
+        "tokenUsage.inputToken": shorterInfo.tokenUsage.inputToken,
+        "tokenUsage.outputToken": shorterInfo.tokenUsage.outputToken,
+        "tokenUsage.totalToken": shorterInfo.tokenUsage.totalToken,
+      }
+    }
+  , {
     runValidators: true,
   });
 
@@ -427,7 +476,7 @@ const setDmPromt = async (id: string, dmSystemPromt: string) => {
   const result = await PageInfo.updateOne(
     { shopId: id },
     { dmSystemPromt },
-    { new: true, runValidators: true }
+    { runValidators: true }
   );
 
   if (!result.modifiedCount) {
@@ -448,7 +497,7 @@ const setCmntPromt = async (id: string, cmntSystemPromt: string) => {
   const result = await PageInfo.updateOne(
     { shopId: id },
     { cmntSystemPromt },
-    { new: true, runValidators: true }
+    { runValidators: true }
   );
   if (!result.modifiedCount) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_UPDATED);

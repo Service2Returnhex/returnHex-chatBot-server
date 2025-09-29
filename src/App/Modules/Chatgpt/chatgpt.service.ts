@@ -1,7 +1,12 @@
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index";
 import { botConfig } from "../../config/botConfig";
-import { AIResponseTokenUsages, messageSummarizer, messageSummarizerTokenUsages, TtokenUsage } from "../../utility/summarizer";
+import {
+  AIResponseTokenUsages,
+  messageSummarizer,
+  messageSummarizerTokenUsages,
+  TtokenUsage,
+} from "../../utility/summarizer";
 import { Order } from "../Page/order.model";
 import { makePromtComment, makePromtDM } from "../Page/page.promt";
 import { PageInfo } from "../Page/pageInfo.model";
@@ -15,7 +20,6 @@ const getResponseDM = async (
   prompt: string,
   action?: string
 ) => {
-
   if (!senderId) throw new Error("Missing senderId");
   if (!shopId) throw new Error("Missing shopId");
 
@@ -25,7 +29,10 @@ const getResponseDM = async (
     throw new Error("Shop not found");
   }
 
-  let userHistoryDoc = await ChatHistory.findOne({ userId: senderId, shopId }).exec();
+  let userHistoryDoc = await ChatHistory.findOne({
+    userId: senderId,
+    shopId,
+  }).exec();
   console.log("userHistoryDoc", userHistoryDoc);
   if (!userHistoryDoc) {
     userHistoryDoc = new ChatHistory({
@@ -38,21 +45,36 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId }).lean().exec();
 
-
   const getPromt = await makePromtDM(shop, products, senderId);
   try {
-    if (Array.isArray(userHistoryDoc.messages) && userHistoryDoc.messages.length > botConfig.converstionThreshold) {
+    if (
+      Array.isArray(userHistoryDoc.messages) &&
+      userHistoryDoc.messages.length > botConfig.converstionThreshold
+    ) {
       const total = userHistoryDoc.messages.length;
       const keep = botConfig.keepMessages || 10;
-      const oldMessages = userHistoryDoc.messages.slice(0, Math.max(0, total - keep));
+      const oldMessages = userHistoryDoc.messages.slice(
+        0,
+        Math.max(0, total - keep)
+      );
       const recentMessages = userHistoryDoc.messages.slice(-keep);
 
-      const summary = await messageSummarizer(shopId, oldMessages, userHistoryDoc?.summary || "", botConfig.messageSummarizerMaxToken);
-      userHistoryDoc.summary = typeof summary === "string" ? summary : (summary || "");
+      const summary = await messageSummarizer(
+        oldMessages,
+        userHistoryDoc?.summary || "",
+        botConfig.messageSummarizerMaxToken
+      );
+      userHistoryDoc.summary =
+        typeof summary.response === "string"
+          ? summary.response
+          : summary.response || "";
       userHistoryDoc.messages = recentMessages;
     }
   } catch (err) {
-    console.warn("getResponseDM: summarization failed:", (err as any)?.message || err);
+    console.warn(
+      "getResponseDM: summarization failed:",
+      (err as any)?.message || err
+    );
   }
 
   userHistoryDoc.messages.push({
@@ -62,12 +84,18 @@ const getResponseDM = async (
     updatedAt: new Date(),
   });
 
-  console.log("getDmPrompt", getPromt);
+  // console.log("getDmPrompt", getPromt);
 
   const messages = [] as { role: string; content: string }[];
   if (getPromt) messages.push({ role: "system", content: getPromt });
-  if (userHistoryDoc.summary && String(userHistoryDoc.summary).trim().length > 0) {
-    messages.push({ role: "system", content: "History summary: " + userHistoryDoc.summary });
+  if (
+    userHistoryDoc.summary &&
+    String(userHistoryDoc.summary).trim().length > 0
+  ) {
+    messages.push({
+      role: "system",
+      content: "History summary: " + userHistoryDoc.summary,
+    });
   }
   for (const m of userHistoryDoc.messages) {
     messages.push({ role: m.role, content: m.content });
@@ -77,20 +105,20 @@ const getResponseDM = async (
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  let reply = ""
-
-  console.log("Hello")
-
+  let reply = "";
   const completion = await openai.chat.completions.create({
     model: botConfig.mainAIModel,
-    messages: messages.map((m) => ({ role: m.role as any, content: m.content })),
+    messages: messages.map((m) => ({
+      role: m.role as any,
+      content: m.content,
+    })),
   });
   let mainAiTokenUsages: TtokenUsage = {
     inputToken: 0,
     outputToken: 0,
     totalToken: 0,
   };
-  reply = completion.choices[0].message.content || "Something went wrong"; 
+  reply = completion.choices[0].message.content || "Something went wrong";
   console.log(reply);
   try {
     const parsed = JSON.parse(reply);
@@ -110,9 +138,7 @@ const getResponseDM = async (
       await order.save();
 
       reply = `✅ Your order for "${parsed.productName}" has been confirmed!`;
-    }
-
-    else if (parsed?.action === "updateOrder") {
+    } else if (parsed?.action === "updateOrder") {
       const updated = await Order.findOneAndUpdate(
         { _id: parsed.orderId, userId: senderId, shopId },
         { $set: parsed.updates, updatedAt: new Date() },
@@ -124,13 +150,11 @@ const getResponseDM = async (
       } else {
         reply = `⚠️ Order not found or could not be updated.`;
       }
-    }
-
-    else if (parsed?.action === "getOrderStatus") {
+    } else if (parsed?.action === "getOrderStatus") {
       const order = await Order.findOne({
         _id: parsed.orderId,
         userId: senderId,
-        shopId
+        shopId,
       });
 
       if (order) {
@@ -138,9 +162,7 @@ const getResponseDM = async (
       } else {
         reply = `⚠️ Order not found. Please check your Order ID.`;
       }
-    }
-
-    else if (parsed?.action === "cancelOrder") {
+    } else if (parsed?.action === "cancelOrder") {
       const canceled = await Order.findOneAndUpdate(
         { _id: parsed.orderId, userId: senderId, shopId },
         { $set: { status: "cancelled", updatedAt: new Date() } },
@@ -157,31 +179,44 @@ const getResponseDM = async (
     console.log(error.message);
   }
 
-  mainAiTokenUsages.inputToken = completion.usage?.prompt_tokens || 0
-  mainAiTokenUsages.outputToken = completion.usage?.completion_tokens || 0
-  mainAiTokenUsages.totalToken = completion.usage?.total_tokens || 0
+  mainAiTokenUsages.inputToken = completion.usage?.prompt_tokens || 0;
+  mainAiTokenUsages.outputToken = completion.usage?.completion_tokens || 0;
+  mainAiTokenUsages.totalToken = completion.usage?.total_tokens || 0;
 
   const totalAITokenDetails: TtokenUsage = {
-    inputToken: messageSummarizerTokenUsages.inputToken + AIResponseTokenUsages.inputToken + mainAiTokenUsages.inputToken,
-    outputToken: messageSummarizerTokenUsages.outputToken + AIResponseTokenUsages.outputToken + mainAiTokenUsages.outputToken,
-    totalToken: messageSummarizerTokenUsages.totalToken + AIResponseTokenUsages.totalToken + mainAiTokenUsages.totalToken,
-  }
+    inputToken:
+      messageSummarizerTokenUsages.inputToken +
+      AIResponseTokenUsages.inputToken +
+      mainAiTokenUsages.inputToken,
+    outputToken:
+      messageSummarizerTokenUsages.outputToken +
+      AIResponseTokenUsages.outputToken +
+      mainAiTokenUsages.outputToken,
+    totalToken:
+      messageSummarizerTokenUsages.totalToken +
+      AIResponseTokenUsages.totalToken +
+      mainAiTokenUsages.totalToken,
+  };
 
   console.log("Total DM Ai Token Details: ", totalAITokenDetails);
 
-  await PageInfo.findOneAndUpdate(
-    {shopId},
+  await PageInfo.updateOne(
+    { shopId },
     {
       $inc: {
-        inputToken: mainAiTokenUsages.inputToken,
-        outputToken: mainAiTokenUsages.outputToken,
-        totalToken: mainAiTokenUsages.totalToken,
-      }
-    },
-    { new: true, upsert: true }
-  )
+        "tokenUsage.inputToken": mainAiTokenUsages.inputToken,
+        "tokenUsage.outputToken": mainAiTokenUsages.outputToken,
+        "tokenUsage.totalToken": mainAiTokenUsages.totalToken,
+      },
+    }
+  );
 
-  userHistoryDoc.messages.push({ role: "assistant", content: reply, createdAt: new Date(), updatedAt: new Date() });
+  userHistoryDoc.messages.push({
+    role: "assistant",
+    content: reply,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   await userHistoryDoc.save();
   return reply;
 };
@@ -198,7 +233,6 @@ export const getCommnetResponse = async (
   let userCommnetHistoryDoc = await CommentHistory.findOne({
     userId: commenterId,
     postId,
-
   });
 
   if (!userCommnetHistoryDoc)
@@ -217,18 +251,14 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPrompt = await makePromtComment(
-    shop,
-    products,
-    specificProduct,
-  );
+  const getPrompt = makePromtComment(shop, products, specificProduct);
 
   userCommnetHistoryDoc.messages.push({
     commentId,
     role: "user",
     content: message,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   });
 
   if (userCommnetHistoryDoc.messages.length > botConfig.commentThreshold) {
@@ -237,23 +267,26 @@ export const getCommnetResponse = async (
       userCommnetHistoryDoc.messages.length - botConfig.keepComments
     );
 
-    const recentComments = userCommnetHistoryDoc.messages.slice(-botConfig.keepComments);
+    const recentComments = userCommnetHistoryDoc.messages.slice(
+      -botConfig.keepComments
+    );
 
     const summary = await messageSummarizer(
-      shopId,
       oldComments,
       userCommnetHistoryDoc?.summary,
       botConfig.messageSummarizerMaxToken
     );
 
-    userCommnetHistoryDoc.summary = summary as string;
+    userCommnetHistoryDoc.summary = summary.response as string;
     userCommnetHistoryDoc.messages = recentComments;
   }
 
-
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
-    { role: "system", content: "History summary: " + userCommnetHistoryDoc.summary },
+    {
+      role: "system",
+      content: "History summary: " + userCommnetHistoryDoc.summary,
+    },
     ...userCommnetHistoryDoc.messages.map((m) => ({
       role: m.role,
       content: m.content,
@@ -276,38 +309,45 @@ export const getCommnetResponse = async (
     totalToken: 0,
   };
 
-  mainAiTokenUsages.inputToken = completion.usage?.prompt_tokens || 0
-  mainAiTokenUsages.outputToken = completion.usage?.completion_tokens || 0
-  mainAiTokenUsages.totalToken = completion.usage?.total_tokens || 0
+  mainAiTokenUsages.inputToken = completion.usage?.prompt_tokens || 0;
+  mainAiTokenUsages.outputToken = completion.usage?.completion_tokens || 0;
+  mainAiTokenUsages.totalToken = completion.usage?.total_tokens || 0;
 
   const totalAITokenDetails: TtokenUsage = {
-    inputToken: messageSummarizerTokenUsages.inputToken + AIResponseTokenUsages.inputToken + mainAiTokenUsages.inputToken,
-    outputToken: messageSummarizerTokenUsages.outputToken + AIResponseTokenUsages.outputToken + mainAiTokenUsages.outputToken,
-    totalToken: messageSummarizerTokenUsages.totalToken + AIResponseTokenUsages.totalToken + mainAiTokenUsages.totalToken,
-  }
+    inputToken:
+      messageSummarizerTokenUsages.inputToken +
+      AIResponseTokenUsages.inputToken +
+      mainAiTokenUsages.inputToken,
+    outputToken:
+      messageSummarizerTokenUsages.outputToken +
+      AIResponseTokenUsages.outputToken +
+      mainAiTokenUsages.outputToken,
+    totalToken:
+      messageSummarizerTokenUsages.totalToken +
+      AIResponseTokenUsages.totalToken +
+      mainAiTokenUsages.totalToken,
+  };
 
   console.log("Total Comment Token Usages: ", totalAITokenDetails);
 
-  await PageInfo.findOneAndUpdate(
-  { shopId },
-  {
-    $inc: {
-      "tokenUsage.inputToken": mainAiTokenUsages.inputToken,
-      "tokenUsage.outputToken": mainAiTokenUsages.outputToken,
-      "tokenUsage.totalToken": mainAiTokenUsages.totalToken,
-    },
-  },
-  { new: true, upsert: true }
-);
-
+  await PageInfo.updateOne(
+    { shopId },
+    {
+      $inc: {
+        "tokenUsage.inputToken": mainAiTokenUsages.inputToken,
+        "tokenUsage.outputToken": mainAiTokenUsages.outputToken,
+        "tokenUsage.totalToken": mainAiTokenUsages.totalToken,
+      },
+    }
+  );
 
   userCommnetHistoryDoc.messages.push({
     commentId,
     role: "assistant",
     content: reply,
-    createdAt: new Date(), updatedAt: new Date()
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
-
 
   await userCommnetHistoryDoc.save();
   return reply;

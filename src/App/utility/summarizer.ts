@@ -1,8 +1,6 @@
 import OpenAI from "openai";
 import { botConfig } from "../config/botConfig";
 import { IChatMessages } from "../Modules/Chatgpt/chat-history.model";
-import { PageInfo } from "../Modules/Page/pageInfo.model";
-import { Logger, LogPrefix, LogService } from "./Logger";
 
 
 export type TtokenUsage = {
@@ -20,7 +18,6 @@ export let messageSummarizerTokenUsages: TtokenUsage = {
 };
 
 export const messageSummarizer = async (
-  shopId: string,
   oldMessages: IChatMessages[],
   oldSummary: string,
   maxToken: number = botConfig.messageSummarizerMaxToken
@@ -50,20 +47,11 @@ export const messageSummarizer = async (
   messageSummarizerTokenUsages.outputToken = response.usage?.completion_tokens|| 0
   messageSummarizerTokenUsages.totalToken = response.usage?.total_tokens  || 0
 
-  await PageInfo.findOneAndUpdate(
-  { shopId },
-  {
-    $inc: {
-      "tokenUsage.inputToken": messageSummarizerTokenUsages.inputToken,
-      "tokenUsage.outputToken": messageSummarizerTokenUsages.outputToken,
-      "tokenUsage.totalToken": messageSummarizerTokenUsages.totalToken,
-    },
-  },
-  { new: true, upsert: true }
-);
 
-
-  return response.choices[0].message.content?.trim();
+  return {
+    response: response.choices[0].message.content?.trim(),
+    tokenUsage: messageSummarizerTokenUsages,
+  }
 };
 
 export let AIResponseTokenUsages: TtokenUsage = {
@@ -73,7 +61,6 @@ export let AIResponseTokenUsages: TtokenUsage = {
 };
 
 export const AIResponse = async (
-  shopId: string,
   promt: string,
   systemPromt: string,
   maxToken: number
@@ -91,23 +78,10 @@ export const AIResponse = async (
   AIResponseTokenUsages.outputToken = response.usage?.completion_tokens  || 0
   AIResponseTokenUsages.totalToken = response.usage?.total_tokens  || 0
 
-  try {
-    await PageInfo.findOneAndUpdate(
-  { shopId },
-  {
-    $inc: {
-      "tokenUsage.inputToken": AIResponseTokenUsages.inputToken,
-      "tokenUsage.outputToken": AIResponseTokenUsages.outputToken,
-      "tokenUsage.totalToken": AIResponseTokenUsages.totalToken,
-    },
-  },
-  { new: true, upsert: true }
-);
-
-  } catch (error: any) {
-    Logger(LogService.DB, LogPrefix.SHOP, "Shop Creating For the First Time!!")
-  }
-
-  return response.choices[0].message.content?.trim();
+  
+  return {
+    response: response.choices[0].message.content?.trim(),
+    tokenUsage: AIResponseTokenUsages,
+  };
 }
 
