@@ -83,7 +83,6 @@ const createProduct = async (payload: any) => {
 
   const images = sanitizeImages(payload.images, payload.full_picture);
   // const aggregatedEmbedding=sanitizeEmbedding(payload?.aggregatedEmbedding)
-  console.log("image", images);
   const aggregatedEmbedding = Array.isArray(payload.aggregatedEmbedding)
     ? payload.aggregatedEmbedding.map(Number).filter((n) => !Number.isNaN(n))
     : [];
@@ -162,11 +161,6 @@ const createAndTrainProduct = async (payload: any) => {
   // 4) safe subattachment access
   const firstSub = attachments[0]?.subattachments?.data?.[0] ?? null;
 
-  // console.log("attachments (length):", attachments.length);
-  // console.log(
-  //   "first attachment (pretty):",
-  //   JSON.stringify(attachments[0] || null, null, 2)
-  // );
   console.log(
     "first subattachment (pretty):",
     JSON.stringify(firstSub, null, 2)
@@ -239,16 +233,6 @@ const createAndTrainProduct = async (payload: any) => {
             if (matched) caption = urlToCaption.get(matched) || null;
           }
 
-          // try to discover photoId by scanning imagesDescription entries
-          // let photoId: string | null = null;
-          // const cd = imagesDescription.find(
-          //   (d) =>
-          //     d.url === url ||
-          //     d.url?.includes(url) ||
-          //     (d.photoId && url.includes(d.photoId))
-          // );
-          // console.log("photo id ", cd?.photoId);
-          // if (cd?.photoId) photoId = String(cd.photoId);
 
           let emb: number[] | null = null;
           let phash = "";
@@ -444,10 +428,9 @@ const getShopById = async (id: string) => {
   return result;
 };
 
-const toggleStatus = async (id: string) => {
+const togglePageStatus = async (id: string) => {
   const page = await PageInfo.findById(id);
   if (!page) throw new ApiError(httpStatus.NOT_FOUND, "Page not found");
-
   page.isStarted = !page.isStarted;
   await page.save();
   return page;
@@ -619,6 +602,15 @@ const getOrders = async (pageId: string) => {
   return result;
 };
 
+const updateOrderStatus = async (id: string, newStatus: "pending" | "confirmed" | "delivered" | "cancelled") => {
+  const order = await Order.findById(id);
+  if (!order) throw new ApiError(httpStatus.NOT_FOUND, "Order not found");
+
+  order.status = newStatus; // directly set new status
+  await order.save();
+  return order;
+};
+
 export const PageService = {
   getProducts,
   getTraindProducts,
@@ -632,13 +624,14 @@ export const PageService = {
   getShopById,
   createShop,
   getShopByOwnerAll,
-  toggleStatus,
+  togglePageStatus,
   updateShop,
   deleteShop,
   setDmPromt,
   setCmntPromt,
 
   getOrders,
+  updateOrderStatus,
 
   getDmMessageCount,
   getCmtMessageCount,
