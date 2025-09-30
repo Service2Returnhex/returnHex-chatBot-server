@@ -14,7 +14,7 @@ enum ActionType {
 
 // create Post
 export const handleAddFeed = async (value: any, pageId: string) => {
-  console.log("value", value);
+  // console.log("value", value);
   try {
     const shop = await PageInfo.findOne({ shopId: pageId });
     if (!shop) {
@@ -55,11 +55,7 @@ export const handleAddFeed = async (value: any, pageId: string) => {
     // 4) safe subattachment access
     const firstSub = attachments[0]?.subattachments?.data?.[0] ?? null;
 
-    // console.log("attachments (length):", attachments.length);
-    // console.log(
-    //   "first attachment (pretty):",
-    //   JSON.stringify(attachments[0] || null, null, 2)
-    // );
+
     console.log(
       "first subattachment (pretty):",
       JSON.stringify(firstSub, null, 2)
@@ -131,17 +127,6 @@ export const handleAddFeed = async (value: any, pageId: string) => {
               });
               if (matched) caption = urlToCaption.get(matched) || null;
             }
-
-            // try to discover photoId by scanning imagesDescription entries
-            // let photoId: string | null = null;
-            // const cd = imagesDescription.find(
-            //   (d) =>
-            //     d.url === url ||
-            //     d.url?.includes(url) ||
-            //     (d.photoId && url.includes(d.photoId))
-            // );
-            // console.log("photo id ", cd?.photoId);
-            // if (cd?.photoId) photoId = String(cd.photoId);
 
             let emb: number[] | null = null;
             let phash = "";

@@ -21,8 +21,13 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPrompt = await makePromtDM(shop, products, userHistoryDoc.messages);
-  userHistoryDoc.messages.push({ role: "user", content: prompt });
+  const getPrompt = await makePromtDM(shop, products, senderId);
+  userHistoryDoc.messages.push({
+    role: "user",
+    content: prompt,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
 
   const cleanedMessages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
@@ -38,7 +43,10 @@ const getResponseDM = async (
   });
   const reply = completion.choices[0]?.message?.content || "";
 
-  userHistoryDoc.messages.push({ role: "assistant", content: reply });
+  userHistoryDoc.messages.push({
+    role: "assistant", content: reply, createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   await userHistoryDoc.save();
   console.log("coming form groq");
   return reply;
@@ -77,12 +85,13 @@ export const getCommnetResponse = async (
     shop,
     products,
     specificProduct,
-    userCommnetHistoryDoc.messages
   );
   userCommnetHistoryDoc.messages.push({
     commentId,
     role: "user",
     content: message,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
   const cleanedMessages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
@@ -101,6 +110,8 @@ export const getCommnetResponse = async (
     commentId,
     role: "assistant",
     content: reply,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
   await userCommnetHistoryDoc.save();
   return reply;

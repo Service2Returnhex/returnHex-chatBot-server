@@ -61,7 +61,7 @@ const updateProduct: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
     const { shopId } = req.body;
-    const result = await PageService.updateProduct(shopId, id, req.body);
+    const result = await PageService.updateProduct(req.body);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,

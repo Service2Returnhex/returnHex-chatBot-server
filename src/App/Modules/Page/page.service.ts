@@ -9,13 +9,13 @@ import {
   LogPrefix,
   LogService,
 } from "../../utility/Logger";
-import { AIResponse } from "../../utility/summarizer";
+import { AIResponse, TtokenUsage } from "../../utility/summarizer";
 import { countWords } from "../../utility/wordCounter";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { Order } from "./order.model";
 import { IPageInfo, PageInfo } from "./pageInfo.model";
-import { IPost, Post } from "./post.mode";
+import { Post } from "./post.mode";
 
 //Product services
 const getProducts = async (pageId: string) => {
@@ -69,10 +69,10 @@ function sanitizeImages(maybe: any, fallbackFullPicture?: string) {
 }
 
 const createProduct = async (payload: any) => {
-  console.log(
-    "CREATE_PRODUCT incoming payload:",
-    JSON.stringify(payload, null, 2)
-  );
+  // console.log(
+  //   "CREATE_PRODUCT incoming payload:",
+  //   JSON.stringify(payload, null, 2)
+  // );
   if (!payload?.shopId || !payload?.postId)
     throw new ApiError(httpStatus.BAD_REQUEST, "Missing shopId or postId");
   const findProduct = await Post.findOne({
@@ -84,7 +84,7 @@ const createProduct = async (payload: any) => {
   const images = sanitizeImages(payload.images, payload.full_picture);
   // const aggregatedEmbedding=sanitizeEmbedding(payload?.aggregatedEmbedding)
   const aggregatedEmbedding = Array.isArray(payload.aggregatedEmbedding)
-    ? payload.aggregatedEmbedding.map(Number).filter((n) => !Number.isNaN(n))
+    ? payload.aggregatedEmbedding.map(Number).filter((n: number) => !Number.isNaN(n))
     : [];
   const message = payload.message ? String(payload.message) : "";
   let summarizedMsg = payload.summarizedMsg
@@ -95,7 +95,7 @@ const createProduct = async (payload: any) => {
     if ((message || "").split(/\s+/).filter(Boolean).length > 30) {
       try {
         const short = await AIResponse(
-          payload?.shopId,
+          // payload?.shopId,
           message || "",
           "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
           50
@@ -131,7 +131,7 @@ const createAndTrainProduct = async (payload: any) => {
   if (mongoose.connection.readyState !== 1) {
     throw new ApiError(httpStatus.SERVICE_UNAVAILABLE, "MongoDB not connected");
   }
-  console.log("payload", payload);
+  // console.log("payload", payload);
   if (!payload.shopId || !payload.postId)
     throw new ApiError(httpStatus.BAD_REQUEST, "Missing shopId or postId");
   const shopId = payload.shopId;
@@ -142,8 +142,8 @@ const createAndTrainProduct = async (payload: any) => {
   }).lean();
   if (findProduct) return "Product Already Created";
 
-  console.log("TRAIN_PRODUCT incoming payload:", JSON.stringify(payload || {}, null, 2));
-  console.log("trai product image", payload.images);
+  // console.log("TRAIN_PRODUCT incoming payload:", JSON.stringify(payload || {}, null, 2));
+  // console.log("trai product image", payload.images);
 
   const page = await PageInfo.findOne({ shopId }).lean().exec();
   const pageAccessToken = page?.accessToken || undefined;
@@ -159,12 +159,12 @@ const createAndTrainProduct = async (payload: any) => {
       : [];
 
   // 4) safe subattachment access
-  const firstSub = attachments[0]?.subattachments?.data?.[0] ?? null;
+  // const firstSub = attachments[0]?.subattachments?.data?.[0] ?? null;
 
-  console.log(
-    "first subattachment (pretty):",
-    JSON.stringify(firstSub, null, 2)
-  );
+  // console.log(
+  //   "first subattachment (pretty):",
+  //   JSON.stringify(firstSub, null, 2)
+  // );
   // 2) extract image captions from Graph response (if available)
 
   const imagesDescription = postData
@@ -240,7 +240,6 @@ const createAndTrainProduct = async (payload: any) => {
             // download image into buffer (pass pageToken if needed)
             const buf = await downloadImageBuffer(url, pageAccessToken ?? "");
             phash = await computeHashFromBuffer(buf);
-            // console.log("buf", buf);
 
             // optional OCR (non-fatal)
             let ocrText = "";
@@ -289,7 +288,7 @@ const createAndTrainProduct = async (payload: any) => {
 
     const results = await Promise.all(promises);
     imagesProcessed.push(...results);
-    console.log("imagesProcessed", imagesProcessed);
+    // console.log("imagesProcessed", imagesProcessed);
   }
 
   // 5) aggregated embedding (mean of non-null embeddings)
@@ -302,6 +301,43 @@ const createAndTrainProduct = async (payload: any) => {
     : [];
 
   // 6) prepare payload & upsert to DB
+  console.log("token check");
+
+  let shorterInfo: {
+    response: string | undefined;
+    tokenUsage: TtokenUsage;
+  };
+  const captionsWordCount = imagesProcessed.reduce((acc, img) => {
+    return acc + countWords(img.caption || "");
+  }, 0);
+
+  const messageWordCount = countWords(payload.message || "");
+  const totalWordCount = captionsWordCount + messageWordCount;
+
+  if (totalWordCount > 30) {
+    shorterInfo =
+      (await AIResponse(
+        payload.message as string,
+        "Summarize this message in under 50 tokens, keep all necessary info.",
+        50
+      )) || "";
+    payload.summarizedMsg = shorterInfo.response;
+
+    console.log("shorterInfo", shorterInfo);
+    await PageInfo.updateOne(
+      { shopId },
+      {
+        $inc: {
+          "tokenUsage.inputToken": shorterInfo.tokenUsage.inputToken,
+          "tokenUsage.outputToken": shorterInfo.tokenUsage.outputToken,
+          "tokenUsage.totalToken": shorterInfo.tokenUsage.totalToken,
+        },
+      },
+    );
+
+    //token calculation
+  }
+
   const payload2: any = {
     postId,
     shopId,
@@ -315,10 +351,10 @@ const createAndTrainProduct = async (payload: any) => {
       phash: it.phash,
       url: it.url,
       caption: it.caption,
-      // don't store raw embeddings per-image to DB here unless you want them:
       embedding: it.embedding ?? undefined,
     })),
   };
+
 
   if (aggregatedEmbedding.length)
     payload2.aggregatedEmbedding = aggregatedEmbedding;
@@ -336,7 +372,7 @@ const createAndTrainProduct = async (payload: any) => {
 
     );
 
-    console.log("payload train post ", payload);
+    // console.log("payload train post ", payload);
     // console.log("payload train post ", payload.rawPost.attachments);
   }
 
@@ -345,30 +381,87 @@ const createAndTrainProduct = async (payload: any) => {
 
 
 const updateProduct = async (
-  pageId: string,
-  id: string,
-  payload: Partial<IPost>
+  // pageId: string,
+  // id: string,
+  payload: any
 ) => {
-  const existing = await Post.findOne({ shopId: pageId, postId: id });
+  if (!payload?.shopId || !payload?.postId)
+    throw new ApiError(httpStatus.BAD_REQUEST, "Missing shopId or postId");
+  const existing = await Post.findOne({
+    shopId: payload.shopId,
+    postId: payload.postId,
+  }).lean();
+  // const existing = await Post.findOne({ shopId: pageId, postId: id });
   // console.log("update existing", existing);
   if (!existing) {
     Logger(LogService.DB, LogPrefix.PRODUCT, LogMessage.NOT_FOUND);
     throw new ApiError(httpStatus.NOT_FOUND, "Product Not Found!");
   }
 
-  let shorterInfo: string | undefined = "";
+  const images = sanitizeImages(payload.images, payload.full_picture);
+  // const aggregatedEmbedding=sanitizeEmbedding(payload?.aggregatedEmbedding)
+  const aggregatedEmbedding = Array.isArray(payload.aggregatedEmbedding)
+    ? payload.aggregatedEmbedding.map(Number).filter((n: number) => !Number.isNaN(n))
+    : [];
+  const message = payload.message ? String(payload.message) : "";
+  let summarizedMsg = payload.summarizedMsg
+    ? String(payload.summarizedMsg)
+    : "";
+
+  if (!summarizedMsg || summarizedMsg.trim().length === 0) {
+    if ((message || "").split(/\s+/).filter(Boolean).length > 30) {
+      try {
+        const short = await AIResponse(
+          // payload?.shopId,
+          message || "",
+          "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
+          50
+        );
+        summarizedMsg = String(short || "").trim();
+      } catch (e) {
+        summarizedMsg = message.slice(0, 300);
+      }
+    } else summarizedMsg = message.slice(0, 300);
+  }
+
+  const updateObj: any = {
+    shopId: payload.shopId,
+    postId: payload.postId,
+    message,
+    summarizedMsg,
+    full_picture: payload.full_picture || (images[0] && images[0].url) || "",
+    images,
+    aggregatedEmbedding,
+    isTrained: true,
+    createdAt: payload.createdAt ? new Date(payload.createdAt) : new Date(),
+  };
+
+
+  let shorterInfo: {
+    response: string | undefined;
+    tokenUsage: TtokenUsage;
+  };
   if (countWords(payload.message as string) > 30) {
     shorterInfo = await AIResponse(
-      pageId,
       payload.message as string,
       "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
       50
     );
-    payload.summarizedMsg = shorterInfo as string;
+    payload.summarizedMsg = shorterInfo.response;
+
+    await PageInfo.updateOne(
+      { shopId: payload.shopId },
+      {
+        $inc: {
+          "tokenUsage.inputToken": shorterInfo.tokenUsage.inputToken,
+          "tokenUsage.outputToken": shorterInfo.tokenUsage.outputToken,
+          "tokenUsage.totalToken": shorterInfo.tokenUsage.totalToken,
+        },
+      },
+    );
   }
 
-  const result = await Post.updateOne({ shopId: pageId, postId: id }, payload, {
-    new: true,
+  const result = await Post.updateOne({ shopId: payload.shopId, postId: payload.postId }, updateObj, {
     runValidators: true,
   });
   // console.log("update result", result);
@@ -438,27 +531,33 @@ const togglePageStatus = async (id: string) => {
 
 const createShop = async (payload: IPageInfo) => {
   const existing = await PageInfo.findOne({ shopId: payload.shopId });
-  console.log("payload", payload);
   if (existing) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.CONFLICT);
     throw new ApiError(httpStatus.CONFLICT, "Shop Already Exists!");
   }
 
-  const shopInfo = `PageName: ${payload.pageName}, Category: ${payload.pageCategory ?? "N/A"
-    }, Address: ${payload?.address ?? "N/A"}
-    Phone: ${payload?.phone ? payload.phone : "N/A"}, Email: ${payload?.email ? payload.email : "N/A"
-    }, MoreInfo: ${payload?.moreInfo ?? "N/A"}
-    `;
+  const shopInfo = `PageName: ${payload.pageName ? payload.pageName : "N/A"}, Category: ${payload.pageCategory ? payload.pageCategory : "N/A"
+    }, Address: ${payload?.address ? payload?.address : "N/A"}
+  Phone: ${payload?.phone ? payload.phone : "N/A"}, Email: ${payload?.email ? payload.email : "N/A"
+    }, MoreInfo: ${payload?.moreInfo ? payload?.moreInfo : "N/A"}
+  `;
 
-  let shorterInfo: string | undefined = "";
+  let shorterInfo: {
+    response: string | undefined;
+    tokenUsage: TtokenUsage;
+  };
   if (countWords(shopInfo) > 30) {
     shorterInfo = await AIResponse(
-      payload.shopId,
       shopInfo,
       "make the info as shorter as possible(summarize) but don't left anything necessary in 100 tokens",
-      100
+      90
     );
-    payload.summary = shorterInfo as string;
+    payload.summary = shorterInfo.response as string;
+    payload.tokenUsage = {
+      inputToken: shorterInfo.tokenUsage.inputToken,
+      outputToken: shorterInfo.tokenUsage.outputToken,
+      totalToken: shorterInfo.tokenUsage.totalToken,
+    }
   }
 
   const result = await PageInfo.create(payload);
@@ -481,25 +580,43 @@ const updateShop = async (id: string, payload: Partial<IPageInfo>) => {
   const shopInfo = `PageName: ${payload.pageName ? payload.pageName : isExists.pageName
     }, Category: ${payload.pageCategory ? payload.pageCategory : isExists.pageCategory
     }, Address: ${payload.address ? payload.address : isExists.address}
-    Phone: ${payload.phone ? payload.phone : isExists.phone}, Email: ${payload.email ? payload.email : isExists.email
+  Phone: ${payload.phone ? payload.phone : isExists.phone}, Email: ${payload.email ? payload.email : isExists.email
     }, MoreInfo: ${payload.moreInfo ? payload.moreInfo : isExists.moreInfo}
-    `;
+  `;
 
-  let shorterInfo: string | undefined = "";
+  let shorterInfo: {
+    response: string | undefined;
+    tokenUsage: TtokenUsage;
+  } = {
+    response: "",
+    tokenUsage: {
+      inputToken: 0,
+      outputToken: 0,
+      totalToken: 0,
+    },
+  };
+
   if (countWords(shopInfo) > 30) {
     shorterInfo = await AIResponse(
-      payload.shopId as string,
       shopInfo,
       "make the info as shorter as possible(summarize) but don't left anything necessary in 100 tokens",
       100
     );
-    payload.summary = shorterInfo as string;
+    payload.summary = shorterInfo.response as string;
   }
 
-  const result = await PageInfo.updateOne({ shopId: id }, payload, {
-    new: true,
-    runValidators: true,
-  });
+  const result = await PageInfo.updateOne({ shopId: id },
+    {
+      $set: payload,
+      $inc: {
+        "tokenUsage.inputToken": shorterInfo.tokenUsage.inputToken,
+        "tokenUsage.outputToken": shorterInfo.tokenUsage.outputToken,
+        "tokenUsage.totalToken": shorterInfo.tokenUsage.totalToken,
+      }
+    }
+    , {
+      runValidators: true,
+    });
 
   if (!result.modifiedCount) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_UPDATED);
@@ -533,7 +650,7 @@ const setDmPromt = async (id: string, dmSystemPromt: string) => {
   const result = await PageInfo.updateOne(
     { shopId: id },
     { dmSystemPromt },
-    { new: true, runValidators: true }
+    { runValidators: true }
   );
 
   if (!result.modifiedCount) {
@@ -554,7 +671,7 @@ const setCmntPromt = async (id: string, cmntSystemPromt: string) => {
   const result = await PageInfo.updateOne(
     { shopId: id },
     { cmntSystemPromt },
-    { new: true, runValidators: true }
+    { runValidators: true }
   );
   if (!result.modifiedCount) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_UPDATED);

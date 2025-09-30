@@ -24,8 +24,11 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPrompt =await makePromtDM(shop, products, userHistoryDoc.messages);
-  userHistoryDoc.messages.push({ role: "user", content: prompt });
+  const getPrompt = await makePromtDM(shop, products, senderId);
+  userHistoryDoc.messages.push({
+    role: "user", content: prompt, createdAt: new Date(),
+    updatedAt: new Date(),
+  });
 
 
   const messages: ChatCompletionMessageParam[] = [
@@ -62,7 +65,10 @@ const getResponseDM = async (
     completion.choices?.[0]?.message?.content ||
     "Sorry, something went wrong. Please try again later.";
 
-  userHistoryDoc.messages.push({ role: "assistant", content: reply });
+  userHistoryDoc.messages.push({
+    role: "assistant", content: reply, createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   await userHistoryDoc.save();
   return reply;
 };
@@ -90,7 +96,7 @@ export const getCommnetResponse = async (
       messages: [],
     });
 
- 
+
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) {
@@ -100,11 +106,13 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPromt =await makePromtComment(shop, products, specificProduct, userCommnetHistoryDoc.messages);
-   userCommnetHistoryDoc.messages.push({
+  const getPromt = await makePromtComment(shop, products, specificProduct);
+  userCommnetHistoryDoc.messages.push({
     commentId,
     role: "user",
     content: message,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
@@ -134,6 +142,8 @@ export const getCommnetResponse = async (
     commentId,
     role: "assistant",
     content: reply,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
   await userCommnetHistoryDoc.save();
   return reply;
