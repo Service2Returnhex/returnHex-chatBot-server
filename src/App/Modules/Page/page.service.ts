@@ -571,6 +571,7 @@ const createShop = async (payload: IPageInfo) => {
 };
 
 const updateShop = async (id: string, payload: Partial<IPageInfo>) => {
+  console.log("shop id", id);
   const isExists = await PageInfo.findOne({ shopId: id });
   if (!isExists) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_FOUND);
