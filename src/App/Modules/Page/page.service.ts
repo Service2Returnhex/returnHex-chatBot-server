@@ -85,7 +85,7 @@ const createProduct = async (payload: any) => {
   // const aggregatedEmbedding=sanitizeEmbedding(payload?.aggregatedEmbedding)
   console.log("image", images);
   const aggregatedEmbedding = Array.isArray(payload.aggregatedEmbedding)
-    ? payload.aggregatedEmbedding.map(Number).filter((n) => !Number.isNaN(n))
+    ? payload.aggregatedEmbedding.map(Number).filter((n:any) => !Number.isNaN(n))
     : [];
   const message = payload.message ? String(payload.message) : "";
   let summarizedMsg = payload.summarizedMsg
@@ -384,7 +384,6 @@ const updateProduct = async (
   }
 
   const result = await Post.updateOne({ shopId: pageId, postId: id }, payload, {
-    new: true,
     runValidators: true,
   });
   // console.log("update result", result);
@@ -514,7 +513,7 @@ const updateShop = async (id: string, payload: Partial<IPageInfo>) => {
   }
 
   const result = await PageInfo.updateOne({ shopId: id }, payload, {
-    new: true,
+    
     runValidators: true,
   });
 
@@ -550,7 +549,7 @@ const setDmPromt = async (id: string, dmSystemPromt: string) => {
   const result = await PageInfo.updateOne(
     { shopId: id },
     { dmSystemPromt },
-    { new: true, runValidators: true }
+    { runValidators: true }
   );
 
   if (!result.modifiedCount) {
@@ -571,7 +570,7 @@ const setCmntPromt = async (id: string, cmntSystemPromt: string) => {
   const result = await PageInfo.updateOne(
     { shopId: id },
     { cmntSystemPromt },
-    { new: true, runValidators: true }
+    { runValidators: true }
   );
   if (!result.modifiedCount) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_UPDATED);
