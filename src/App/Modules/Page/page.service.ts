@@ -1,6 +1,7 @@
 import { AxiosError } from "axios";
 import httpStatus from "http-status";
 import mongoose from "mongoose";
+import { sendMessage } from "../../api/facebook.api";
 import ApiError from "../../utility/AppError";
 import { averageEmbeddings, computeHashFromBuffer, createTextEmbedding, downloadImageBuffer, extractImageCaptions, extractImageUrlsFromTrainPost, extractTextFromImageBuffer } from "../../utility/image.embedding";
 import {
@@ -9,6 +10,7 @@ import {
   LogPrefix,
   LogService,
 } from "../../utility/Logger";
+import { buildOrderStatusMessage } from "../../utility/orderStatusMessage";
 import { AIResponse, TtokenUsage } from "../../utility/summarizer";
 import { countWords } from "../../utility/wordCounter";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
@@ -729,6 +731,43 @@ const updateOrderStatus = async (id: string, newStatus: "pending" | "confirmed" 
   return order;
 };
 
+
+const followUpDmMsg = async (orderId: string, newStatus: "pending" | "confirmed" | "delivered" | "cancelled") => {
+  // 1. fetch order
+  const order = await Order.findById(orderId);
+  if (!order) throw new ApiError(httpStatus.NOT_FOUND, "Order not found");
+
+  // 2. update status
+  order.status = newStatus;
+  await order.save();
+  console.log("order", order);
+
+  // 3. try notify customer (fire-and-forget style but awaited in try/catch so we can log failures)
+  (async () => {
+    try {
+      // find page token by shopId
+      const page = await PageInfo.findOne({ shopId: order.shopId }).lean().exec();
+      const pageToken = page?.accessToken ?? null;
+      const psid = order.userId; // your stored senderId / PSID
+
+      if (!pageToken || !psid) return;
+
+      // build message text (customize as you like)
+      const text = buildOrderStatusMessage(order, newStatus);
+
+      // send
+      await sendMessage(psid, order?.shopId, text);
+    } catch (err) {
+      // do not fail the status update if notification fails; just log
+      console.warn("Failed to send order status notification:", err);
+    }
+  })();
+
+  return order;
+}
+
+
+
 export const PageService = {
   getProducts,
   getTraindProducts,
@@ -750,6 +789,7 @@ export const PageService = {
 
   getOrders,
   updateOrderStatus,
+  followUpDmMsg,
 
   getDmMessageCount,
   getCmtMessageCount,

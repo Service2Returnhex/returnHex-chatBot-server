@@ -29,5 +29,5 @@ router.get("/shop/:shopId/token-count", PageController.getUsageByShop);
 router.get("/shop/:shopId/msg-counts", PageController.getMsgCounts);
 
 router.get("/shop/order/:shopId", PageController.getOrders);
-router.patch("/shop/order/:id", auth("user"), PageController.updateOrderStatus);
+router.patch("/shop/order/:id", PageController.followUpDm);
 export const PageRouter = router;

@@ -119,7 +119,8 @@ const getResponseDM = async (
     totalToken: 0,
   };
   reply = completion.choices[0].message.content || "Something went wrong";
-  console.log(reply);
+  console.log("reply", reply);
+  console.log("shop access token", shop.accessToken);
   try {
     const parsed = JSON.parse(reply);
 
@@ -220,6 +221,8 @@ const getResponseDM = async (
   await userHistoryDoc.save();
   return reply;
 };
+
+
 
 export const getCommnetResponse = async (
   commenterId: string,

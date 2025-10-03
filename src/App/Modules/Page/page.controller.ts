@@ -366,6 +366,23 @@ const updateOrderStatus: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+const followUpDm: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    console.log("params", req.params);
+    const { status } = req.body;
+    if (!status) throw new Error("Missing status");
+    console.log("req body", req.body);
+    const result = await PageService.followUpDmMsg(id, status);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "DM Follow Up Msg Send Successfully",
+      data: result,
+    });
+  }
+);
+
 export const PageController = {
   getProducts,
   getTrainedProducts,
@@ -386,6 +403,7 @@ export const PageController = {
 
   getOrders,
   updateOrderStatus,
+  followUpDm,
 
   trainProductHandler,
   getDmMessageCount,
