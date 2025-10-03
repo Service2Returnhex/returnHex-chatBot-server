@@ -377,8 +377,8 @@ export function isAskingForImage(rawMsg: string | undefined | null): boolean {
 
   // সহজ কিওয়ার্ডগুলো — বাংলা ও ইংরেজি মিশানো
   const keywords = [
-    "ছবি", "ইমেজ", "দেখ", "দেখাও", "দেখতে চাই", "দেখান", "দেও", "দাও", "দেন",
-    "show image", "dau", "cobi", "show", "show photo", "picture", "photo", "open image", "open photo", "den", "patau"
+    "ছবি", "ইমেজ", "দেখ", "ছবি দেখাও", "দেখতে চাই", "ছবি দেখান", "ছবি দেও", "ছবি দাও", "ছবি দেন",
+    "show image", "cobi dau","image dau", "cobi", "show", "show photo", "picture", "photo", "open image", "open photo", "cobi den", "image den", "cobi patau","image patau",
   ];
 
   for (const k of keywords) {

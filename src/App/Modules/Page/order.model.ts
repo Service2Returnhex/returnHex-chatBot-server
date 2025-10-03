@@ -9,7 +9,7 @@ export interface IOrder {
   address: string;
   paymentMethod: string;
   contact: string;
-  status: "pending" |  "confirmed" | "delivered" | "cancelled";
+  status: "pending" | "confirmed" | "delivered" | "cancelled";
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -61,7 +61,7 @@ const updateProduct: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
     const { shopId } = req.body;
-    const result = await PageService.updateProduct(shopId, id, req.body);
+    const result = await PageService.updateProduct(req.body);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
@@ -97,9 +97,9 @@ const getShops: RequestHandler = catchAsync(
   }
 );
 
-const toggleStatus: RequestHandler = catchAsync(async (req, res) => {
+const togglePageStatus: RequestHandler = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await PageService.toggleStatus(id);
+  const result = await PageService.togglePageStatus(id);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -343,12 +343,41 @@ const getMsgCounts = catchAsync(
 
 const getOrders: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const { shopId } = req.params; 
+    const { shopId } = req.params;
     const result = await PageService.getOrders(shopId as string);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: "Order retrieved successfully",
+      data: result,
+    });
+  }
+);
+
+const updateOrderStatus: RequestHandler = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const result = await PageService.updateOrderStatus(id, status);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Page status updated successfully",
+    data: result,
+  });
+});
+
+const followUpDm: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    console.log("params", req.params);
+    const { status } = req.body;
+    if (!status) throw new Error("Missing status");
+    console.log("req body", req.body);
+    const result = await PageService.followUpDmMsg(id, status);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "DM Follow Up Msg Send Successfully",
       data: result,
     });
   }
@@ -366,13 +395,15 @@ export const PageController = {
   getShopById,
   createShop,
   getPagesByOwner,
-  toggleStatus,
+  togglePageStatus,
   updateShop,
   deleteShop,
   setDmPromt,
   setCmntPromt,
 
   getOrders,
+  updateOrderStatus,
+  followUpDm,
 
   trainProductHandler,
   getDmMessageCount,

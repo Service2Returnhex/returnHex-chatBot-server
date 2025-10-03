@@ -14,7 +14,7 @@ router.delete("/product/:id", PageController.deleteProduct)
 router.get("/shop", auth(USER_ROLE.admin, USER_ROLE.user), PageController.getShops);
 router.get("/shop/:id", PageController.getShopById);
 router.get("/shop/owner/:ownerId", PageController.getPagesByOwner);
-router.patch("/:id/toggle-status", auth(USER_ROLE.admin, USER_ROLE.user), PageController.toggleStatus);
+router.patch("/:id/toggle-status", auth(USER_ROLE.admin, USER_ROLE.user), PageController.togglePageStatus);
 router.post("/shop", PageController.createShop);
 router.patch("/shop/:id", PageController.updateShop);
 router.delete("/shop/:id", PageController.deleteShop);
@@ -29,4 +29,5 @@ router.get("/shop/:shopId/token-count", PageController.getUsageByShop);
 router.get("/shop/:shopId/msg-counts", PageController.getMsgCounts);
 
 router.get("/shop/order/:shopId", PageController.getOrders);
+router.patch("/shop/order/:id", PageController.followUpDm);
 export const PageRouter = router;
