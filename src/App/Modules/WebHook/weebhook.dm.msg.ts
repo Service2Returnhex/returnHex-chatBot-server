@@ -4,6 +4,10 @@ import { AIMethod, getAiReplySimple } from "../../utility/aiSimple";
 import { cleanText, cleanTokens, computeHashFromBuffer, cosineSimilarity, createTextEmbedding, downloadImageBuffer, extractTextFromImageBuffer, hammingDistanceGeneric, isAskingForImage, jaccard, longestConsecutiveMatchRatio, sendImageAttachment, sendTyping, UI_BLACKLIST } from "../../utility/image.embedding";
 import { PageInfo } from "../Page/pageInfo.model";
 import { Post } from "../Page/post.mode";
+import { downloadToTempFile, readAudioNGenerateText } from "../../utility/voiceToTextConversion";
+
+
+
 
 enum ActionType {
   DM = "reply",
@@ -22,6 +26,11 @@ function escapeRegex(s: string) {
 }
 
 
+
+
+
+
+
 export const handleDM = async (
   event: any,
   shopId: string,
@@ -36,11 +45,21 @@ export const handleDM = async (
   const userMsg = (event.message?.text || "").toString();
   console.log("💬 DM Message:", userMsg);
 
-  // --------------------------
-  // If there's an attachment (image) -> image matching flow
-  // --------------------------
   if (event.message?.attachments && event.message.attachments.length > 0) {
     const att = event.message.attachments[0];
+    if(att.type !== 'image' && att.type === 'audio') {
+      console.log(att)
+      const audioUrl = att.payload?.url;
+      console.log("audioUrl==", audioUrl);
+
+
+      const tempFilePath = await downloadToTempFile(audioUrl);
+      const audioText = await readAudioNGenerateText(tempFilePath);
+      console.log('Audio Text:', audioText);
+      const aiReply = await getAiReplySimple(method, senderId, shopId, audioText, ActionType.DM, ["chatgpt"]);
+      await sendMessage(senderId, shopId, aiReply);
+      return;
+    }
     const imageUrl = att.payload?.url;
     console.log("imgurl==", imageUrl);
     if (!imageUrl) {
