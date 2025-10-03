@@ -48,11 +48,7 @@ export const handleDM = async (
   if (event.message?.attachments && event.message.attachments.length > 0) {
     const att = event.message.attachments[0];
     if(att.type !== 'image' && att.type === 'audio') {
-      console.log(att)
       const audioUrl = att.payload?.url;
-      console.log("audioUrl==", audioUrl);
-
-
       const tempFilePath = await downloadToTempFile(audioUrl);
       const audioText = await readAudioNGenerateText(tempFilePath);
       console.log('Audio Text:', audioText);
