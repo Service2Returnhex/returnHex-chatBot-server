@@ -11,12 +11,7 @@ export interface IPost {
   full_picture: string;
   shopId: string;
   isTrained?: boolean;
-  // full_picture: string;
-  // imageHash?: string;
-  // embedding?: number[];
   images?: IImageItem;
-  aggregatedEmbedding?: number[];
-
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -33,10 +28,7 @@ const PostSchema = new Schema<IPost>({
   message: { type: String, required: true, default: "" },
   summarizedMsg: { type: String, default: ""},
   full_picture: { type: String, default: "" },
-  // imageHash: String,
-  // embedding: { type: [Number], default: [] },
   images: { type: [ImageItemSchema], default: [] },
-  aggregatedEmbedding: { type: [Number], default: [] },
   shopId: { type: String, required: true },
   isTrained: { type: Boolean, required: true, default: false },
   createdAt: { type: Date, default: Date.now },
