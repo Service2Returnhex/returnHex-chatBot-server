@@ -1,11 +1,9 @@
 import { sendMessage } from "../../api/facebook.api";
+import { ActionType, ContentType } from "../../types/file.type";
 import { getAiReplySimple } from "../../utility/aiSimple";
-import { downloadToTempFile, readAudioNGenerateText } from "../../utility/voiceToTextConversion";
+import { convertImageToText, downloadToTempFile, readAudioNGenerateText } from "../../utility/attachementsToTextConversion";
 
-enum ActionType {
-  DM = "reply",
-  COMMENT = "comment",
-}
+
 
 export const handleDM = async (
   event: any,
@@ -19,18 +17,74 @@ export const handleDM = async (
   const userMsg = (event.message?.text || "").toString();
   console.log("💬 DM Message:", userMsg);
 
-  if (event.message?.attachments && event.message.attachments.length > 0) {
+  const attachhementlength = event.message?.attachments?.length || 0;
+  if (event.message?.attachments && attachhementlength > 0) {
     const att = event.message.attachments[0];
-    if (att.type !== 'image' && att.type === 'audio') {
+    
+    if (att.type === 'audio') {
+      console.log('Audio Attachemet Detected:');
       const audioUrl = att.payload?.url;
       const tempFilePath = await downloadToTempFile(audioUrl);
       const audioText = await readAudioNGenerateText(tempFilePath);
       console.log('Audio Text:', audioText);
       const aiReply = await getAiReplySimple(method, senderId, shopId, audioText, ActionType.DM, ["chatgpt"]);
-      await sendMessage(senderId, shopId, aiReply);
+      await sendMessage(senderId, shopId, aiReply, ContentType.AUDIO);
       return;
     }
+
+    if (att.type === 'image') {
+      console.log('Image Attachemets Detected:');
+      // const imageUrl = att.payload?.url;
+
+      const imageUrls: string[] = event.message.attachments
+        .map((att: any) => att.payload?.url)
+        .filter((url: string): url is string => !!url)
+      console.log("Image Urls: ", imageUrls); 
+      const imageTexts = await convertImageToText(imageUrls)
+      let combinedText = '';
+      imageTexts.forEach((text, idx) => {
+        combinedText += `image-${idx}: ${text}\n`;
+      })
+      console.log(combinedText);
+      
+      return;
+    }
+
+    if ( att.type === 'video') {
+      console.log('Video Attachemets Detected:');
+      return;
+    }
+
+    if (att.type === 'file') {
+      console.log('File Attachemets Detected:');
+      return;
+    }
+
+    if (att.type === 'location') {
+      console.log('Location Attachemets Detected:');
+      return;
+    }
+
+    if (att.type === 'fallback') {
+      console.log('Fallback Attachemets Detected:');
+      return;
+    }
+
+    console.log('Unknown Attachemets Detected:', att.type);
+    return;
   }
+
+  // Plain Text Message
+  const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, ["chatgpt"]);
+  if (!aiReply) {
+    console.log("No AI reply generated.");
+    return;
+  }
+
+  console.log("AI Reply:", aiReply);
+  await sendMessage(senderId, shopId, aiReply, ContentType.TEXT);
+  console.log("Reply sent to user.");
+  return;
 };
 
 

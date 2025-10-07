@@ -1,20 +1,14 @@
-// src/services/aiSimple.ts
-// import { ActionType } from "../constants/actionTypes"; // adjust path
-
 import { ChatgptService } from "../Modules/Chatgpt/chatgpt.service";
 import { DeepSeekService } from "../Modules/DeepSeek/deepseek.service";
 import { GeminiService } from "../Modules/Gemini/gemini.service";
 import { GroqService } from "../Modules/Groq/grok.service";
 
 export type AIMethod =   "chatgpt" | "gemini" | "deepseek" | "groq";
+
 enum ActionType {
   DM = "reply",
   COMMENT = "comment",
 }
-/**
- * Simple helper: try primary method then optional fallbacks.
- * Returns first non-empty string, or empty string if all fail.
- */
 export async function getAiReplySimple(
   method: AIMethod,
   senderId: string,
@@ -38,13 +32,10 @@ export async function getAiReplySimple(
       const res = await call(m);
       const text = (res ?? "").toString().trim();
       if (text) return text;
-      // else empty -> try next
       console.warn(`[AI simple] empty response from ${m}`);
     } catch (err: any) {
       console.warn(`[AI simple] ${m} failed:`, err?.message || err);
     }
   }
-
-  // nothing worked
   return "";
 }

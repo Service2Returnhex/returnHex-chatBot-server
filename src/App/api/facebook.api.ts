@@ -1,11 +1,13 @@
 import axios from "axios";
 import { PageInfo } from "../Modules/Page/pageInfo.model";
 import ApiError from "../utility/AppError";
+import { ContentType } from "../types/file.type";
 
 export const sendMessage = async (
   recipientId: string,
   pageId: string,
-  text: string
+  text: string,
+  contentType?: ContentType
 ) => {
   try {
     const shop = await PageInfo.findOne({ shopId: pageId });

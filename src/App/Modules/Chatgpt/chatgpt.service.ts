@@ -33,7 +33,7 @@ const getResponseDM = async (
     userId: senderId,
     shopId,
   }).exec();
-  // console.log("userHistoryDoc", userHistoryDoc);
+ 
   if (!userHistoryDoc) {
     userHistoryDoc = new ChatHistory({
       userId: senderId,

@@ -1,6 +1,7 @@
 export enum LogService {
     DB = "DATABASE",
-    API = "API"
+    API = "API",
+    WebHookService = "WEBHOOK_SERVICE",
 }
 
 export enum LogPrefix {
@@ -8,8 +9,8 @@ export enum LogPrefix {
     SHOPS = "SHOPS",
 
     PRODUCTS = "PRODUCTS",
-    PRODUCT = "PRODUCT"
-    
+    PRODUCT = "PRODUCT",
+
 }
 
 export enum LogMessage {
@@ -26,7 +27,8 @@ export enum LogMessage {
     NOT_UPDATED = "NOT_UPDATED",
 
     DELETED = "DELETED",
-    NOTE_DELETED = "NOTE_DELETED"
+    NOTE_DELETED = "NOTE_DELETED",
+
 }
 
 export const Logger = (service: string, prefix: string, msg: string):void => {

@@ -25,7 +25,7 @@ export const handleWebhook: RequestHandler = catchAsync(
   }
 );
 
-enum WebHookMethods {
+enum AiType {
   GEMINI = "gemini",
   CHATGPT = "chatgpt",
   DEEPSEEK = "deepseek",
@@ -45,7 +45,7 @@ export const handleIncomingMessages: RequestHandler = catchAsync(
         req,
         res,
         pageId as string,
-        WebHookMethods.CHATGPT
+        AiType.CHATGPT
       );
     }
 

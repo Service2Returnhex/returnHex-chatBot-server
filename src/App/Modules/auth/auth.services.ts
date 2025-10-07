@@ -63,7 +63,6 @@ const changePassword = async (
   userData: JwtPayload,
   payload: { oldPassword: string; newPassword: string }
 ) => {
-  console.log("Came herer");
   const user = await User.findById(userData.userId).select("+password");
   if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User Not Found!");
 

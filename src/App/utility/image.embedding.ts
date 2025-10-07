@@ -281,6 +281,8 @@ export async function extractImageCaptions(postData: any) {
       }
     } else {
       // single attachment fallback
+      console.log("Coming Here Bruhh!");
+      console.log(att);
       const url = att.media?.image?.src || null;
       const caption = att.description || att.title || null;
       const photoId = att.target?.id || null;
