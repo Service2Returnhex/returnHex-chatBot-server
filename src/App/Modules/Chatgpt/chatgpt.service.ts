@@ -13,6 +13,9 @@ import { PageInfo } from "../Page/pageInfo.model";
 import { Post } from "../Page/post.mode";
 import { ChatHistory } from "./chat-history.model";
 import { CommentHistory } from "./comment-histroy.model";
+import { ReplayResponse } from "@google/genai";
+import { sendImageMessage, sendMessage } from "../../api/facebook.api";
+import { ContentType } from "../../types/file.type";
 
 const getResponseDM = async (
   senderId: string,
@@ -121,10 +124,16 @@ const getResponseDM = async (
   reply = completion.choices[0].message.content || "Something went wrong";
   console.log("reply", reply);
   console.log("shop access token", shop.accessToken);
+  let parsed = null;
   try {
-    const parsed = JSON.parse(reply);
-
-    if (parsed?.action === "confirmOrder") {
+    parsed = JSON.parse(reply)
+    if(parsed?.action === "imagesView") {
+      // await sendMessage(senderId, shopId, parsed.message, ContentType.TEXT);
+      for (const url of parsed.images) {
+          await sendImageMessage(senderId, shopId, url);
+      }
+    }
+    else if (parsed?.action === "confirmOrder") {
       const order = new Order({
         userId: senderId,
         shopId,
@@ -214,12 +223,12 @@ const getResponseDM = async (
 
   userHistoryDoc.messages.push({
     role: "assistant",
-    content: reply,
+    content: parsed?.action === "imagesView" ? parsed?.message : reply,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
   await userHistoryDoc.save();
-  return reply;
+  return parsed?.action === "imagesView"? parsed?.message : reply;
 };
 
 

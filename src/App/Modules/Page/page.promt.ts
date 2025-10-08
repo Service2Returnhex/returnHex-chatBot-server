@@ -17,7 +17,11 @@ export const makePromtDM = async (
     postList = recentPost
       .map(
         (p, i) => `
-  ${i + 1}. ${!p.summarizedMsg ? p.message : p.summarizedMsg}`
+  ${i + 1} - Description: ${!p.summarizedMsg ? p.message : p.summarizedMsg}
+  Image Links: ${p.images && p.images.length > 0
+  ? p.images.map((img, idx) => `url-${idx + 1}: ${img.url}`).join("\n")
+  : "No images urls"}
+  `
       )
       .join(",");
     recentPost.length === botConfig.postVisibility
@@ -25,6 +29,8 @@ export const makePromtDM = async (
         } more(can be products, service etc page category)...`)
       : "";
   }
+
+  console.log("recent Posts: ", postList);
   const userOrders = await Order.find({ userId: senderId, shopId: page.shopId })
     .sort({ createdAt: -1 })
     .lean();
@@ -51,22 +57,30 @@ Quantity: ${o.quantity}, Status: ${o.status}`
     }, MoreInfo: ${page?.moreInfo ?? "N/A"}
   `;
 
-
-
   const systemPrompt = `
 Page information: ${shopInfo}
 
 Recent posts(can be products, service etc page category):
 ${postList.length > 0
       ? postList
-      : "Say No posts(can be products, service etc page category) available. if the list is empty"
-    }
+      : "The posts(can be products, service etc page category) list is empty"
+}
 
 Existing Orders for this user:
 ${orderList}
 
+if image information arise then try to talk about the matched image or similar type images. 
+If not even close then say no similar thing founds!
+
 more system instructions:
-${page?.dmSystemPromt ?? "not provided"}
+${page?.dmSystemPromt ? "page?.dmSystemPromt" : "not provided"}
+
+If the user wants to specific images or all images, reply with structured JSON in this format only:
+{
+  "action" : "imagesView",
+  "images" : [array of image urls that asks for],
+  "message" : "Generated relavent message to reply with images"
+}
 
 If the user wants to confirm an order, update an order, or cancel an order, reply with structured JSON in one of these formats only:
 

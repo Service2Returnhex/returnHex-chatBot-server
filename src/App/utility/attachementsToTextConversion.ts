@@ -78,7 +78,7 @@ export const convertImageToText = async (
               content: [
                 {
                   type: "input_text",
-                  text: "Describe this image in detail.",
+                  text: "Describe the image in short with the necessary infromations",
                 },
                 {
                   type: "input_image",

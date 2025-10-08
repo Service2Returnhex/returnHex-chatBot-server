@@ -11,7 +11,7 @@ export interface IPost {
   full_picture: string;
   shopId: string;
   isTrained?: boolean;
-  images?: IImageItem;
+  images?: IImageItem[];
   createdAt?: Date;
   updatedAt?: Date;
 }

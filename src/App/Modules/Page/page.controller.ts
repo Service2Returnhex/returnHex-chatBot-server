@@ -47,7 +47,7 @@ const getTrainedProducts: RequestHandler = catchAsync(
 
 const createProduct: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await PageService.createAndTrainProduct(req.body);
+    const result = await PageService.createProduct(req.body);
     sendResponse(res, {
       statusCode: httpStatus.CREATED,
       success: true,
@@ -212,53 +212,53 @@ const setCmntPromt: RequestHandler = catchAsync(
   }
 );
 
-const trainProductHandler: RequestHandler = catchAsync(async (req: Request, res: Response) => {
-  // postId will come from route param (similar to setCmntPromt)
-  console.log("req params", req.params);
-  console.log("req body", req.body);
-  const postId = String(req.params.postId || req.params.id || "");
-  // shopId should be passed in body or query
-  const shopId = String(req.body?.shopId || req.query.shopId || "");
+// const trainProductHandler: RequestHandler = catchAsync(async (req: Request, res: Response) => {
+//   // postId will come from route param (similar to setCmntPromt)
+//   console.log("req params", req.params);
+//   console.log("req body", req.body);
+//   const postId = String(req.params.postId || req.params.id || "");
+//   // shopId should be passed in body or query
+//   const shopId = String(req.body?.shopId || req.query.shopId || "");
 
-  if (!shopId) {
-    return sendResponse(res, {
-      statusCode: httpStatus.BAD_REQUEST,
-      success: false,
-      message: "Missing shopId in request body or query",
-      data: null,
-    });
-  }
+//   if (!shopId) {
+//     return sendResponse(res, {
+//       statusCode: httpStatus.BAD_REQUEST,
+//       success: false,
+//       message: "Missing shopId in request body or query",
+//       data: null,
+//     });
+//   }
 
-  if (!postId) {
-    return sendResponse(res, {
-      statusCode: httpStatus.BAD_REQUEST,
-      success: false,
-      message: "Missing postId (route param)",
-      data: null,
-    });
-  }
-  // console.log("Calling PageService.trainProduct with", { shopId, postId });
-  const fullPostPayload = req.body as any;
-  try {
-    const trained = await PageService.createAndTrainProduct(req.body);
-    console.log("trained result", trained);
-    return sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "Post trained successfully",
-      data: trained,
-    });
-  } catch (err: any) {
-    console.error("PageService.trainProduct threw:", err);
-    // return error to client
-    return sendResponse(res, {
-      statusCode: err?.statusCode || httpStatus.INTERNAL_SERVER_ERROR,
-      success: false,
-      message: err?.message || "Training failed",
-      data: null,
-    });
-  }
-});
+//   if (!postId) {
+//     return sendResponse(res, {
+//       statusCode: httpStatus.BAD_REQUEST,
+//       success: false,
+//       message: "Missing postId (route param)",
+//       data: null,
+//     });
+//   }
+//   // console.log("Calling PageService.trainProduct with", { shopId, postId });
+//   const fullPostPayload = req.body as any;
+//   try {
+//     const trained = await PageService.createAndTrainProduct(req.body);
+//     console.log("trained result", trained);
+//     return sendResponse(res, {
+//       statusCode: httpStatus.OK,
+//       success: true,
+//       message: "Post trained successfully",
+//       data: trained,
+//     });
+//   } catch (err: any) {
+//     console.error("PageService.trainProduct threw:", err);
+//     // return error to client
+//     return sendResponse(res, {
+//       statusCode: err?.statusCode || httpStatus.INTERNAL_SERVER_ERROR,
+//       success: false,
+//       message: err?.message || "Training failed",
+//       data: null,
+//     });
+//   }
+// });
 
 const getDmMessageCount: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
@@ -405,7 +405,7 @@ export const PageController = {
   updateOrderStatus,
   followUpDm,
 
-  trainProductHandler,
+  // trainProductHandler,
   getDmMessageCount,
   getCmtMessageCount,
   getUsageByShop,

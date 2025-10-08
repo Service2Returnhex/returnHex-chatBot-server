@@ -13,6 +13,8 @@ export const sendMessage = async (
     const shop = await PageInfo.findOne({ shopId: pageId });
     if (!shop) throw new ApiError(404, "Shop Not Found!");
     console.log("Sending Replay....");
+
+
     const res = await axios.post(
       `https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`,
       {
@@ -23,6 +25,39 @@ export const sendMessage = async (
     console.log(res.data);
   } catch (error: any) {
     console.error("[Meta-API]-Message Sending Failed: ", error.message);
+  }
+};
+
+export const sendImageMessage = async (
+  recipientId: string,
+  pageId: string,
+  imageUrl: string
+) => {
+  try {
+    const shop = await PageInfo.findOne({ shopId: pageId });
+    if (!shop) throw new ApiError(404, "Shop Not Found!");
+
+    console.log("Sending Image...");
+
+    const res = await axios.post(
+      `https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`,
+      {
+        recipient: { id: recipientId },
+        message: {
+          attachment: {
+            type: "image",
+            payload: {
+              url: imageUrl,
+              is_reusable: true,
+            },
+          },
+        },
+      }
+    );
+
+    console.log("Image sent successfully:", res.data);
+  } catch (error: any) {
+    console.error("[Meta-API]-Image Sending Failed:", error.message);
   }
 };
 

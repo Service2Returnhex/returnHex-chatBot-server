@@ -27,15 +27,25 @@ export const handleDM = async (
       const tempFilePath = await downloadToTempFile(audioUrl);
       const audioText = await readAudioNGenerateText(tempFilePath);
       console.log('Audio Text:', audioText);
-      const aiReply = await getAiReplySimple(method, senderId, shopId, audioText, ActionType.DM, ["chatgpt"]);
-      await sendMessage(senderId, shopId, aiReply, ContentType.AUDIO);
+      const aiReply = await getAiReplySimple(
+        method, 
+        senderId, 
+        shopId, 
+        audioText, 
+        ActionType.DM, ["chatgpt"]
+      );
+      await sendMessage(
+        senderId, 
+        shopId, 
+        aiReply, 
+        ContentType.AUDIO
+      );
       return;
     }
 
     if (att.type === 'image') {
       console.log('Image Attachemets Detected:');
-      // const imageUrl = att.payload?.url;
-
+      
       const imageUrls: string[] = event.message.attachments
         .map((att: any) => att.payload?.url)
         .filter((url: string): url is string => !!url)
@@ -46,27 +56,63 @@ export const handleDM = async (
         combinedText += `image-${idx}: ${text}\n`;
       })
       console.log(combinedText);
-      
+      const aiReply = await getAiReplySimple(
+        method, 
+        senderId, 
+        shopId, 
+        combinedText, 
+        ActionType.DM, ["chatgpt"]
+      );
+      await sendMessage(
+        senderId, 
+        shopId, 
+        aiReply, 
+        ContentType.IMAGE
+      );
       return;
     }
 
     if ( att.type === 'video') {
       console.log('Video Attachemets Detected:');
+      await sendMessage(
+        senderId, 
+        shopId, 
+        "Video Support is not available. Only text, image and voice support available", 
+        ContentType.VIDEO
+      );
       return;
     }
 
     if (att.type === 'file') {
       console.log('File Attachemets Detected:');
+      await sendMessage(
+        senderId, 
+        shopId, 
+        "File(pdf, docs etc.) Support is not available. Only text, image and voice support available", 
+        ContentType.FILE
+      );
       return;
     }
 
     if (att.type === 'location') {
       console.log('Location Attachemets Detected:');
+      await sendMessage(
+        senderId, 
+        shopId, 
+        "Location Support is not available. Only text, image and voice support available", 
+        ContentType.LOCATION
+      );
       return;
     }
 
     if (att.type === 'fallback') {
       console.log('Fallback Attachemets Detected:');
+      await sendMessage(
+        senderId, 
+        shopId, 
+        "Links Support is not available. Only text, image and voice support available", 
+        ContentType.FALLBACK
+      );
       return;
     }
 
@@ -75,10 +121,9 @@ export const handleDM = async (
   }
 
   // Plain Text Message
-  const aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, ["chatgpt"]);
+  let aiReply = await getAiReplySimple(method, senderId, shopId, userMsg, ActionType.DM, ["chatgpt"]);
   if (!aiReply) {
-    console.log("No AI reply generated.");
-    return;
+    aiReply = "Something went wrong!! Ask Again";
   }
 
   console.log("AI Reply:", aiReply);
