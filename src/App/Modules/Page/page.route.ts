@@ -15,6 +15,7 @@ router.get("/shop", auth(USER_ROLE.admin, USER_ROLE.user), PageController.getSho
 router.get("/shop/:id", PageController.getShopById);
 router.get("/shop/owner/:ownerId", PageController.getPagesByOwner);
 router.patch("/:id/toggle-status", auth(USER_ROLE.admin, USER_ROLE.user), PageController.togglePageStatus);
+router.patch("/:id/connected", auth(USER_ROLE.admin), PageController.connectedPage);
 router.post("/shop", PageController.createShop);
 router.patch("/shop/:id", PageController.updateShop);
 router.delete("/shop/:id", PageController.deleteShop);

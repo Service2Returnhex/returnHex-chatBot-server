@@ -523,10 +523,22 @@ const getShopById = async (id: string) => {
   return result;
 };
 
-const togglePageStatus = async (id: string) => {
+const togglePageStatus = async (id: string,) => {
   const page = await PageInfo.findById(id);
   if (!page) throw new ApiError(httpStatus.NOT_FOUND, "Page not found");
   page.isStarted = !page.isStarted;
+  // page.isStarted = newStatus;
+  await page.save();
+  return page;
+};
+
+const connectedPage = async (id: string, newStatus: "stop" | "pending" | "start") => {
+  const page = await PageInfo.findById(id);
+  if (!page) throw new ApiError(httpStatus.NOT_FOUND, "Page not found");
+  // page.connected = !page.connected;
+  console.log("statusss", id);
+  console.log("statusss", newStatus);
+  page.connected = newStatus;
   await page.save();
   return page;
 };
@@ -782,6 +794,7 @@ export const PageService = {
   createShop,
   getShopByOwnerAll,
   togglePageStatus,
+  connectedPage,
   updateShop,
   deleteShop,
   setDmPromt,
