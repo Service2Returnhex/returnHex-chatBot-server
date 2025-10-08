@@ -1,42 +1,89 @@
 import axios from "axios";
-import ApiError from "../utility/AppError";
 import { PageInfo } from "../Modules/Page/pageInfo.model";
+import ApiError from "../utility/AppError";
+import { ContentType } from "../types/file.type";
 
 export const sendMessage = async (
   recipientId: string,
   pageId: string,
-  text: string
+  text: string,
+  contentType?: ContentType
 ) => {
-  const shop = await PageInfo.findOne({ shopId: pageId });
-  if (!shop) throw new ApiError(404, "Shop Not Found!");
+  try {
+    const shop = await PageInfo.findOne({ shopId: pageId });
+    if (!shop) throw new ApiError(404, "Shop Not Found!");
+    console.log("Sending Replay....");
 
-  const res = await axios.post(
-    `https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`,
-    {
-      recipient: { id: recipientId },
-      message: { text },
-    }
-  );
-  console.log(res.data);
+
+    const res = await axios.post(
+      `https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`,
+      {
+        recipient: { id: recipientId },
+        message: { text },
+      }
+    );
+    console.log(res.data);
+  } catch (error: any) {
+    console.error("[Meta-API]-Message Sending Failed: ", error.message);
+  }
+};
+
+export const sendImageMessage = async (
+  recipientId: string,
+  pageId: string,
+  imageUrl: string
+) => {
+  try {
+    const shop = await PageInfo.findOne({ shopId: pageId });
+    if (!shop) throw new ApiError(404, "Shop Not Found!");
+
+    console.log("Sending Image...");
+
+    const res = await axios.post(
+      `https://graph.facebook.com/v23.0/me/messages?access_token=${shop.accessToken}`,
+      {
+        recipient: { id: recipientId },
+        message: {
+          attachment: {
+            type: "image",
+            payload: {
+              url: imageUrl,
+              is_reusable: true,
+            },
+          },
+        },
+      }
+    );
+
+    console.log("Image sent successfully:", res.data);
+  } catch (error: any) {
+    console.error("[Meta-API]-Image Sending Failed:", error.message);
+  }
 };
 
 export const replyToComment = async (
   commentId: string,
   pageId: string,
-  message: string
+  message: string,
+  userId: string
 ) => {
-  const shop = await PageInfo.findOne({ shopId: pageId });
-  if (!shop) throw new ApiError(404, "Shop Not Found!");
-  const response = await axios.post(
-    `https://graph.facebook.com/v23.0/${commentId}/comments`,
-    {
-      message,
-    },
-    {
-      params: {
-        access_token: shop.accessToken,
+  try {
+    const shop = await PageInfo.findOne({ shopId: pageId });
+    if (!shop) throw new ApiError(404, "Shop Not Found!");
+    console.log("Sending Replay....");
+    const response = await axios.post(
+      `https://graph.facebook.com/v23.0/${commentId}/comments`,
+      {
+        message,
       },
-    }
-  );
-  console.log("✅ Comment reply sent:", response.data);
+      {
+        params: {
+          access_token: shop.accessToken,
+        },
+      }
+    );
+    console.log("✅ Comment reply sent:", response.data);
+  } catch (error: any) {
+    console.error("[Meta-API]-Replay to comment Failed: ", error.message);
+  }
 };

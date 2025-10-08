@@ -6,8 +6,8 @@
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "start": "npm run src/server.ts",
-    "comment": "run the makeProm intial phase"
+    "delete:full": "ts-node-dev --respawn --transpile-only src/deleteFullDB.ts",
+    "delete:docs": "ts-node-dev --respawn --transpile-only src/deleteDBDocuments.ts"
   },
   "keywords": [],
   "author": "",
@@ -15,25 +15,41 @@
   "description": "",
   "dependencies": {
     "@google/genai": "^1.9.0",
+    "@tanstack/react-query": "^5.89.0",
     "axios": "^1.10.0",
+    "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "fs-extra": "^11.3.1",
+    "fuse.js": "^7.1.0",
     "groq-sdk": "^0.27.0",
     "http-status": "^2.1.0",
-    "mongoose": "^8.13.2",
+    "imghash": "^1.1.0",
+    "jimp": "^1.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.0",
     "multer": "^2.0.0",
-    "openai": "^5.9.0",
+    "nodemailer": "^7.0.5",
+    "openai": "^5.16.0",
+    "p-limit": "^2.3.0",
+    "tesseract.js": "^6.0.1",
+    "tesseract.js-core": "^2.1.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3",
     "uuid": "^11.1.0",
     "zod": "^3.24.3"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.8",
-    "@types/cors": "^2.8.17",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.1",
-    "@types/multer": "^1.4.12"
+    "@types/fs-extra": "^11.0.4",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^24.3.0",
+    "@types/nodemailer": "^6.4.17"
   }
 }

@@ -4,8 +4,8 @@ import { ChatCompletionMessageParam } from "openai/resources/index";
 import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { makePromtComment, makePromtDM } from "../Page/page.promt";
-import { Post } from "../Page/post.mode";
 import { PageInfo } from "../Page/pageInfo.model";
+import { Post } from "../Page/post.mode";
 
 const getResponseDM = async (
   senderId: string,
@@ -16,14 +16,18 @@ const getResponseDM = async (
   let userHistoryDoc = await ChatHistory.findOne({ senderId });
   if (!userHistoryDoc)
     userHistoryDoc = new ChatHistory({ senderId, messages: [] });
-  userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
 
   const products = await Post.find({ shopId });
 
-  const getPrompt = makePromtDM(shop, products, prompt);
+  const getPrompt = await makePromtDM(shop, products, senderId);
+  userHistoryDoc.messages.push({
+    role: "user", content: prompt, createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
     { role: "user", content: getPrompt },
@@ -42,7 +46,10 @@ const getResponseDM = async (
   });
   const reply = completion.text || "";
 
-  userHistoryDoc.messages.push({ role: "assistant", content: reply });
+  userHistoryDoc.messages.push({
+    role: "assistant", content: reply, createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   await userHistoryDoc.save();
   return reply;
 };
@@ -69,11 +76,6 @@ export const getCommnetResponse = async (
       userName,
       messages: [],
     });
-  userCommnetHistoryDoc.messages.push({
-    commentId,
-    role: "user",
-    content: message,
-  });
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) throw new Error("Shop not found");
@@ -81,7 +83,18 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPrompt = makePromtComment(shop, products, specificProduct);
+  const getPrompt = await makePromtComment(
+    shop,
+    products,
+    specificProduct,
+  );
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "user",
+    content: message,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt },
     { role: "user", content: message },
@@ -102,6 +115,8 @@ export const getCommnetResponse = async (
     commentId,
     role: "assistant",
     content: reply,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
   await userCommnetHistoryDoc.save();
   return reply;

@@ -16,7 +16,6 @@ const getResponseDM = async (
   if (!userHistoryDoc)
     userHistoryDoc = new ChatHistory({ userId: senderId, messages: [] });
 
-  userHistoryDoc.messages.push({ role: "user", content: prompt });
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) {
@@ -25,7 +24,12 @@ const getResponseDM = async (
 
   const products = await Post.find({ shopId });
 
-  const getPrompt = makePromtDM(shop, products, prompt);
+  const getPrompt = await makePromtDM(shop, products, senderId);
+  userHistoryDoc.messages.push({
+    role: "user", content: prompt, createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPrompt }, //as much as optimize
@@ -61,7 +65,10 @@ const getResponseDM = async (
     completion.choices?.[0]?.message?.content ||
     "Sorry, something went wrong. Please try again later.";
 
-  userHistoryDoc.messages.push({ role: "assistant", content: reply });
+  userHistoryDoc.messages.push({
+    role: "assistant", content: reply, createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   await userHistoryDoc.save();
   return reply;
 };
@@ -89,11 +96,7 @@ export const getCommnetResponse = async (
       messages: [],
     });
 
-  userCommnetHistoryDoc.messages.push({
-    commentId,
-    role: "user",
-    content: message,
-  });
+
 
   const shop = await PageInfo.findOne({ shopId });
   if (!shop) {
@@ -103,7 +106,14 @@ export const getCommnetResponse = async (
   const products = await Post.find({ shopId });
   const specificProduct = await Post.findOne({ shopId, postId });
 
-  const getPromt = makePromtComment(shop, products, specificProduct);
+  const getPromt = await makePromtComment(shop, products, specificProduct);
+  userCommnetHistoryDoc.messages.push({
+    commentId,
+    role: "user",
+    content: message,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: getPromt },
     { role: "user", content: message },
@@ -132,6 +142,8 @@ export const getCommnetResponse = async (
     commentId,
     role: "assistant",
     content: reply,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
   await userCommnetHistoryDoc.save();
   return reply;

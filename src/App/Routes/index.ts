@@ -5,16 +5,26 @@ import { WebhookRouter } from "../Modules/WebHook/webhook.route";
 import { PageRouter } from "../Modules/Page/page.route";
 import { DeepSeekRouter } from "../Modules/DeepSeek/deepseek.route";
 import { GroqRouter } from "../Modules/Groq/grok.route";
+import { authRoute } from "../Modules/auth/auth.route";
+import { userRouter } from "../Modules/users/user.route";
 
 const router = Router();
 
 const moduleRoutes = [
     {
+        path: '/auth',
+        route: authRoute
+    },
+    {
+        path: '/users',
+        route: userRouter
+    },
+    {
         path: '/meta-webhook', 
         route: WebhookRouter 
     },
     {
-        path: '/chatgpt',
+        path: '/chatgpt', 
         route: ChatgptRouter
     },
     {

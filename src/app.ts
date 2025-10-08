@@ -6,7 +6,9 @@ import notFound from "./App/Middlewares/notFound";
 import router from "./App/Routes";
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({})
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -14,11 +16,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/v1", router);
 
 app.get("/", (req, res) => {
-  res.send("Hello Server");
+  res.send("Welcome to hex-bot latest(v1.1.0) Server");
 });
 
 app.get("/api/health", (req, res) => {
-  res.send("Server health is good!");
+  res.send("Server health is very good!");
 });
 
 app.use(notFound);

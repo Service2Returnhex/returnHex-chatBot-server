@@ -1,110 +1,92 @@
 import { Request, Response } from "express";
-import { replyToComment, sendMessage } from "../../api/facebook.api";
+import { replyToComment } from "../../api/facebook.api";
+import { fetchPostAttachments } from "../../utility/image.caption";
+import { extractImageCaptions } from "../../utility/image.embedding";
 import { ChatgptService } from "../Chatgpt/chatgpt.service";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { DeepSeekService } from "../DeepSeek/deepseek.service";
 import { GeminiService } from "../Gemini/gemini.service";
 import { GroqService } from "../Groq/grok.service";
 import { PageService } from "../Page/page.service";
+import { PageInfo } from "../Page/pageInfo.model";
+import { handleAddFeed } from "./weebhook.add.feed";
+import { handleDM } from "./weebhook.dm.msg";
 
 enum ActionType {
   DM = "reply",
   COMMENT = "comment",
 }
 
-const handleDM = async (
-  event: any,
-  pageId: string,
-  method: "gemini" | "chatgpt" | "deepseek" | "groq"
-) => {
-  const senderId = event.sender.id;
-  const userMsg = event.message.text;
-  console.log("💬 DM Message:", userMsg);
-  if(event.message.attachments) {
-    console.log("📎 Attachment detected!");
-    await sendMessage(senderId, pageId, "Attachments or voices, videos, images, files are not allowed yet.");
-    return;
-  }
-
-  let reply = "";
-  try {
-    if (method === "gemini") {
-      reply = await GeminiService.getResponseDM(
-        senderId,
-        pageId,
-        userMsg,
-        ActionType.DM
-      );
-    } else if (method === "chatgpt") {
-      reply = await ChatgptService.getResponseDM(
-        senderId,
-        pageId,
-        userMsg,
-        ActionType.DM
-      );
-    } else if (method === "deepseek") {
-      reply = await DeepSeekService.getResponseDM(
-        senderId,
-        pageId,
-        userMsg,
-        ActionType.DM
-      );
-    } else if (method === "groq") {
-      reply = await GroqService.getResponseDM(
-        senderId,
-        pageId,
-        userMsg,
-        ActionType.DM
-      );
-    }
-  } catch (error: any) {
-    console.log("Error generating reply:", error?.message);
-  }
-
-  try {
-    await sendMessage(senderId, pageId, reply);
-  } catch (error: any) {
-    console.log("Error sending reply:", error?.message);
-  }
-};
-
-const handleAddFeed = async (value: any, pageId: string) => {
-  try {
-    const result = await PageService.createProduct({
-      postId: value.post_id,
-      message: value.message,
-      shopId: pageId,
-      createdAt: value.created_time,
-      full_picture: value.link,
-    });
-
-    !result
-      ? console.log("Feed Not Created")
-      : console.log("Feed Created Successfully");
-  } catch (error: any) {
-    console.log("Feed Not Created, Error: ", error?.message);
-  }
-};
-
 const handleEditFeed = async (value: any, pageId: string) => {
-  const { post_id, message } = value;
+ 
   try {
-    const result = await PageService.updateProduct(pageId, post_id, {
-      message,
+    const shop = await PageInfo.findOne({ shopId: pageId });
+    if (!shop) {
+      console.warn("handleAddFeed: PageInfo not found for", pageId);
+      return;
+    }
+    const pageAccessToken = shop.accessToken || "";
+    if (!pageAccessToken) {
+      console.warn("handleAddFeed: No page access token for", pageId);
+      return;
+    }
+    const postId = String(value.post_id || value.id || "");
+    if (!postId) {
+      console.warn("handleAddFeed: no post_id in webhook value", value);
+      return;
+    }
+
+    let postData: any = null;
+    try {
+      postData = await fetchPostAttachments(postId, pageAccessToken);
+    } catch (err: any) {
+      console.warn("fetchPostAttachments failed:", err?.message || err);
+    }
+
+    console.log("PostData: ", postData);
+
+    const imagesDescription = postData
+      ? await extractImageCaptions(postData)
+      : ([] as { photoId?: string; url?: string; caption?: string }[]);
+
+    console.log("imagesDescription", imagesDescription);
+
+    const payload: any = {
+      postId,
+      shopId: pageId,
+      message: (postData?.message || value.message || "") as string,
+      createdAt: value.created_time
+        ? new Date(value.created_time * 1000)
+        : new Date(),
       updatedAt: new Date(),
-    });
-    !result
-      ? console.log("Feed Not Updated")
-      : console.log("Feed Updated Successfully");
-  } catch (error: any) {
-    console.log("Feed Not Updated, Error: ", error?.message);
+      images: imagesDescription.map((img) => ({
+        photoId: img.photoId ? img.photoId : postId.split('_')[1],
+        url: img.url,
+        caption: img.caption,
+      })),
+    };
+
+    
+    const result = await PageService.updateProduct(payload);
+
+    if (!result) {
+      console.warn("handleAddFeed: createProduct returned falsy for", postId);
+      return null;
+    }
+
+    console.log("Updated");
+    return result;
+  } catch (err: any) {
+    console.error("handleAddFeed: unexpected error:", err?.message || err);
+    return null;
   }
 };
 
 const handleRemoveFeed = async (value: any, pageId: string) => {
   const { post_id } = value;
+  console.log("remove value", value);
   try {
-    const result = await PageService.deleteProduct(pageId, post_id);
+    const result = await PageService.deleteProduct(value.from.id, post_id);
     const result1 = await CommentHistory.findOneAndDelete({ postId: post_id });
     !result
       ? console.log("Feed Not Deleted")
@@ -124,9 +106,14 @@ const handleAddComment = async (value: any, pageId: string, method: string) => {
   const { comment_id, message, post_id, from } = value;
   const commenterId = from?.id;
   const userName = from?.name;
-  if(!value.message) {
+  if (!value.message) {
     console.log("📎 Attachment detected in comment!");
-    await replyToComment(comment_id, pageId, "Attachments or videos, images, files are not allowed yet.");
+    await replyToComment(
+      comment_id,
+      pageId,
+      "সংযুক্তি বা ভিডিও, ছবি, ফাইল এখনও অনুমোদিত নয়। আমাদের কাস্টমার সার্ভিস আপনার সাথে যোগাযোগ করবে।\nAttachments or videos, images, files are not allowed yet. Our customer service will contact you.",
+      commenterId
+    );
     return;
   }
 
@@ -186,7 +173,7 @@ const handleAddComment = async (value: any, pageId: string, method: string) => {
   }
 
   try {
-    await replyToComment(comment_id, pageId, reply as string);
+    await replyToComment(comment_id, pageId, reply as string, commenterId);
   } catch (error: any) {
     console.log("Error Sending Comment Replay: ", error?.message);
   }
@@ -246,6 +233,7 @@ const handleIncomingMessages = async (
 
   for (const entry of req.body.entry) {
     const event = entry.messaging?.[0];
+    // console.log("event",event);
 
     if (event?.message) {
       handleDM(event, pageId, method);

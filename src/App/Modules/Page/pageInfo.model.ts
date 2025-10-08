@@ -1,4 +1,10 @@
-import mongoose, { Schema} from "mongoose";
+import mongoose from "mongoose";
+
+export interface ITokenUsage {
+  inputToken: number;
+  outputToken: number;
+  totalToken: number;
+}
 
 export interface IPageInfo {
   pageName: string;
@@ -6,26 +12,49 @@ export interface IPageInfo {
   phone: string;
   email?: string;
   pageCategory: string;
-  shopId: string; 
+  shopId: string;
   moreInfo?: string;
+  ownerId: string;
+  summary: string;
   dmSystemPromt?: string;
   cmntSystemPromt?: string;
   isVerified?: boolean;
-  accessToken: string; 
+  isStarted?: boolean;
+  connected?: "stop" | "pending" | "start";
+  tokenUsage: ITokenUsage;
+  accessToken: string;
   verifyToken: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-const PageInfoSchema = new Schema<IPageInfo>({
+const TokenUsageSchema = new mongoose.Schema<ITokenUsage>(
+  {
+    inputToken: { type: Number, required: true, default: 0 },
+    outputToken: { type: Number, required: true, default: 0 },
+    totalToken: { type: Number, required: true, default: 0 },
+  },
+  { timestamps: true }
+);
+
+const PageInfoSchema = new mongoose.Schema<IPageInfo>({
   pageName: { type: String, required: true },
   address: { type: String, required: true },
   phone: { type: String, required: true },
-  email: { type: String},
+  email: { type: String },
   pageCategory: { type: String, required: true },
   shopId: { type: String, required: true, unique: true },
-  moreInfo: { type: String, default: ''},
-  dmSystemPromt: {type: String, default: ''},
-  cmntSystemPromt: {type: String, default: ''},
-  isVerified: {type: Boolean, default: false},
+  ownerId: { type: String, required: true },
+  moreInfo: { type: String, default: '' },
+  summary: { type: String, default: '' },
+  dmSystemPromt: { type: String, default: '' },
+  cmntSystemPromt: { type: String, default: '' },
+  isVerified: { type: Boolean, default: false },
+  isStarted: { type: Boolean, default: false },
+  connected: {
+    type: String, enum: ["stop", "pending", "start"],
+    default: "pending"
+  },
   accessToken: {
     type: String,
     default: '',
@@ -35,6 +64,9 @@ const PageInfoSchema = new Schema<IPageInfo>({
     ],
   },
   verifyToken: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  tokenUsage: { type: TokenUsageSchema, default: {} },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 export const PageInfo = mongoose.model<IPageInfo>("PageInfo", PageInfoSchema);
