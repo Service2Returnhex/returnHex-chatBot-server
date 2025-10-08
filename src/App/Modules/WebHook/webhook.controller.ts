@@ -37,10 +37,11 @@ export const handleIncomingMessages: RequestHandler = catchAsync(
     const { pageId } = req.params;
     const shop = await PageService.getShopById(pageId);
     const isStartedApp = shop?.isStarted;
+    const connect = shop?.connected;
 
     let result = null;
 
-    if (isStartedApp) {
+    if (isStartedApp && connect === "start") {
       result = await WebHookService.handleIncomingMessages(
         req,
         res,
@@ -52,7 +53,7 @@ export const handleIncomingMessages: RequestHandler = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: isStartedApp
+      message: (isStartedApp && connect === "start")
         ? "Incoming messages handled successfully"
         : "App is on Off State",
       data: result,

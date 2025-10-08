@@ -20,6 +20,7 @@ export interface IPageInfo {
   cmntSystemPromt?: string;
   isVerified?: boolean;
   isStarted?: boolean;
+  connected?: "stop" | "pending" | "start";
   tokenUsage: ITokenUsage;
   accessToken: string;
   verifyToken: string;
@@ -50,6 +51,10 @@ const PageInfoSchema = new mongoose.Schema<IPageInfo>({
   cmntSystemPromt: { type: String, default: '' },
   isVerified: { type: Boolean, default: false },
   isStarted: { type: Boolean, default: false },
+  connected: {
+    type: String, enum: ["stop", "pending", "start"],
+    default: "pending"
+  },
   accessToken: {
     type: String,
     default: '',
@@ -60,7 +65,7 @@ const PageInfoSchema = new mongoose.Schema<IPageInfo>({
   },
   verifyToken: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
-  tokenUsage: { type: TokenUsageSchema, default: {}},
+  tokenUsage: { type: TokenUsageSchema, default: {} },
   updatedAt: { type: Date, default: Date.now },
 });
 

@@ -1,9 +1,6 @@
-import { AxiosError } from "axios";
 import httpStatus from "http-status";
-import mongoose from "mongoose";
 import { sendMessage } from "../../api/facebook.api";
 import ApiError from "../../utility/AppError";
-import { averageEmbeddings, computeHashFromBuffer, createTextEmbedding, downloadImageBuffer, extractImageCaptions, extractImageUrlsFromTrainPost, extractTextFromImageBuffer } from "../../utility/image.embedding";
 import {
   Logger,
   LogMessage,
@@ -83,7 +80,7 @@ const createProduct = async (payload: IPost) => {
   images.forEach((img, idx) => {
     imagesCaptions += `Image-${idx}: ${img.caption}, `
   })
- 
+
   let message = payload.message ? String(payload.message) : "";
   const fullTextsOfImages = message + "\n" + imagesCaptions
 
@@ -147,11 +144,11 @@ const updateProduct = async (
   }
 
   const images = sanitizeImages(payload, payload.images, payload.full_picture);
- let imagesCaptions = ''
+  let imagesCaptions = ''
   images.forEach((img, idx) => {
     imagesCaptions += `Image-${idx}: ${img.caption}, `
   })
- 
+
   let message = payload.message ? String(payload.message) : "";
   const fullTextsOfImages = message + "\n" + imagesCaptions
 
@@ -259,6 +256,17 @@ const togglePageStatus = async (id: string) => {
   const page = await PageInfo.findById(id);
   if (!page) throw new ApiError(httpStatus.NOT_FOUND, "Page not found");
   page.isStarted = !page.isStarted;
+  await page.save();
+  return page;
+};
+
+const connectedPage = async (id: string, newStatus: "stop" | "pending" | "start") => {
+  const page = await PageInfo.findById(id);
+  if (!page) throw new ApiError(httpStatus.NOT_FOUND, "Page not found");
+  // page.connected = !page.connected;
+  console.log("statusss", id);
+  console.log("statusss", newStatus);
+  page.connected = newStatus;
   await page.save();
   return page;
 };
@@ -513,6 +521,7 @@ export const PageService = {
   createShop,
   getShopByOwnerAll,
   togglePageStatus,
+  connectedPage,
   updateShop,
   deleteShop,
   setDmPromt,

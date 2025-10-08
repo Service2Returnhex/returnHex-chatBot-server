@@ -108,6 +108,19 @@ const togglePageStatus: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+const connectedPage: RequestHandler = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  console.log("status", status);
+  const result = await PageService.connectedPage(id, status);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "connection status updated successfully",
+    data: result,
+  });
+})
+
 const getShopById: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params;
@@ -396,6 +409,7 @@ export const PageController = {
   createShop,
   getPagesByOwner,
   togglePageStatus,
+  connectedPage,
   updateShop,
   deleteShop,
   setDmPromt,
