@@ -1,14 +1,7 @@
-import { AxiosError } from "axios";
 import { fetchPostAttachments } from "../../utility/image.caption";
-import { averageEmbeddings, computeHashFromBuffer, createTextEmbedding, downloadImageBuffer, extractImageCaptions, extractImageUrlsFromFeed, extractTextFromImageBuffer } from "../../utility/image.embedding";
+import { extractImageCaptions } from "../../utility/image.embedding";
 import { PageService } from "../Page/page.service";
 import { PageInfo } from "../Page/pageInfo.model";
-
-
-enum ActionType {
-  DM = "reply",
-  COMMENT = "comment",
-}
 
 export const handleAddFeed = async (value: any, pageId: string) => {
 
@@ -29,7 +22,6 @@ export const handleAddFeed = async (value: any, pageId: string) => {
       return;
     }
 
-    // 1) fetch post attachments (to get per-image captions via subattachments)
     let postData: any = null;
     try {
       postData = await fetchPostAttachments(postId, pageAccessToken);
@@ -39,24 +31,12 @@ export const handleAddFeed = async (value: any, pageId: string) => {
 
     console.log("Post Data: ", postData);
 
-    // 2) extract image captions from Graph response (if available)
     const imagesDescription = postData
       ? await extractImageCaptions(postData)
       : ([] as { photoId?: string; url?: string; caption?: string }[]);
     
     console.log("imagesDescription", imagesDescription);
 
-
-    // 4) process each image: download, OCR (optional), create embedding
-    type ImageResult = {
-      url: string;
-      photoId?: string | null;
-      caption?: string | null;
-    };
-
-
-
-    // 6) prepare payload & upsert to DB
     const payload: any = {
       postId,
       shopId: pageId,
@@ -72,24 +52,16 @@ export const handleAddFeed = async (value: any, pageId: string) => {
       })),
     };
 
-    // Persist: use PageService.createProduct (or adapt to your Post model)
     const result = await PageService.createProduct(payload);
 
-    // if (!result) {
-    //   console.warn("handleAddFeed: createProduct returned falsy for", postId);
-    // } else {
-    //   console.log(
-    //     "handleAddFeed: saved post",
-    //     postId,
-    //     "images:",
-    //     payload.images.length
-    //   );
-    // }
+    if (!result) {
+      console.warn("handleAddFeed: createProduct returned falsy for", postId);
+      return null;
+    } 
     console.log("Product Created!");
-    return "result";
+    return result;
   } catch (err: any) {
     console.error("handleAddFeed: unexpected error:", err?.message || err);
-    // Do not throw — webhook should return 200, but you can rethrow if you want failure visibility
     return null;
   }
 };

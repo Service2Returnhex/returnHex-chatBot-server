@@ -147,46 +147,26 @@ const updateProduct = async (
   }
 
   const images = sanitizeImages(payload, payload.images, payload.full_picture);
-  const message = payload.message ? String(payload.message) : "";
-  let summarizedMsg = payload.summarizedMsg
-    ? String(payload.summarizedMsg)
-    : "";
-
-  if (!summarizedMsg || summarizedMsg.trim().length === 0) {
-    if ((message || "").split(/\s+/).filter(Boolean).length > 30) {
-      try {
-        const short = await AIResponse(
-          // payload?.shopId,
-          message || "",
-          "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
-          50
-        );
-        summarizedMsg = String(short || "").trim();
-      } catch (e) {
-        summarizedMsg = message.slice(0, 300);
-      }
-    } else summarizedMsg = message.slice(0, 300);
-  }
-
-  const updateObj: any = {
-    shopId: payload.shopId,
-    postId: payload.postId,
-    message,
-    summarizedMsg,
-    full_picture: payload.full_picture || (images[0] && images[0].url) || "",
-    images,
-    isTrained: true,
-    createdAt: payload.createdAt ? new Date(payload.createdAt) : new Date(),
-  };
+ let imagesCaptions = ''
+  images.forEach((img, idx) => {
+    imagesCaptions += `Image-${idx}: ${img.caption}, `
+  })
+ 
+  let message = payload.message ? String(payload.message) : "";
+  const fullTextsOfImages = message + "\n" + imagesCaptions
 
 
   let shorterInfo: {
     response: string | undefined;
     tokenUsage: TtokenUsage;
   };
-  if (countWords(payload.message as string) > 30) {
+
+  const words = countWords(fullTextsOfImages as string);
+  console.log("Words: ", words);
+
+  if (countWords(fullTextsOfImages as string) > 30) {
     shorterInfo = await AIResponse(
-      payload.message as string,
+      fullTextsOfImages as string,
       "make the info as shorter as possible(summarize) but don't left anything necessary in 50 tokens",
       50
     );
@@ -202,7 +182,18 @@ const updateProduct = async (
         },
       },
     );
-  }
+  } else message = fullTextsOfImages;
+
+  const updateObj = {
+    shopId: payload.shopId,
+    postId: payload.postId,
+    message,
+    summarizedMsg: payload.summarizedMsg,
+    full_picture: payload.full_picture || (images[0] && images[0].url) || "",
+    images,
+    isTrained: true,
+    createdAt: payload.createdAt ? new Date(payload.createdAt) : new Date(),
+  };
 
   const result = await Post.updateOne({ shopId: payload.shopId, postId: payload.postId }, updateObj, {
     runValidators: true,
