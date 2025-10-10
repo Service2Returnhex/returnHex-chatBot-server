@@ -19,7 +19,7 @@ type TBotConfig = {
 
 export const botConfig: TBotConfig = {
     mainAIModel: "gpt-5-mini",
-    mainAIMaxToken: 50,
+    mainAIMaxToken: 100,
 
     NormaAIResponseModel: 'gpt-4o',
 

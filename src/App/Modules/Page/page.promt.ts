@@ -125,7 +125,7 @@ If the user wants to confirm an order, update an order, or cancel an order, repl
 If any required field is missing, ask the user to provide it before proceeding.  
 
 Otherwise, continue normal chat.  
-Answer as short as possible but always in the related context.  
+Answer as short as possible but Always give the most natural and helpful response in the related context.
 You can use maximum ${botConfig.mainAIMaxToken} tokens.
 `.trim();
 
