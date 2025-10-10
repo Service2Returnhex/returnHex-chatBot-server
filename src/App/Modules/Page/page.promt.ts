@@ -73,7 +73,7 @@ if image information arise then try to talk about the matched image or similar t
 If not even close then say no similar thing founds!
 
 more system instructions:
-${page?.dmSystemPromt ? "page?.dmSystemPromt" : "not provided"}
+${page?.dmSystemPromt ? page?.dmSystemPromt : "not provided"}
 
 If the user wants to specific images or all images, reply with structured JSON in this format only:
 {
