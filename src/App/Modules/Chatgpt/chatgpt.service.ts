@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index";
+import { sendImageMessage } from "../../api/facebook.api";
 import { botConfig } from "../../config/botConfig";
 import {
   AIResponseTokenUsages,
@@ -13,9 +14,6 @@ import { PageInfo } from "../Page/pageInfo.model";
 import { Post } from "../Page/post.mode";
 import { ChatHistory } from "./chat-history.model";
 import { CommentHistory } from "./comment-histroy.model";
-import { ReplayResponse } from "@google/genai";
-import { sendImageMessage, sendMessage } from "../../api/facebook.api";
-import { ContentType } from "../../types/file.type";
 
 const getResponseDM = async (
   senderId: string,
@@ -36,7 +34,7 @@ const getResponseDM = async (
     userId: senderId,
     shopId,
   }).exec();
- 
+
   if (!userHistoryDoc) {
     userHistoryDoc = new ChatHistory({
       userId: senderId,
@@ -124,13 +122,14 @@ const getResponseDM = async (
   reply = completion.choices[0].message.content || "Something went wrong";
   console.log("reply", reply);
   console.log("shop access token", shop.accessToken);
-  let parsed = null;
+  let parsed;
   try {
-    parsed = JSON.parse(reply)
-    if(parsed?.action === "imagesView") {
+    parsed = typeof reply === "string" ? JSON.parse(reply) : reply;
+    console.log("parsed", parsed?.quantity);
+    if (parsed?.action === "imagesView") {
       // await sendMessage(senderId, shopId, parsed.message, ContentType.TEXT);
       for (const url of parsed.images) {
-          await sendImageMessage(senderId, shopId, url);
+        await sendImageMessage(senderId, shopId, url);
       }
     }
     else if (parsed?.action === "confirmOrder") {
@@ -139,7 +138,7 @@ const getResponseDM = async (
         shopId,
         customerName: parsed?.name || "N/A",
         productName: parsed?.productName || "N/A",
-        quantity: parsed?.quantity || "N/A",
+        quantity: Number(parsed?.quantity) || 1,
         address: parsed?.address || "N/A",
         contact: parsed?.contact || "N/A",
         paymentMethod: parsed?.paymentMethod || "N/A",
@@ -228,7 +227,7 @@ const getResponseDM = async (
     updatedAt: new Date(),
   });
   await userHistoryDoc.save();
-  return parsed?.action === "imagesView"? parsed?.message : reply;
+  return parsed?.action === "imagesView" ? parsed?.message : reply;
 };
 
 
