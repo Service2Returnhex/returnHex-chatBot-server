@@ -17,6 +17,4 @@ WORKDIR /app
 
 COPY --from=builder /app .
 
-EXPOSE 5002
-
 CMD ["npm", "run", "start:dev"]

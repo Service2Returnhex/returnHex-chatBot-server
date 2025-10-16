@@ -1,20 +1,28 @@
-name: Hex-Bot CI/CD Pipeline
+name: Deploy with Docker Compose
 
 on:
   push:
     branches:
+      - main 
+  pull_request:
+    types: [closed]
+    branches:
       - main
-      - dev
 
 jobs:
-  run-and-deploy:
-    runs-on: hex-machine
+  deploy:
+    if: github.event_name == 'push' || (github.event.pull_request.merged == true)
+    runs-on: self-hosted
+
     steps:
-      - name: Deploy & restart app
-        run: |
-          cd /home/github-runner/returnHex-chatBot-server/
-          git pull origin dev
-          npm install
-          pm2 delete hex-bot || true
-          pm2 start npm --name "hex-bot" -- run start:dev
-          pm2 save
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Stop existing containers
+        run: sudo docker compose down || true
+
+      - name: Rebuild and restart containers
+        run: sudo docker compose up -d --build
+
+      - name: Cleanup unused images
+        run: sudo docker system prune -f
