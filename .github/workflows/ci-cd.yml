@@ -1,9 +1,9 @@
-name: Deploy with Docker Compose
+name: CI/CD - Deploy BotServer
 
 on:
   push:
     branches:
-      - main 
+      - main
   pull_request:
     types: [closed]
     branches:
@@ -11,18 +11,26 @@ on:
 
 jobs:
   deploy:
+    
     if: github.event_name == 'push' || (github.event.pull_request.merged == true)
     runs-on: self-hosted
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Pull Latest Code
+        run: |
+          cd ~/chatbot/server
+          git fetch --all
+          git pull origin main
 
-      - name: Stop existing containers
-        run: docker compose down || true
+      - name: Rebuild & Restart Docker Container
+        run: |
+          cd ~/chatbot/server
 
-      - name: Rebuild and restart containers
-        run: docker compose up -d --build
+          # Stop and remove old container (if running)
+          if [ "$(docker ps -q -f name=chatbot-server)" ]; then
+            docker stop chatbot-server
+            docker rm chatbot-server
+          fi
 
-      - name: Cleanup unused images
-        run: docker system prune -f
+          # Rebuild and start using docker-compose
+          docker compose up --build -d
