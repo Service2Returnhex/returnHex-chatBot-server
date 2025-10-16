@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import readline from "readline";
-import { connectDB } from "./App/config/databas";
+import { connectDB } from "./App/config/database";
 
 
 const rl = readline.createInterface({

@@ -3,7 +3,7 @@ dotenv.config();
 // 
 import app from './app';
 import { config } from './App/config/config';
-import { connectDB } from './App/config/databas';
+import { connectDB } from './App/config/database';
 
 const PORT = config.port;
 connectDB();

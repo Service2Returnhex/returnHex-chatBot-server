@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { connectDB } from "./App/config/databas";
+import { connectDB } from "./App/config/database";
 
 async function main() {
   try {
