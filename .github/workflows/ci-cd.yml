@@ -1,4 +1,4 @@
-name: CI/CD - Deploy chatbot Server 
+name: CI/CD - Deploy chatbot Server
 
 on:
   push:
