@@ -357,7 +357,7 @@ const getMsgCounts = catchAsync(
 const getOrders: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const { shopId } = req.params;
-    const result = await PageService.getOrders(shopId as string);
+    const result = await PageService.getOrders(shopId as string, req.query);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
