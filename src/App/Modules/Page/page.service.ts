@@ -472,7 +472,7 @@ const getOrders = async (
   shopId: string,
   query?: {
     status?: "all" | "pending" | "confirmed" | "delivered" | "cancelled";
-    sort?: "asc" | "desc";
+    sortByCreatedAt?: "asc" | "desc";
   }
 ) => {
   const filters: any = { shopId };
@@ -485,9 +485,9 @@ const getOrders = async (
     filters.status = query.status;
   }
 
-  if(query?.sort && !['asc', 'desc'].includes(query?.sort))
+  if(query?.sortByCreatedAt && !['asc', 'desc'].includes(query?.sortByCreatedAt))
       throw new ApiError(httpStatus.BAD_REQUEST, "Invalid Sort Value");
-  const sortOrder = query?.sort === "asc" ? 1 : -1;
+  const sortOrder = query?.sortByCreatedAt === "asc" ? 1 : -1;
 
   const result = await Order.find(filters).sort({ createdAt: sortOrder });
 
