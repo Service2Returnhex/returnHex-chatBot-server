@@ -18,18 +18,18 @@ type TBotConfig = {
 }
 
 export const botConfig: TBotConfig = {
-    mainAIModel: "gpt-5-mini",
+    mainAIModel: "gpt-4.1-nano",
     mainAIMaxToken: 100,
 
-    NormaAIResponseModel: 'gpt-4o',
+    NormaAIResponseModel: 'gpt-4.1-nano',
 
-    messageSummarizerModel: 'gpt-4o',
-    messageSummarizerMaxToken: 350,
+    messageSummarizerModel: 'gpt-4.1-nano',
+    messageSummarizerMaxToken: 250,
 
-    converstionThreshold: 30,
-    keepMessages: 20,
+    converstionThreshold: 20,
+    keepMessages: 10,
 
-    commentThreshold: 20,
+    commentThreshold: 10,
     keepComments: 5,
 
     postVisibility: 5,

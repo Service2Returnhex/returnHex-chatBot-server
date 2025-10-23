@@ -23,21 +23,21 @@ export const handleDM = async (
     
     if (att.type === 'audio') {
       console.log('Audio Attachemet Detected:');
-      const audioUrl = att.payload?.url;
-      const tempFilePath = await downloadToTempFile(audioUrl);
-      const audioText = await readAudioNGenerateText(tempFilePath);
-      console.log('Audio Text:', audioText);
-      const aiReply = await getAiReplySimple(
-        method, 
-        senderId, 
-        shopId, 
-        audioText, 
-        ActionType.DM, ["chatgpt"]
-      );
+      // const audioUrl = att.payload?.url;
+      // const tempFilePath = await downloadToTempFile(audioUrl);
+      // const audioText = await readAudioNGenerateText(tempFilePath);
+      // console.log('Audio Text:', audioText);
+      // const aiReply = await getAiReplySimple(
+      //   method, 
+      //   senderId, 
+      //   shopId, 
+      //   audioText, 
+      //   ActionType.DM, ["chatgpt"]
+      // );
       await sendMessage(
         senderId, 
         shopId, 
-        aiReply, 
+        "Voice Support is not available. Only text, image and voice support available", 
         ContentType.AUDIO
       );
       return;
