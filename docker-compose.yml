@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: chatbot-server
     ports:
-      - "5002:5002"  
+      - "5030:5030"  
     env_file: ./.env
     volumes:
       - ./:/app

@@ -1,36 +1,36 @@
-name: CI/CD - Deploy chatbot Server 
+# name: CI/CD - Deploy chatbot Server 
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types: [closed]
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     types: [closed]
+#     branches:
+#       - main
 
-jobs:
-  deploy:
+# jobs:
+#   deploy:
 
-    if: github.event_name == 'push' || (github.event.pull_request.merged == true)
-    runs-on: self-hosted
+#     if: github.event_name == 'push' || (github.event.pull_request.merged == true)
+#     runs-on: self-hosted
 
-    steps:
-      - name: Pull Latest Code
-        run: |
-          cd ~/chatbot/server
-          git fetch --all
-          git pull origin main
+#     steps:
+#       - name: Pull Latest Code
+#         run: |
+#           cd ~/chatbot/server
+#           git fetch --all
+#           git pull origin main
 
-      - name: Rebuild & Restart Docker Container
-        run: |
-          cd ~/chatbot/server
+#       - name: Rebuild & Restart Docker Container
+#         run: |
+#           cd ~/chatbot/server
 
-          # Stop and remove old container (if running)
-          if [ "$(docker ps -q -f name=chatbot-server)" ]; then
-            docker stop chatbot-server
-            docker rm chatbot-server
-          fi
+#           # Stop and remove old container (if running)
+#           if [ "$(docker ps -q -f name=chatbot-server)" ]; then
+#             docker stop chatbot-server
+#             docker rm chatbot-server
+#           fi
 
-          # Rebuild and start using docker-compose
-          docker compose up --build -d
+#           # Rebuild and start using docker-compose
+#           docker compose up --build -d
