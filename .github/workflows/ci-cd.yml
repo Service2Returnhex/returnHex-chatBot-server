@@ -1,4 +1,4 @@
-name: CI/CD - Deploy chatbot Server 
+name: CI/CD - Deploy chatbot Server v.2.0.1
 
 on:
   push:
