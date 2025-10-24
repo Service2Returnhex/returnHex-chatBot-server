@@ -211,7 +211,6 @@ const logoutUser = async (token: string) => {
     throw new ApiError(httpStatus.UNAUTHORIZED, "User is blocked"); 
   await RefreshToken.deleteMany({ user: decoded.userId });
   return { message: "User logged out successfully" };
-  
 };
 
 export const AuthServices = {

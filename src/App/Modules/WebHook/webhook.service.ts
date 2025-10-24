@@ -11,6 +11,7 @@ import { PageService } from "../Page/page.service";
 import { PageInfo } from "../Page/pageInfo.model";
 import { handleAddFeed } from "./weebhook.add.feed";
 import { handleDM } from "./weebhook.dm.msg";
+import { convertImageToText } from "../../utility/attachementsToTextConversion";
 
 enum ActionType {
   DM = "reply",
@@ -51,6 +52,18 @@ const handleEditFeed = async (value: any, pageId: string) => {
 
     console.log("imagesDescription", imagesDescription);
 
+       const images = await Promise.all(
+          imagesDescription.map(async(img) => {
+            const descriptions = await convertImageToText([img.url]);
+            return {
+              photoId: img.photoId ? img.photoId : postId.split('_')[1],
+              url: img.url,
+              caption: img.caption || "",
+              imageDescription: descriptions[0] || ""
+            };
+          })
+        )
+
     const payload: any = {
       postId,
       shopId: pageId,
@@ -59,22 +72,18 @@ const handleEditFeed = async (value: any, pageId: string) => {
         ? new Date(value.created_time * 1000)
         : new Date(),
       updatedAt: new Date(),
-      images: imagesDescription.map((img) => ({
-        photoId: img.photoId ? img.photoId : postId.split('_')[1],
-        url: img.url,
-        caption: img.caption,
-      })),
+      images
     };
 
     
     const result = await PageService.updateProduct(payload);
 
     if (!result) {
-      console.warn("handleAddFeed: createProduct returned falsy for", postId);
+      console.warn("handleAddFeed: updateProduct returned falsy for", postId);
       return null;
     }
 
-    console.log("Updated");
+    console.log("Product Updated");
     return result;
   } catch (err: any) {
     console.error("handleAddFeed: unexpected error:", err?.message || err);

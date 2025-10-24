@@ -1,7 +1,7 @@
 import { botConfig } from "../../config/botConfig";
 import { Order } from "./order.model";
 import { IPageInfo } from "./pageInfo.model";
-import { IPost } from "./post.mode";
+import { IPost } from "./post.model";
 
 export const makePromtDM = async (
   page: IPageInfo,
@@ -18,9 +18,12 @@ export const makePromtDM = async (
       .map(
         (p, i) => `
   ${i + 1} - Description: ${!p.summarizedMsg ? p.message : p.summarizedMsg}
-  Image Links: ${p.images && p.images.length > 0
+  Image urls: ${p.images && p.images.length > 0
   ? p.images.map((img, idx) => `url-${idx + 1}: ${img.url}`).join("\n")
   : "No images urls"}
+  Image details: ${p.images && p.images.length > 0
+  ? p.images.map((img, idx) => `details-${idx + 1}: ${img.imageDescription}`).join("\n")
+  : "No image details"}
   `
       )
       .join(",");
@@ -69,8 +72,8 @@ ${postList.length > 0
 Existing Orders for this user:
 ${orderList}
 
-if image information arise then try to talk about the matched image or similar type images. 
-If not even close then say no similar thing founds!
+if image information arise then try to talk about the matched image or similar type images.(eg. we have that, stock available, similar type available, etc)
+If not even close then say no similar thing founds!(eg. no similar thing founds, we don't have that, not available in stock etc)
 
 more system instructions:
 ${page?.dmSystemPromt ? page?.dmSystemPromt : "not provided"}
@@ -128,8 +131,6 @@ Otherwise, continue normal chat.
 Answer as short as possible but Always give the most natural and helpful response in the related context.
 You can use maximum ${botConfig.mainAIMaxToken} tokens.
 `.trim();
-
-  // console.log(systemPrompt);
 
   return systemPrompt;
 };

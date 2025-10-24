@@ -12,9 +12,9 @@ const auth = (...requireRoles: TUserRole[]) => {
     return catchAsync(
         async(req: Request, res: Response, next: NextFunction) => {
             const token = req.headers.authorization
-
             if(!token) throw new ApiError(httpStatus.UNAUTHORIZED, "Token Not Found. Unauthorized user!");
             const decoded = verifyToken(token, config.jwt_access_secret as string) as JwtPayload;
+            
             if(!decoded) throw new ApiError(httpStatus.UNAUTHORIZED, "Could not verify token. Unauthorized user");
             const {userId, role} = decoded
 
@@ -26,6 +26,7 @@ const auth = (...requireRoles: TUserRole[]) => {
                 throw new ApiError(httpStatus.UNAUTHORIZED, "Role mismatched. Unauthorized!");
 
             req.user = decoded as JwtPayload
+
             next();
         }
     )

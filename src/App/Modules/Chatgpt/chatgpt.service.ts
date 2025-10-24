@@ -11,7 +11,7 @@ import {
 import { Order } from "../Page/order.model";
 import { makePromtComment, makePromtDM } from "../Page/page.promt";
 import { PageInfo } from "../Page/pageInfo.model";
-import { Post } from "../Page/post.mode";
+import { Post } from "../Page/post.model";
 import { ChatHistory } from "./chat-history.model";
 import { CommentHistory } from "./comment-histroy.model";
 

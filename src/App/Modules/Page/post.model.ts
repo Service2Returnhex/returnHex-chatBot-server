@@ -4,7 +4,6 @@ export interface IPost {
   name?: string;
   description?: string;
   price?: string;
-  
   postId: string;
   message: string;
   summarizedMsg?: string;

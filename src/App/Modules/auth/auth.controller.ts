@@ -11,10 +11,12 @@ export const loginUser: RequestHandler = catchAsync(
 
     const { accessToken, refreshToken, userRole, id } = result;
 
+    const isProduction = config.node_env === "production";
+
     res.cookie("refreshToken", refreshToken, {
-      secure: config.node_env === "production",
       httpOnly: true,
-      sameSite: "none",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24 * 30,
     });
 

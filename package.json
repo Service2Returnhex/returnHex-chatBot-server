@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "delete:full": "ts-node-dev --respawn --transpile-only src/deleteFullDB.ts",
-    "delete:docs": "ts-node-dev --respawn --transpile-only src/deleteDBDocuments.ts"
+    "delete:docs": "ts-node-dev --respawn --transpile-only src/deleteDBDocuments.ts",
+    "add:img-desc": "ts-node-dev --respawn --transpile-only src/addImageDescriptionFieldTemp.ts"
   },
   "keywords": [],
   "author": "",

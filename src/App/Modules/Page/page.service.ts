@@ -14,7 +14,7 @@ import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { Order } from "./order.model";
 import { IPageInfo, PageInfo } from "./pageInfo.model";
-import { IPost, Post } from "./post.mode";
+import { IPost, Post } from "./post.model";
 
 //Product services
 const getProducts = async (pageId: string) => {
@@ -44,28 +44,33 @@ const getProductById = async (pageId: string, id: string) => {
   return result;
 };
 
-function sanitizeImages(payload: IPost, maybe: any, fallbackFullPicture?: string) {
+function sanitizeImages(
+  payload: IPost,
+  maybe: any,
+  fallbackFullPicture?: string
+) {
   if (!Array.isArray(maybe)) maybe = [];
-  const images = (maybe as any[])
-    .map((img: any) => ({
-      photoId: img?.photoId ? String(img.photoId).trim() : "",
-      url: img?.url ? String(img.url).trim() : "",
-      caption: img?.caption ? String(img.caption) : "",
-    }))
-    .filter((i) => i.url && i.url.length > 0);
+  const images = (maybe as any[]).map((img: any) => ({
+    photoId: img?.photoId ? String(img.photoId).trim() : "",
+    url: img?.url ? String(img.url).trim() : "",
+    caption: img?.caption ? String(img.caption) : "",
+    imageDescription: img?.imageDescription
+      ? String(img.imageDescription).trim()
+      : "",
+  }));
 
   if (images.length === 0 && fallbackFullPicture) {
     images.push({
-      photoId: payload.postId.split('_')[1],
+      photoId: payload.postId.split("_")[1],
       url: String(fallbackFullPicture).trim(),
       caption: "",
+      imageDescription: "",
     });
   }
   return images;
 }
 
 const createProduct = async (payload: IPost) => {
-
   if (!payload?.shopId || !payload?.postId)
     throw new ApiError(httpStatus.BAD_REQUEST, "Missing shopId or postId");
   const findProduct = await Post.findOne({
@@ -76,14 +81,15 @@ const createProduct = async (payload: IPost) => {
 
   const images = sanitizeImages(payload, payload.images, payload.full_picture);
 
-  let imagesCaptions = ''
+  let imagesCaptions = "";
   images.forEach((img, idx) => {
-    imagesCaptions += `Image-${idx}: ${img.caption}, `
-  })
+    if (img.caption && img.caption.trim() !== "") {
+      imagesCaptions += `Image-${idx}: ${img.caption}, `;
+    }
+  });
 
   let message = payload.message ? String(payload.message) : "";
-  const fullTextsOfImages = message + "\n" + imagesCaptions
-
+  const fullTextsOfImages = message + "\n" + imagesCaptions;
 
   let shorterInfo: {
     response: string | undefined;
@@ -109,7 +115,7 @@ const createProduct = async (payload: IPost) => {
           "tokenUsage.outputToken": shorterInfo.tokenUsage.outputToken,
           "tokenUsage.totalToken": shorterInfo.tokenUsage.totalToken,
         },
-      },
+      }
     );
   } else message = fullTextsOfImages;
 
@@ -128,9 +134,7 @@ const createProduct = async (payload: IPost) => {
   return result;
 };
 
-const updateProduct = async (
-  payload: IPost
-) => {
+const updateProduct = async (payload: IPost) => {
   if (!payload?.shopId || !payload?.postId)
     throw new ApiError(httpStatus.BAD_REQUEST, "Missing shopId or postId");
   const existing = await Post.findOne({
@@ -144,14 +148,15 @@ const updateProduct = async (
   }
 
   const images = sanitizeImages(payload, payload.images, payload.full_picture);
-  let imagesCaptions = ''
+  let imagesCaptions = "";
   images.forEach((img, idx) => {
-    imagesCaptions += `Image-${idx}: ${img.caption}, `
-  })
+    if (img.caption && img.caption.trim() !== "") {
+      imagesCaptions += `Image-${idx}: ${img.caption}, `;
+    }
+  });
 
   let message = payload.message ? String(payload.message) : "";
-  const fullTextsOfImages = message + "\n" + imagesCaptions
-
+  const fullTextsOfImages = message + "\n" + imagesCaptions;
 
   let shorterInfo: {
     response: string | undefined;
@@ -177,7 +182,7 @@ const updateProduct = async (
           "tokenUsage.outputToken": shorterInfo.tokenUsage.outputToken,
           "tokenUsage.totalToken": shorterInfo.tokenUsage.totalToken,
         },
-      },
+      }
     );
   } else message = fullTextsOfImages;
 
@@ -192,9 +197,13 @@ const updateProduct = async (
     createdAt: payload.createdAt ? new Date(payload.createdAt) : new Date(),
   };
 
-  const result = await Post.updateOne({ shopId: payload.shopId, postId: payload.postId }, updateObj, {
-    runValidators: true,
-  });
+  const result = await Post.updateOne(
+    { shopId: payload.shopId, postId: payload.postId },
+    updateObj,
+    {
+      runValidators: true,
+    }
+  );
   // console.log("update result", result);
   if (!result.modifiedCount) {
     Logger(LogService.DB, LogPrefix.PRODUCT, LogMessage.NOT_UPDATED);
@@ -260,7 +269,10 @@ const togglePageStatus = async (id: string) => {
   return page;
 };
 
-const connectedPage = async (id: string, newStatus: "stop" | "pending" | "start") => {
+const connectedPage = async (
+  id: string,
+  newStatus: "stop" | "pending" | "start"
+) => {
   const page = await PageInfo.findById(id);
   if (!page) throw new ApiError(httpStatus.NOT_FOUND, "Page not found");
   // page.connected = !page.connected;
@@ -278,10 +290,14 @@ const createShop = async (payload: IPageInfo) => {
     throw new ApiError(httpStatus.CONFLICT, "Shop Already Exists!");
   }
 
-  const shopInfo = `PageName: ${payload.pageName ? payload.pageName : "N/A"}, Category: ${payload.pageCategory ? payload.pageCategory : "N/A"
-    }, Address: ${payload?.address ? payload?.address : "N/A"}
-  Phone: ${payload?.phone ? payload.phone : "N/A"}, Email: ${payload?.email ? payload.email : "N/A"
-    }, MoreInfo: ${payload?.moreInfo ? payload?.moreInfo : "N/A"}
+  const shopInfo = `PageName: ${
+    payload.pageName ? payload.pageName : "N/A"
+  }, Category: ${
+    payload.pageCategory ? payload.pageCategory : "N/A"
+  }, Address: ${payload?.address ? payload?.address : "N/A"}
+  Phone: ${payload?.phone ? payload.phone : "N/A"}, Email: ${
+    payload?.email ? payload.email : "N/A"
+  }, MoreInfo: ${payload?.moreInfo ? payload?.moreInfo : "N/A"}
   `;
 
   let shorterInfo: {
@@ -299,7 +315,7 @@ const createShop = async (payload: IPageInfo) => {
       inputToken: shorterInfo.tokenUsage.inputToken,
       outputToken: shorterInfo.tokenUsage.outputToken,
       totalToken: shorterInfo.tokenUsage.totalToken,
-    }
+    };
   }
 
   const result = await PageInfo.create(payload);
@@ -320,11 +336,14 @@ const updateShop = async (id: string, payload: Partial<IPageInfo>) => {
     throw new ApiError(httpStatus.NOT_FOUND, "Shop Not Found");
   }
 
-  const shopInfo = `PageName: ${payload.pageName ? payload.pageName : isExists.pageName
-    }, Category: ${payload.pageCategory ? payload.pageCategory : isExists.pageCategory
-    }, Address: ${payload.address ? payload.address : isExists.address}
-  Phone: ${payload.phone ? payload.phone : isExists.phone}, Email: ${payload.email ? payload.email : isExists.email
-    }, MoreInfo: ${payload.moreInfo ? payload.moreInfo : isExists.moreInfo}
+  const shopInfo = `PageName: ${
+    payload.pageName ? payload.pageName : isExists.pageName
+  }, Category: ${
+    payload.pageCategory ? payload.pageCategory : isExists.pageCategory
+  }, Address: ${payload.address ? payload.address : isExists.address}
+  Phone: ${payload.phone ? payload.phone : isExists.phone}, Email: ${
+    payload.email ? payload.email : isExists.email
+  }, MoreInfo: ${payload.moreInfo ? payload.moreInfo : isExists.moreInfo}
   `;
 
   let shorterInfo: {
@@ -348,18 +367,20 @@ const updateShop = async (id: string, payload: Partial<IPageInfo>) => {
     payload.summary = shorterInfo.response as string;
   }
 
-  const result = await PageInfo.updateOne({ shopId: id },
+  const result = await PageInfo.updateOne(
+    { shopId: id },
     {
       $set: payload,
       $inc: {
         "tokenUsage.inputToken": shorterInfo.tokenUsage.inputToken,
         "tokenUsage.outputToken": shorterInfo.tokenUsage.outputToken,
         "tokenUsage.totalToken": shorterInfo.tokenUsage.totalToken,
-      }
-    }
-    , {
+      },
+    },
+    {
       runValidators: true,
-    });
+    }
+  );
 
   if (!result.modifiedCount) {
     Logger(LogService.DB, LogPrefix.SHOP, LogMessage.NOT_UPDATED);
@@ -462,7 +483,10 @@ const getOrders = async (pageId: string) => {
   return result;
 };
 
-const updateOrderStatus = async (id: string, newStatus: "pending" | "confirmed" | "delivered" | "cancelled") => {
+const updateOrderStatus = async (
+  id: string,
+  newStatus: "pending" | "confirmed" | "delivered" | "cancelled"
+) => {
   const order = await Order.findById(id);
   if (!order) throw new ApiError(httpStatus.NOT_FOUND, "Order not found");
 
@@ -471,8 +495,10 @@ const updateOrderStatus = async (id: string, newStatus: "pending" | "confirmed" 
   return order;
 };
 
-
-const followUpDmMsg = async (orderId: string, newStatus: "pending" | "confirmed" | "delivered" | "cancelled") => {
+const followUpDmMsg = async (
+  orderId: string,
+  newStatus: "pending" | "confirmed" | "delivered" | "cancelled"
+) => {
   // 1. fetch order
   const order = await Order.findById(orderId);
   if (!order) throw new ApiError(httpStatus.NOT_FOUND, "Order not found");
@@ -486,7 +512,9 @@ const followUpDmMsg = async (orderId: string, newStatus: "pending" | "confirmed"
   (async () => {
     try {
       // find page token by shopId
-      const page = await PageInfo.findOne({ shopId: order.shopId }).lean().exec();
+      const page = await PageInfo.findOne({ shopId: order.shopId })
+        .lean()
+        .exec();
       const pageToken = page?.accessToken ?? null;
       const psid = order.userId; // your stored senderId / PSID
 
@@ -504,9 +532,7 @@ const followUpDmMsg = async (orderId: string, newStatus: "pending" | "confirmed"
   })();
 
   return order;
-}
-
-
+};
 
 export const PageService = {
   getProducts,

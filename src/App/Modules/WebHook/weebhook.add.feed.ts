@@ -1,3 +1,4 @@
+import { convertImageToText } from "../../utility/attachementsToTextConversion";
 import { fetchPostAttachments } from "../../utility/image.caption";
 import { extractImageCaptions } from "../../utility/image.embedding";
 import { PageService } from "../Page/page.service";
@@ -37,6 +38,18 @@ export const handleAddFeed = async (value: any, pageId: string) => {
     
     console.log("imagesDescription", imagesDescription);
 
+    const images = await Promise.all(
+      imagesDescription.map(async(img) => {
+        const descriptions = await convertImageToText([img.url]);
+        return {
+          photoId: img.photoId ? img.photoId : postId.split('_')[1],
+          url: img.url,
+          caption: img.caption || "",
+          imageDescription: descriptions[0] || ""
+        };
+      })
+    )
+
     const payload: any = {
       postId,
       shopId: pageId,
@@ -45,12 +58,10 @@ export const handleAddFeed = async (value: any, pageId: string) => {
         ? new Date(value.created_time * 1000)
         : new Date(),
       updatedAt: new Date(),
-      images: imagesDescription.map((img) => ({
-        photoId: img.photoId ? img.photoId : postId.split('_')[1],
-        url: img.url,
-        caption: img.caption,
-      })),
+      images
     };
+
+    console.log("Payload for creating product:", payload);
 
     const result = await PageService.createProduct(payload);
 

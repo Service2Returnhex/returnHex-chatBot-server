@@ -5,7 +5,7 @@ import { ChatHistory } from "../Chatgpt/chat-history.model";
 import { CommentHistory } from "../Chatgpt/comment-histroy.model";
 import { makePromtComment, makePromtDM } from "../Page/page.promt";
 import { PageInfo } from "../Page/pageInfo.model";
-import { Post } from "../Page/post.mode";
+import { Post } from "../Page/post.model";
 
 const getResponseDM = async (
   senderId: string,

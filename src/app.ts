@@ -6,8 +6,22 @@ import notFound from "./App/Middlewares/notFound";
 import router from "./App/Routes";
 const app = express();
 
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://autopingai.com",
+  "https://www.autopingai.com",
+]
+
 app.use(
-  cors({})
+  cors({
+    origin: (origin, callback) => {
+      if(!origin) return callback(null, true);
+      if(allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"), false);
+    },
+    credentials: true
+  })
 );
 app.use(express.json());
 app.use(cookieParser());
